@@ -359,6 +359,8 @@ Route::group(['prefix' => 'game'], function () {
     Route::get('/franchises/{prefix?}', [$class, 'franchises'])->name('Game.Franchises');
     // ホラーゲームラインナップ
     Route::get('/lineup', [$class, 'lineup'])->name('Game.Lineup');
+    // ラインナップ追加ノード取得（HTML断片）
+    Route::get('/lineup/more', [$class, 'lineupMore'])->name('Game.LineupMore');
     // タイトル詳細
     Route::get('/title/{titleKey}', [$class, 'titleDetail'])->name('Game.TitleDetail');
 

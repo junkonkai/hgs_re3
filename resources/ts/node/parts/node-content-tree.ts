@@ -9,6 +9,7 @@ import { TreeNodeInterface } from "../interface/tree-node-interface";
 import { BasicNode } from "../basic-node";
 import { AccordionTreeNode } from "../accordion-tree-node";
 import { LinkTreeNode } from "../link-tree-node";
+import { LoadMoreNode } from "../load-more-node";
 import { CurrentNode } from "../current-node";
 
 export class NodeContentTree extends NodeContent
@@ -77,26 +78,78 @@ export class NodeContentTree extends NodeContent
         this._nodeCount = 0;
         this.homewardNode = null;
         this._contentElement.querySelectorAll(':scope > section.node').forEach(nodeElement => {
-            // link-nodeクラスがあればLinkNodeを作成
-            if (nodeElement.classList.contains('link-node')) {
-                this._nodes.push(new LinkNode(nodeElement as HTMLElement, parentNode));
-                this._nodeCount++;
-            } else if (nodeElement.classList.contains('link-tree-node')) {
-                this._nodes.push(new LinkTreeNode(nodeElement as HTMLElement, parentNode));
-                this._nodeCount++;
-            } else if (nodeElement.classList.contains('tree-node')) {
-                if (nodeElement.classList.contains('accordion')) {
-                    this._nodes.push(new AccordionTreeNode(nodeElement as HTMLElement, parentNode));
-                } else {
-                    this._nodes.push(new TreeNode(nodeElement as HTMLElement, parentNode));
-                }
-                this._nodeCount++;
-            } else {
-                // どれにも当てはまらないものはベーシックノード
-                this._nodes.push(new BasicNode(nodeElement as HTMLElement, parentNode));
-                this._nodeCount++;
-            }
+            this._nodes.push(this.createNodeFromElement(nodeElement as HTMLElement, parentNode));
+            this._nodeCount++;
         });
+    }
+
+    /**
+     * 要素からノードオブジェクトを1つ生成する（loadNodes と replaceLoadMoreWithNodes で共通利用）
+     */
+    private createNodeFromElement(nodeElement: HTMLElement, parentNode: TreeNodeInterface): NodeType
+    {
+        if (nodeElement.classList.contains('link-node')) {
+            return new LinkNode(nodeElement, parentNode);
+        }
+        if (nodeElement.classList.contains('link-tree-node')) {
+            return new LinkTreeNode(nodeElement, parentNode);
+        }
+        if (nodeElement.classList.contains('load-more-node')) {
+            return new LoadMoreNode(nodeElement, parentNode);
+        }
+        if (nodeElement.classList.contains('tree-node')) {
+            if (nodeElement.classList.contains('accordion')) {
+                return new AccordionTreeNode(nodeElement, parentNode);
+            }
+            return new TreeNode(nodeElement, parentNode);
+        }
+        return new BasicNode(nodeElement, parentNode);
+    }
+
+    /**
+     * 「さらに表示」クリック後: 取得した HTML を LoadMoreNode の位置に挿入し、追加ノードを登録・接続線を伸ばし・追加分のみ appear させる。
+     */
+    public replaceLoadMoreWithNodes(loadMoreNode: LoadMoreNode, html: string): void
+    {
+        const contentElement = this._contentElement;
+        const loadMoreElement = loadMoreNode.nodeElement;
+
+        const temp = document.createElement('div');
+        temp.innerHTML = html.trim();
+
+        const insertedElements: HTMLElement[] = [];
+        while (temp.firstElementChild) {
+            const child = temp.firstElementChild as HTMLElement;
+            contentElement.insertBefore(child, loadMoreElement);
+            insertedElements.push(child);
+        }
+
+        loadMoreElement.remove();
+
+        const loadMoreIndex = this._nodes.indexOf(loadMoreNode);
+        if (loadMoreIndex === -1) {
+            return;
+        }
+
+        this._nodes.splice(loadMoreIndex, 1);
+        this._nodeCount = this._nodes.length;
+
+        insertedElements.forEach((el, i) => {
+            const node = this.createNodeFromElement(el, this._parentNode as TreeNodeInterface);
+            this._nodes.splice(loadMoreIndex + i, 0, node);
+        });
+        this._nodeCount = this._nodes.length;
+
+        this.resizeConnectionLine(this._parentNode.nodeHead.getConnectionPoint());
+
+        const startIndex = loadMoreIndex;
+        const endIndex = loadMoreIndex + insertedElements.length;
+        for (let i = startIndex; i < endIndex; i++) {
+            const node = this._nodes[i];
+            if (AppearStatus.isDisappeared(node.appearStatus)) {
+                node.appear(true, true);
+            }
+        }
     }
 
     public get lastNode(): NodeType

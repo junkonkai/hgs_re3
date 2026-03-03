@@ -332,7 +332,7 @@ div.connection-line {
     }
 }
 
-.link-node, .link-tree-node {
+.link-node, .link-tree-node, .load-more-node {
     .node-head-text {
         & + .node-pt {
             color: var(--node-pt-dark);
@@ -347,6 +347,15 @@ div.connection-line {
                 transition: color 0.3s ease, text-shadow 0.3s ease;
             }
         }
+    }
+}
+
+/* さらに表示ボタン: リンク風だがクリックで追加読み込み */
+.load-more-node {
+    cursor: pointer;
+
+    .node-head-text {
+        cursor: pointer;
     }
 }
 

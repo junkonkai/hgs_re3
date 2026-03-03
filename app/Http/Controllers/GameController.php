@@ -128,25 +128,28 @@ class GameController extends Controller
             compact('text', 'franchises', 'franchiseIds', 'series', 'titles', 'searchResultIds')));
     }
 
+    private const LINEUP_PER_PAGE = 30;
+
     /**
-     * ホラーゲームラインナップ
-     * last_title_update_at 降順の上位30件のフランチャイズと、紐づくシリーズ・タイトルをツリー形式で表示する。
+     * ラインナップ用フランチャイズ一覧を取得（シリーズ・タイトル付き）
      *
-     * @param Request $request
-     * @return JsonResponse|Application|Factory|View
-     * @throws \Throwable
+     * @param int $offset
+     * @param int $limit
+     * @return array{0: \Illuminate\Support\Collection, 1: bool}
      */
-    public function lineup(Request $request): JsonResponse|Application|Factory|View
+    private function getLineupFranchises(int $offset = 0, int $limit = self::LINEUP_PER_PAGE): array
     {
-        $franchises = GameFranchise::select(['id', 'key', 'name', 'rating'])
-            ->orderByDesc('last_title_update_at')
-            ->limit(30)
-            ->get();
+        $query = GameFranchise::select(['id', 'key', 'name', 'rating'])
+            ->orderByDesc('last_title_update_at');
+
+        $total = $query->count();
+        $franchises = (clone $query)->offset($offset)->limit($limit)->get();
+        $hasMore = ($offset + $limit) < $total;
 
         $franchiseIds = $franchises->pluck('id')->toArray();
 
         if (empty($franchiseIds)) {
-            return $this->tree(view('game.lineup', compact('franchises')));
+            return [$franchises, false];
         }
 
         $series = GameSeries::select(['id', 'name', 'game_franchise_id'])
@@ -199,7 +202,42 @@ class GameController extends Controller
             }
         }
 
-        return $this->tree(view('game.lineup', compact('franchises')));
+        return [$franchises, $hasMore];
+    }
+
+    /**
+     * ホラーゲームラインナップ
+     * last_title_update_at 降順の上位30件のフランチャイズと、紐づくシリーズ・タイトルをツリー形式で表示する。
+     * 「さらに表示」で30件ずつ追加読み込み可能。
+     *
+     * @param Request $request
+     * @return JsonResponse|Application|Factory|View
+     * @throws \Throwable
+     */
+    public function lineup(Request $request): JsonResponse|Application|Factory|View
+    {
+        [$franchises, $hasMore] = $this->getLineupFranchises(0, self::LINEUP_PER_PAGE);
+        $nextPage = 2;
+
+        return $this->tree(view('game.lineup', compact('franchises', 'hasMore', 'nextPage')));
+    }
+
+    /**
+     * ラインナップの追加ノード取得（HTML断片）
+     * X-Requested-With: XMLHttpRequest で呼び出し、partial のみ返す。
+     *
+     * @param Request $request
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function lineupMore(Request $request): \Illuminate\Contracts\View\View
+    {
+        $page = max(1, (int) $request->input('page', 1));
+        $offset = ($page - 1) * self::LINEUP_PER_PAGE;
+
+        [$franchises, $hasMore] = $this->getLineupFranchises($offset, self::LINEUP_PER_PAGE);
+        $nextPage = $page + 1;
+
+        return view('game.lineup_nodes', compact('franchises', 'hasMore', 'nextPage'));
     }
 
     /**
