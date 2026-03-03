@@ -129,6 +129,80 @@ class GameController extends Controller
     }
 
     /**
+     * ホラーゲームラインナップ
+     * last_title_update_at 降順の上位30件のフランチャイズと、紐づくシリーズ・タイトルをツリー形式で表示する。
+     *
+     * @param Request $request
+     * @return JsonResponse|Application|Factory|View
+     * @throws \Throwable
+     */
+    public function lineup(Request $request): JsonResponse|Application|Factory|View
+    {
+        $franchises = GameFranchise::select(['id', 'key', 'name', 'rating'])
+            ->orderByDesc('last_title_update_at')
+            ->limit(30)
+            ->get();
+
+        $franchiseIds = $franchises->pluck('id')->toArray();
+
+        if (empty($franchiseIds)) {
+            return $this->tree(view('game.lineup', compact('franchises')));
+        }
+
+        $series = GameSeries::select(['id', 'name', 'game_franchise_id'])
+            ->whereIn('game_franchise_id', $franchiseIds)
+            ->get()
+            ->keyBy('id');
+
+        $seriesIds = $series->pluck('id')->toArray();
+
+        foreach ($series as $s) {
+            $s->searchTitles = [];
+        }
+
+        $titles = GameTitle::select(['id', 'key', 'name', 'game_series_id', 'game_franchise_id', 'rating'])
+            ->where(function ($q) use ($franchiseIds, $seriesIds) {
+                $q->whereIn('game_series_id', $seriesIds)
+                    ->orWhere(function ($q) use ($franchiseIds) {
+                        $q->whereIn('game_franchise_id', $franchiseIds)->whereNull('game_series_id');
+                    });
+            })
+            ->get();
+
+        foreach ($franchises as $franchise) {
+            $franchise->searchTitles = [];
+            $franchise->searchSeries = [];
+        }
+
+        foreach ($titles as $title) {
+            if (!empty($title->game_series_id) && isset($series[$title->game_series_id])) {
+                $s = $series[$title->game_series_id];
+                $searchTitles = $s->searchTitles;
+                $searchTitles[] = $title;
+                $s->searchTitles = $searchTitles;
+            } elseif (!empty($title->game_franchise_id)) {
+                $franchise = $franchises->firstWhere('id', $title->game_franchise_id);
+                if ($franchise !== null) {
+                    $searchTitles = $franchise->searchTitles;
+                    $searchTitles[] = $title;
+                    $franchise->searchTitles = $searchTitles;
+                }
+            }
+        }
+
+        foreach ($series as $s) {
+            $franchise = $franchises->firstWhere('id', $s->game_franchise_id);
+            if ($franchise !== null) {
+                $searchSeries = $franchise->searchSeries;
+                $searchSeries[] = $s;
+                $franchise->searchSeries = $searchSeries;
+            }
+        }
+
+        return $this->tree(view('game.lineup', compact('franchises')));
+    }
+
+    /**
      * メーカーネットワーク
      *
      * @param Request $request

@@ -15,6 +15,7 @@ class GameFranchise extends Model
     protected $hidden = ['created_at', 'updated_at'];
     protected $casts = [
         'rating' => Rating::class,
+        'last_title_update_at' => 'datetime',
     ];
 
     /**
