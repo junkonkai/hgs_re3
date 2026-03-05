@@ -135,7 +135,7 @@ class GameController extends Controller
      *
      * @param int $offset
      * @param int $limit
-     * @return array{0: \Illuminate\Support\Collection, 1: bool}
+     * @return array{0: \Illuminate\Support\Collection, 1: bool, 2: int} [franchises, hasMore, total]
      */
     private function getLineupFranchises(int $offset = 0, int $limit = self::LINEUP_PER_PAGE): array
     {
@@ -149,7 +149,7 @@ class GameController extends Controller
         $franchiseIds = $franchises->pluck('id')->toArray();
 
         if (empty($franchiseIds)) {
-            return [$franchises, false];
+            return [$franchises, false, $total];
         }
 
         $series = GameSeries::select(['id', 'name', 'game_franchise_id'])
@@ -202,13 +202,13 @@ class GameController extends Controller
             }
         }
 
-        return [$franchises, $hasMore];
+        return [$franchises, $hasMore, $total];
     }
 
     /**
      * ホラーゲームラインナップ
-     * last_title_update_at 降順の上位30件のフランチャイズと、紐づくシリーズ・タイトルをツリー形式で表示する。
-     * 「さらに表示」で30件ずつ追加読み込み可能。
+     * last_title_update_at 降順のフランチャイズと、紐づくシリーズ・タイトルをツリー形式で表示する。
+     * ページングで30件ずつ表示。rel="internal-node" によりノード内のみ更新。
      *
      * @param Request $request
      * @return JsonResponse|Application|Factory|View
@@ -216,28 +216,13 @@ class GameController extends Controller
      */
     public function lineup(Request $request): JsonResponse|Application|Factory|View
     {
-        [$franchises, $hasMore] = $this->getLineupFranchises(0, self::LINEUP_PER_PAGE);
-        $nextPage = 2;
-
-        return $this->tree(view('game.lineup', compact('franchises', 'hasMore', 'nextPage')));
-    }
-
-    /**
-     * ラインナップの追加ノード取得（HTML断片）
-     * X-Requested-With: XMLHttpRequest で呼び出し、partial のみ返す。
-     *
-     * @param Request $request
-     * @return \Illuminate\Contracts\View\View
-     */
-    public function lineupMore(Request $request): \Illuminate\Contracts\View\View
-    {
         $page = max(1, (int) $request->input('page', 1));
         $offset = ($page - 1) * self::LINEUP_PER_PAGE;
 
-        [$franchises, $hasMore] = $this->getLineupFranchises($offset, self::LINEUP_PER_PAGE);
-        $nextPage = $page + 1;
+        [$franchises, $hasMore, $total] = $this->getLineupFranchises($offset, self::LINEUP_PER_PAGE);
+        $totalPages = (int) ceil($total / self::LINEUP_PER_PAGE);
 
-        return view('game.lineup_nodes', compact('franchises', 'hasMore', 'nextPage'));
+        return $this->tree(view('game.lineup', compact('franchises', 'totalPages', 'page', 'total')));
     }
 
     /**

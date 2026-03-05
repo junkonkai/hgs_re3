@@ -25,6 +25,7 @@ export class NodeContentTree extends NodeContent
     protected _nodeCount: number;
     protected _isFast: boolean;
     protected _doNotAppearBehind: boolean;
+    protected _onDisappearedCallback: (() => void) | null = null;
 
     public get appearStatus(): AppearStatus
     {
@@ -157,9 +158,25 @@ export class NodeContentTree extends NodeContent
         return this._nodes[this._nodes.length - 1];
     }
 
+    /**
+     * 子ノードが存在する場合のみ lastNode を返す（空のときの undefined 参照を防ぐ）
+     */
+    public get lastNodeOrNull(): NodeType | null
+    {
+        return this._nodes.length > 0 ? this._nodes[this._nodes.length - 1] : null;
+    }
+
     public getNodeByIndex(index: number): NodeType
     {
         return this._nodes[index];
+    }
+
+    /**
+     * ノードのインデックスを取得（internal-node 更新時の差し替え位置の特定に利用）
+     */
+    public getIndexByNode(node: NodeType): number
+    {
+        return this._nodes.indexOf(node);
     }
 
     public getNodeById(id: string): NodeType | null
@@ -186,19 +203,27 @@ export class NodeContentTree extends NodeContent
      */
     public disposeNodes(): void
     {
-        this._nodes.forEach(node => node.dispose());
+        this._nodes.forEach(node => {
+            if (node) {
+                node.dispose();
+            }
+        });
         this._nodes = [];
     }
 
     public resize(): void
     {
-        this._nodes.forEach(node => node.resize());
+        this._nodes.forEach(node => {
+            if (node) {
+                node.resize();
+            }
+        });
         this.resizeConnectionLine(this._parentNode.nodeHead.getConnectionPoint());
     }
 
     public resizeConnectionLine(headerPosition: Point): void
     {
-        if (this._connectionLine && !AppearStatus.isDisappeared(this._connectionLine.appearStatus)) {
+        if (this._connectionLine && !AppearStatus.isDisappeared(this._connectionLine.appearStatus) && this._nodes.length > 0) {
             this._connectionLine.setPosition(headerPosition.x - 1, headerPosition.y);
             this._connectionLine.changeHeight(this.lastNode.nodeElement.offsetTop - headerPosition.y + 2);
         }
@@ -208,7 +233,11 @@ export class NodeContentTree extends NodeContent
     public update(): void
     {
         this._connectionLine.update();
-        this._nodes.forEach(node => node.update());
+        this._nodes.forEach(node => {
+            if (node) {
+                node.update();
+            }
+        });
 
         if (this.appearAnimationFunc !== null) {
             this.appearAnimationFunc();
@@ -217,6 +246,11 @@ export class NodeContentTree extends NodeContent
 
     public appear(isFast: boolean = false, doNotAppearBehind: boolean = false): void
     {
+        if (this._nodes.length === 0) {
+            this._appearStatus = AppearStatus.APPEARED;
+            this.appearAnimationFunc = null;
+            return;
+        }
         const headerPosition = this._parentNode.nodeHead.getConnectionPoint();
         this._connectionLine.setPosition(headerPosition.x - 1, headerPosition.y);
         const conLineHeight = this.lastNode.nodeElement.offsetTop - headerPosition.y + 2;
@@ -239,6 +273,9 @@ export class NodeContentTree extends NodeContent
         freePt.moveOffset(0, conLineHeight);
         
         this._nodes.forEach(node => {
+            if (!node) {
+                return;
+            }
             if (AppearStatus.isDisappeared(node.appearStatus)) {
                 const top = node.nodeElement.offsetTop - headerPosition.y;
                 if (top <= conLineHeight) {
@@ -255,7 +292,8 @@ export class NodeContentTree extends NodeContent
 
     public appearAnimation2(): void
     {
-        if (this.lastNode.appearStatus === AppearStatus.APPEARED) {
+        const last = this._nodes.length > 0 ? this.lastNode : null;
+        if (last && last.appearStatus === AppearStatus.APPEARED) {
             this.appeared();
         }
     }
@@ -291,13 +329,20 @@ export class NodeContentTree extends NodeContent
             this._connectionLine.disappearFadeOut(isFast);
             this._appearStatus = AppearStatus.DISAPPEARING;
             this.appearAnimationFunc = this.disappearAnimation2;
-            this._nodes.forEach(node => node.disappear(this._isFast, this._doNotAppearBehind));
+            this._nodes.forEach(node => {
+                if (node) {
+                    node.disappear(this._isFast, this._doNotAppearBehind);
+                }
+            });
         }
     }
 
     private disappeareUnderLine(conLineHeight: number, headerPosition: Point): void
     {
         this._nodes.forEach(node => {
+            if (!node) {
+                return;
+            }
             if (AppearStatus.isAppeared(node.appearStatus)) {
                 const top = node.nodeElement.offsetTop - headerPosition.y;
                 if (top >= conLineHeight) {
@@ -367,6 +412,19 @@ export class NodeContentTree extends NodeContent
     {
         this._appearStatus = AppearStatus.DISAPPEARED;
         this.appearAnimationFunc = null;
+        if (this._onDisappearedCallback) {
+            const cb = this._onDisappearedCallback;
+            this._onDisappearedCallback = null;
+            cb();
+        }
+    }
+
+    /**
+     * 消滅完了時に呼ばれるコールバックを設定（internal-node 用）
+     */
+    public setOnDisappearedCallback(cb: (() => void) | null): void
+    {
+        this._onDisappearedCallback = cb;
     }
 
     public disappearConnectionLine(): void
@@ -379,7 +437,11 @@ export class NodeContentTree extends NodeContent
 
     public draw(): void
     {
-        this._nodes.forEach(node => node.draw());
+        this._nodes.forEach(node => {
+            if (node) {
+                node.draw();
+            }
+        });
     }
 
     public noDisplay(): void

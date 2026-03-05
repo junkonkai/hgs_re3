@@ -22,6 +22,7 @@ export class BasicNode extends NodeBase
     protected _curveCanvas: CurveCanvas;
     protected _isFast: boolean = false;
     protected _doNotAppearBehind: boolean = false;
+    protected _onDisappearOnlyComplete: (() => void) | null = null;
 
     public get parentNode(): TreeNodeInterface
     {
@@ -57,10 +58,15 @@ export class BasicNode extends NodeBase
             this._nodeContentBehind.loadNodes();
         }
 
-        // .node-content a かつ、relがinternalであるもの
-        const anchors = Array.from(this._nodeElement.querySelectorAll(':scope > .node-content.basic a[rel="internal"]')) as HTMLAnchorElement[];
-        // anchorsをクリックした時にclickLinkを呼び出す
-        anchors.forEach(anchor => {
+        // .node-content a かつ、relがinternalまたはinternal-nodeであるもの
+        const internalAnchors = Array.from(this._nodeElement.querySelectorAll(':scope > .node-content.basic a[rel="internal"]')) as HTMLAnchorElement[];
+        internalAnchors.forEach(anchor => {
+            anchor.addEventListener('click', (e) => {
+                this.clickLink(anchor, e);
+            });
+        });
+        const internalNodeAnchors = Array.from(this._nodeElement.querySelectorAll(':scope > .node-content.basic a[rel="internal-node"]')) as HTMLAnchorElement[];
+        internalNodeAnchors.forEach(anchor => {
             anchor.addEventListener('click', (e) => {
                 this.clickLink(anchor, e);
             });
@@ -225,9 +231,35 @@ export class BasicNode extends NodeBase
             this._appearAnimationFunc = null;
             this._appearStatus = AppearStatus.DISAPPEARED;
             this._nodeHead.disappearFadeOut();
+            if (this._onDisappearOnlyComplete) {
+                const cb = this._onDisappearOnlyComplete;
+                this._onDisappearOnlyComplete = null;
+                cb();
+            }
         }
         
         this._isDraw = true;
+    }
+
+    /**
+     * このノードのみ消滅（internal-node 更新用）。完了時に onComplete を呼ぶ。
+     */
+    public disappearOnlyThisNode(onComplete?: () => void): void
+    {
+        if (AppearStatus.isDisappeared(this.appearStatus) || AppearStatus.isDisappearing(this.appearStatus)) {
+            onComplete?.();
+            return;
+        }
+        this._onDisappearOnlyComplete = onComplete ?? null;
+        this._isFast = false;
+        this.disappearContents();
+        this._animationStartTime = (window as any).hgn.timestamp;
+        this._curveCanvas.gradientEndAlpha = 0;
+        this._appearStatus = AppearStatus.DISAPPEARING;
+        this._updateGradientEndAlphaFunc = null;
+        this._nodeContentBehind?.disappear();
+        this._isDraw = true;
+        this._appearAnimationFunc = this.disappearAnimation;
     }
 
     protected curveDisappearAnimation(): boolean
@@ -314,10 +346,16 @@ export class BasicNode extends NodeBase
 
         e.preventDefault();
 
+        const rel = anchor.getAttribute('rel') ?? '';
         const hgn = (window as any).hgn as HorrorGameNetwork;
         const currentNode = hgn.currentNode as CurrentNode;
-        currentNode.moveNode(anchor.href, false);
 
+        if (rel === 'internal-node') {
+            currentNode.updateSingleNode(anchor.href, this);
+            return;
+        }
+
+        currentNode.moveNode(anchor.href, false);
         this.disappearStart();
     }
 

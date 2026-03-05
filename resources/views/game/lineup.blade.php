@@ -5,20 +5,28 @@
 
 @section('nodes')
 @isset($franchises)
-    <section class="node {{ $franchises->isNotEmpty() ? 'tree-node' : '' }}">
+    <section class="node {{ $franchises->isNotEmpty() ? 'tree-node' : '' }}" id="lineup-node">
         <div class="node-head">
             <h2 class="node-head-text">ラインナップ</h2>
             <span class="node-pt">●</span>
         </div>
         @if ($franchises->isNotEmpty())
         <div class="node-content tree">
-            @include('game.lineup_nodes', [
-                'franchises' => $franchises,
-                'hasMore' => $hasMore ?? false,
-                'nextPage' => $nextPage ?? 2,
-            ])
+            @include('game.lineup_nodes', ['franchises' => $franchises])
         </div>
-        @else
+        @endif
+        @if (isset($totalPages) && $totalPages > 1)
+        <div class="node-content basic">
+            @for ($p = 1; $p <= $totalPages; $p++)
+                @if ($p == $page)
+                    <span class="me-2">{{ $p }}</span>
+                @else
+                    <a href="{{ route('Game.Lineup', ['page' => $p]) }}" rel="internal-node" class="me-2">{{ $p }}</a>
+                @endif
+            @endfor
+        </div>
+        @endif
+        @if ($franchises->isEmpty())
         <div class="node-content basic">
             表示するフランチャイズがありません。
         </div>

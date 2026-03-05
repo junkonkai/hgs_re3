@@ -53,6 +53,53 @@ abstract class Controller
     }
 
     /**
+     * nodes HTML から最初の section.node 1 個分の HTML を抽出する（internal_node 用）
+     *
+     * @param string $nodesHtml
+     * @return string
+     */
+    private static function extractFirstNodeSection(string $nodesHtml): string
+    {
+        if ($nodesHtml === '') {
+            return '';
+        }
+        $len = strlen($nodesHtml);
+        $pos = 0;
+        while (($pos = stripos($nodesHtml, '<section', $pos)) !== false) {
+            $tagEnd = strpos($nodesHtml, '>', $pos);
+            if ($tagEnd === false || $tagEnd - $pos > 200) {
+                $pos++;
+                continue;
+            }
+            $tag = substr($nodesHtml, $pos, $tagEnd - $pos + 1);
+            if (preg_match('/\bclass\s*=\s*["\']([^"\']*)["\']/', $tag, $m) && preg_match('/\bnode\b/', $m[1])) {
+                $depth = 1;
+                $i = $tagEnd + 1;
+                while ($i < $len && $depth > 0) {
+                    $nextOpen = stripos($nodesHtml, '<section', $i);
+                    $nextClose = stripos($nodesHtml, '</section>', $i);
+                    if ($nextClose === false) {
+                        break;
+                    }
+                    if ($nextOpen !== false && $nextOpen < $nextClose) {
+                        $depth++;
+                        $i = $nextOpen + 8;
+                    } else {
+                        $depth--;
+                        if ($depth === 0) {
+                            return substr($nodesHtml, $pos, $nextClose + strlen('</section>') - $pos);
+                        }
+                        $i = $nextClose + 10;
+                    }
+                }
+                break;
+            }
+            $pos++;
+        }
+        return '';
+    }
+
+    /**
      * ツリーの生成
      *
      * @param View $view
@@ -75,7 +122,7 @@ abstract class Controller
         if (self::isAjax()) {
             $viewData = $view->getData();
             $rendered = $view->renderSections();
-            return response()->json([
+            $json = [
                 'title'              => $rendered['title'],
                 'currentNodeTitle'   => $rendered['current-node-title'],
                 'currentNodeContent' => $rendered['current-node-content'] ?? '',
@@ -85,7 +132,11 @@ abstract class Controller
                 'colorState'         => $viewData['colorState'] ?? '',
                 'components'         => $options['components'] ?? [],
                 'csrfToken'          => $options['csrfToken'] ?? '',
-            ]);
+            ];
+            if (request()->query('internal_node', 0) == 1) {
+                $json['internalNodeHtml'] = self::extractFirstNodeSection($rendered['nodes'] ?? '');
+            }
+            return response()->json($json);
         }
 
         return $view->with('viewerType', 'tree');

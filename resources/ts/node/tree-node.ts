@@ -198,4 +198,32 @@ export class TreeNode extends BasicNode implements TreeNodeInterface
     {
         return this._nodeContentTree.getNodeById(id);
     }
+
+    /**
+     * このノードのみ消滅（internal-node 更新用）。子ツリーと自身のヘッダ・曲線を消し、完了時に onComplete を呼ぶ。
+     */
+    public disappearOnlyThisNode(onComplete?: () => void): void
+    {
+        if (AppearStatus.isDisappeared(this._appearStatus) || AppearStatus.isDisappearing(this._appearStatus)) {
+            onComplete?.();
+            return;
+        }
+        let treeDone = false;
+        let selfDone = false;
+        const check = (): void => {
+            if (treeDone && selfDone) {
+                onComplete?.();
+            }
+        };
+        this._nodeContentTree.setOnDisappearedCallback(() => {
+            treeDone = true;
+            check();
+        });
+        this._nodeContentTree.homewardNode = null;
+        this._nodeContentTree.disappear();
+        super.disappearOnlyThisNode(() => {
+            selfDone = true;
+            check();
+        });
+    }
 }

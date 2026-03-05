@@ -34,11 +34,3 @@
     </div>
 </section>
 @endforeach
-@if (!empty($hasMore))
-<section class="node load-more-node" id="lineup-load-more-node" data-load-more-url="{{ route('Game.LineupMore') }}?page={{ $nextPage }}">
-    <div class="node-head">
-        <span class="node-head-text">さらに表示</span>
-        <span class="node-pt">●</span>
-    </div>
-</section>
-@endif
