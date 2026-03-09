@@ -418,5 +418,67 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     {
         return this._nodeContentTree.getNodeById(id);
     }
+
+    /**
+     * rel="internal-node" 用: 指定ノード内のみ disappear → 取得 → DOM 差し替え → 再構築 → appear
+     *
+     * @param url 取得 URL（a=1&internal_node=1 を付与して fetch）
+     * @param clickedNode クリックされたノード（差し替え対象の section.node）
+     */
+    public updateSingleNode(url: string, clickedNode: NodeType): void
+    {
+        const parent = clickedNode.parentNode;
+        const tree = parent.nodeContentTree;
+        const nodeIndex = tree.getIndexByNode(clickedNode);
+        if (nodeIndex < 0) {
+            return;
+        }
+
+        const runFetch = (): void => {
+            const urlWithA = Util.addParameterA(url);
+            const sep = urlWithA.includes('?') ? '&' : '?';
+            const fetchUrl = urlWithA + sep + 'internal_node=1';
+
+            fetch(fetchUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(response => response.json())
+                .then((data: { internalNodeHtml?: string }) => {
+                    const html = data.internalNodeHtml;
+                    if (!html || typeof html !== 'string') {
+                        return;
+                    }
+                    const temp = document.createElement('div');
+                    temp.innerHTML = html.trim();
+                    const newSection = temp.firstElementChild as HTMLElement;
+                    if (!newSection) {
+                        return;
+                    }
+                    const oldSection = clickedNode.nodeElement;
+                    const parentEl = oldSection.parentNode;
+                    if (!parentEl) {
+                        return;
+                    }
+                    parentEl.replaceChild(newSection, oldSection);
+                    tree.disposeNodes();
+                    tree.loadNodes(parent);
+                    const newNode = tree.getNodeByIndex(nodeIndex);
+                    if (newNode) {
+                        newNode.appear(true, true);
+                    }
+                    this.resizeConnectionLine();
+                    if (url) {
+                        window.history.pushState({ url, isInternalNode: true, nodeId: clickedNode.id }, '', url);
+                    }
+                })
+                .catch(err => {
+                    console.error('internal-node 取得に失敗しました:', err);
+                });
+        };
+
+        if ('disappearOnlyThisNode' in clickedNode && typeof clickedNode.disappearOnlyThisNode === 'function') {
+            clickedNode.disappearOnlyThisNode(runFetch);
+        } else {
+            runFetch();
+        }
+    }
 }
 

@@ -10,6 +10,7 @@ export class NextNodeCache
     public colorState: string;
     public components: { [key: string]: any | null };
     public csrfToken: string;
+    public internalNodeHtml?: string;
 
     public constructor()
     {

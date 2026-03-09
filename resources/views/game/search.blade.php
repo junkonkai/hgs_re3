@@ -10,7 +10,6 @@
         <button type="submit" class="btn btn-default btn-sm">検索</button>
     </div>
 </form>
-
 @endsection
 
 @section('nodes')

@@ -128,6 +128,103 @@ class GameController extends Controller
             compact('text', 'franchises', 'franchiseIds', 'series', 'titles', 'searchResultIds')));
     }
 
+    private const LINEUP_PER_PAGE = 30;
+
+    /**
+     * ラインナップ用フランチャイズ一覧を取得（シリーズ・タイトル付き）
+     *
+     * @param int $offset
+     * @param int $limit
+     * @return array{0: \Illuminate\Support\Collection, 1: bool, 2: int} [franchises, hasMore, total]
+     */
+    private function getLineupFranchises(int $offset = 0, int $limit = self::LINEUP_PER_PAGE): array
+    {
+        $query = GameFranchise::select(['id', 'key', 'name', 'rating'])
+            ->orderByDesc('last_title_update_at');
+
+        $total = $query->count();
+        $franchises = (clone $query)->offset($offset)->limit($limit)->get();
+        $hasMore = ($offset + $limit) < $total;
+
+        $franchiseIds = $franchises->pluck('id')->toArray();
+
+        if (empty($franchiseIds)) {
+            return [$franchises, false, $total];
+        }
+
+        $series = GameSeries::select(['id', 'name', 'game_franchise_id'])
+            ->whereIn('game_franchise_id', $franchiseIds)
+            ->get()
+            ->keyBy('id');
+
+        $seriesIds = $series->pluck('id')->toArray();
+
+        foreach ($series as $s) {
+            $s->searchTitles = [];
+        }
+
+        $titles = GameTitle::select(['id', 'key', 'name', 'game_series_id', 'game_franchise_id', 'rating'])
+            ->where(function ($q) use ($franchiseIds, $seriesIds) {
+                $q->whereIn('game_series_id', $seriesIds)
+                    ->orWhere(function ($q) use ($franchiseIds) {
+                        $q->whereIn('game_franchise_id', $franchiseIds)->whereNull('game_series_id');
+                    });
+            })
+            ->get();
+
+        foreach ($franchises as $franchise) {
+            $franchise->searchTitles = [];
+            $franchise->searchSeries = [];
+        }
+
+        foreach ($titles as $title) {
+            if (!empty($title->game_series_id) && isset($series[$title->game_series_id])) {
+                $s = $series[$title->game_series_id];
+                $searchTitles = $s->searchTitles;
+                $searchTitles[] = $title;
+                $s->searchTitles = $searchTitles;
+            } elseif (!empty($title->game_franchise_id)) {
+                $franchise = $franchises->firstWhere('id', $title->game_franchise_id);
+                if ($franchise !== null) {
+                    $searchTitles = $franchise->searchTitles;
+                    $searchTitles[] = $title;
+                    $franchise->searchTitles = $searchTitles;
+                }
+            }
+        }
+
+        foreach ($series as $s) {
+            $franchise = $franchises->firstWhere('id', $s->game_franchise_id);
+            if ($franchise !== null) {
+                $searchSeries = $franchise->searchSeries;
+                $searchSeries[] = $s;
+                $franchise->searchSeries = $searchSeries;
+            }
+        }
+
+        return [$franchises, $hasMore, $total];
+    }
+
+    /**
+     * ホラーゲームラインナップ
+     * last_title_update_at 降順のフランチャイズと、紐づくシリーズ・タイトルをツリー形式で表示する。
+     * ページングで30件ずつ表示。rel="internal-node" によりノード内のみ更新。
+     *
+     * @param Request $request
+     * @return JsonResponse|Application|Factory|View
+     * @throws \Throwable
+     */
+    public function lineup(Request $request): JsonResponse|Application|Factory|View
+    {
+        $page = max(1, (int) $request->input('page', 1));
+        $offset = ($page - 1) * self::LINEUP_PER_PAGE;
+
+        [$franchises, $hasMore, $total] = $this->getLineupFranchises($offset, self::LINEUP_PER_PAGE);
+        $totalPages = (int) ceil($total / self::LINEUP_PER_PAGE);
+
+        return $this->tree(view('game.lineup', compact('franchises', 'totalPages', 'page', 'total')));
+    }
+
     /**
      * メーカーネットワーク
      *

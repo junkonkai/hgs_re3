@@ -33,6 +33,21 @@ class GameTitle extends Model
     ];
 
     /**
+     * モデルの起動処理
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::updated(function (GameTitle $title) {
+            $franchise = $title->getFranchise();
+            if ($franchise !== null) {
+                $franchise->update(['last_title_update_at' => now()]);
+            }
+        });
+    }
+
+    /**
      * フランチャイズを取得
      *
      * @return BelongsTo

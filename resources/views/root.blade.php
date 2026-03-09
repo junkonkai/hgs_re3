@@ -17,9 +17,9 @@
                 </div>
             </section>
 
-            <section class="node link-node" id="franchises-link-node">
+            <section class="node link-node" id="lineup-link-node">
                 <div class="node-head">
-                    <a href="{{ route('Game.Franchises') }}" class="node-head-text">フランチャイズ</a>
+                    <a href="{{ route('Game.Lineup') }}" class="node-head-text">ラインナップ</a>
                     <span class="node-pt">●</span>
                 </div>
                 <div class="node-content behind">

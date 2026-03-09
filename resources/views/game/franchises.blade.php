@@ -5,14 +5,14 @@
 
 @section('nodes')
     @foreach ($prefixes as $prefix => $words)
-        @php $franchises = $franchisesByPrefix[$prefix] ?? []; @endphp
+        @php $prefixFranchises = $franchisesByPrefix[$prefix] ?? []; @endphp
         <section class="node tree-node accordion" id="{{ $prefix }}-tree" data-accordion-group="acc1" data-accordion-type="auto-close">
             <div class="node-head">
                 <button class="node-head-text" type="button" aria-expanded="false" aria-controls="acc1-a" id="acc-btn-a">{{ $words[0] }}</button>
                 <span class="node-pt">●</span>
             </div>
             <div class="node-content behind">
-                @foreach ($franchises as $franchise)
+                @foreach ($prefixFranchises as $franchise)
                     @if ($loop->iteration > 3)
                         @break
                     @endif
@@ -21,9 +21,8 @@
                     </div>
                 @endforeach
             </div>
-
             <div class="node-content tree" id="acc1-a">
-                @foreach ($franchises as $franchise)
+                @foreach ($prefixFranchises as $franchise)
                 <section class="node link-node" id="search-node">
                     <div class="node-head">
                         <a href="{{ route('Game.FranchiseDetail', ['franchiseKey' => $franchise->key]) }}" class="node-head-text">
