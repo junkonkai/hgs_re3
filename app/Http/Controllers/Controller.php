@@ -122,19 +122,33 @@ abstract class Controller
         if (self::isAjax()) {
             $viewData = $view->getData();
             $rendered = $view->renderSections();
+            $nodes = $rendered['nodes'] ?? '';
+
+            $updateType = 'full';
+            if (request()->query('internal_node', 0) == 1) {
+                $updateType = 'node';
+            } elseif (request()->query('children_only', 0) == 1) {
+                $updateType = 'children';
+            }
+
             $json = [
+                'updateType'         => $updateType,
                 'title'              => $rendered['title'],
                 'currentNodeTitle'   => $rendered['current-node-title'],
                 'currentNodeContent' => $rendered['current-node-content'] ?? '',
-                'nodes'              => $rendered['nodes'],
+                'nodes'              => $nodes,
                 'popup'              => $rendered['popup'] ?? '',
                 'url'                => $options['url'] ?? '',
                 'colorState'         => $viewData['colorState'] ?? '',
                 'components'         => $options['components'] ?? [],
                 'csrfToken'          => $options['csrfToken'] ?? '',
             ];
-            if (request()->query('internal_node', 0) == 1) {
-                $json['internalNodeHtml'] = self::extractFirstNodeSection($rendered['nodes'] ?? '');
+            if ($updateType === 'node') {
+                $json['internalNodeHtml'] = self::extractFirstNodeSection($nodes);
+                $json['targetNodeId'] = request()->query('source_node_id', '');
+            }
+            if ($updateType === 'children') {
+                $json['currentChildrenHtml'] = $nodes;
             }
             return response()->json($json);
         }

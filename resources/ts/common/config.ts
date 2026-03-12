@@ -18,6 +18,10 @@ export class Config
     public readonly CONNECTION_LINE_LONG_DISAPPEAR_TIME: number;
     public readonly CONNECTION_LINE_FAST_SHORT_DISAPPEAR_SPEED: number;
     public readonly CONNECTION_LINE_FAST_LONG_DISAPPEAR_TIME: number;
+    /** Phase4: true のとき接続線に SvgCurveRenderer を使用 */
+    public readonly USE_SVG_CURVE: boolean;
+    /** カーブの出現・消失アニメーション時間（ミリ秒） */
+    public readonly CURVE_ANIMATION_DURATION: number;
 
     /**
      * プライベートコンストラクタ（シングルトンパターン）
@@ -25,6 +29,8 @@ export class Config
     private constructor()
     {
         // デフォルト設定値
+        this.USE_SVG_CURVE = true;
+        this.CURVE_ANIMATION_DURATION = 100;
         this.BEHIND_CURVE_LINE_MAX_OPACITY = 0.3;
         this.BEHIND_CURVE_LINE_MIN_OPACITY = 0.1;
         this.CONNECTION_LINE_TYPE_THRESHOLD = 1000;
@@ -85,7 +91,9 @@ export class Config
             CONNECTION_LINE_SHORT_DISAPPEAR_SPEED: this.CONNECTION_LINE_SHORT_DISAPPEAR_SPEED,
             CONNECTION_LINE_LONG_DISAPPEAR_TIME: this.CONNECTION_LINE_LONG_DISAPPEAR_TIME,
             CONNECTION_LINE_FAST_SHORT_DISAPPEAR_SPEED: this.CONNECTION_LINE_FAST_SHORT_DISAPPEAR_SPEED,
-            CONNECTION_LINE_FAST_LONG_DISAPPEAR_TIME: this.CONNECTION_LINE_FAST_LONG_DISAPPEAR_TIME
+            CONNECTION_LINE_FAST_LONG_DISAPPEAR_TIME: this.CONNECTION_LINE_FAST_LONG_DISAPPEAR_TIME,
+            USE_SVG_CURVE: this.USE_SVG_CURVE,
+            CURVE_ANIMATION_DURATION: this.CURVE_ANIMATION_DURATION
         };
     }
 }

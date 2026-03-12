@@ -108,6 +108,56 @@ export class NodeContentTree extends NodeContent
     }
 
     /**
+     * Phase2: CurrentNode 直下の子ノード群を全部差し替える。
+     * 旧ノードを dispose し、新しい section.node 群を生成して返す。
+     */
+    public replaceChildren(html: string): NodeType[]
+    {
+        this.disposeNodes();
+        this._contentElement.innerHTML = html.trim();
+        this.loadNodes(this._parentNode as TreeNodeInterface);
+        this.resizeConnectionLine(this._parentNode.nodeHead.getConnectionPoint());
+        return this._nodes;
+    }
+
+    /**
+     * Phase2: 指定 id のノード 1 個を差し替える。見つからなければ子 TreeNode に再帰委譲。
+     * 置換後の新ノードを返す。見つからない場合は null。
+     */
+    public replaceNodeById(nodeId: string, html: string): NodeType | null
+    {
+        const index = this._nodes.findIndex(n => n.id === nodeId);
+        if (index >= 0) {
+            const oldNode = this._nodes[index];
+            const parentEl = oldNode.nodeElement.parentNode;
+            if (!parentEl) {
+                return null;
+            }
+            oldNode.dispose();
+            const temp = document.createElement('div');
+            temp.innerHTML = html.trim();
+            const newSection = temp.firstElementChild as HTMLElement;
+            if (!newSection) {
+                return null;
+            }
+            parentEl.replaceChild(newSection, oldNode.nodeElement);
+            const newNode = this.createNodeFromElement(newSection, this._parentNode as TreeNodeInterface);
+            this._nodes[index] = newNode;
+            this.resizeConnectionLine(this._parentNode.nodeHead.getConnectionPoint());
+            return newNode;
+        }
+        for (const n of this._nodes) {
+            if ('nodeContentTree' in n && n.nodeContentTree) {
+                const found = (n as TreeNodeInterface).nodeContentTree.replaceNodeById(nodeId, html);
+                if (found) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * 「さらに表示」クリック後: 取得した HTML を LoadMoreNode の位置に挿入し、追加ノードを登録・接続線を伸ばし・追加分のみ appear させる。
      */
     public replaceLoadMoreWithNodes(loadMoreNode: LoadMoreNode, html: string): void
@@ -177,6 +227,20 @@ export class NodeContentTree extends NodeContent
     public getIndexByNode(node: NodeType): number
     {
         return this._nodes.indexOf(node);
+    }
+
+    /**
+     * Phase3: 接続線または子ノードに進行中アニメーションがあるか。
+     */
+    public hasActiveAnimation(): boolean
+    {
+        if (AppearStatus.isTransitioning(this._connectionLine.appearStatus)) {
+            return true;
+        }
+        if (this.appearAnimationFunc !== null) {
+            return true;
+        }
+        return this._nodes.some(n => (n as { hasActiveAnimation?: () => boolean }).hasActiveAnimation?.() === true);
     }
 
     public getNodeById(id: string): NodeType | null

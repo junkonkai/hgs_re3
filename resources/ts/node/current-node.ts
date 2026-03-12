@@ -8,6 +8,9 @@ import { NodeType } from "../common/type";
 import { AccordionTreeNode } from "./accordion-tree-node";
 import { HorrorGameNetwork } from "../horror-game-network";
 import { ComponentManager } from "../component-manager";
+import { ScopedHydrator } from "../hydrate/scoped-hydrator";
+import type { NavigationRequest } from "../navigation/types";
+import type { NavigationResult } from "../navigation/types";
 
 export class CurrentNode extends NodeBase implements TreeNodeInterface
 {
@@ -20,10 +23,27 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     private _currentNodeContentElement: HTMLElement | null = null;
     private _accordionGroups: { [key: string]: AccordionTreeNode[] } = {};
     private _tmpStateData: { url: string, isChildOnly: boolean } | null = null;
+    private _scopedHydrator: ScopedHydrator = new ScopedHydrator();
 
     public get homewardNode(): NodeType | null
     {
         return this._homewardNode;
+    }
+
+    /**
+     * Phase1: 子ノードのみ更新フラグを設定（NavigationController から呼ぶ）
+     */
+    public setChildOnly(isChildOnly: boolean): void
+    {
+        this._isChildOnly = isChildOnly;
+    }
+
+    /**
+     * Phase1: pushState 用の一時データを設定（NavigationController から呼ぶ）
+     */
+    public setTmpStateData(data: { url: string; isChildOnly: boolean } | null): void
+    {
+        this._tmpStateData = data;
     }
 
     /**
@@ -71,6 +91,31 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
         return this._nodeContentTree;
     }
 
+    /**
+     * Phase3: ノード切替待ちまたはアニメーション進行中か。
+     */
+    public hasActiveAnimation(): boolean
+    {
+        if (this._isChanging) {
+            return true;
+        }
+        if (this._appearAnimationFunc !== null) {
+            return true;
+        }
+        return this._nodeContentTree.hasActiveAnimation();
+    }
+
+    /**
+     * Phase3: アニメーション開始時に Scheduler を起動する。
+     */
+    public requestAnimationFrameIfNeeded(): void
+    {
+        const hgn = (window as any).hgn as HorrorGameNetwork;
+        if (hgn && typeof (hgn as { requestAnimationFrameIfNeeded?: () => void }).requestAnimationFrameIfNeeded === 'function') {
+            (hgn as { requestAnimationFrameIfNeeded: () => void }).requestAnimationFrameIfNeeded();
+        }
+    }
+
     public resize(): void
     {
         super.resize();
@@ -109,6 +154,7 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
      */
     public appear(): void
     {
+        this.requestAnimationFrameIfNeeded();
         const hgn = (window as any).hgn as HorrorGameNetwork;
         hgn.calculateDisappearSpeedRate(1);
 
@@ -158,6 +204,7 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
      */
     public disappear(): void
     {
+        this.requestAnimationFrameIfNeeded();
         this._appearStatus = AppearStatus.DISAPPEARING;
         this._nodeContentTree.disappear();
 
@@ -210,57 +257,106 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     }
 
     /**
-     * ノードの切り替え
+     * ノードの切り替え（updateType に応じて適用メソッドを分岐）
      */
     private changeNode(): void
     {
-        if (this._nextNodeCache && this._appearStatus === AppearStatus.DISAPPEARED) {
-            const componentManager = ComponentManager.getInstance();
-            
-            componentManager.disposeComponents();
-            this.dispose();
-
-            if (this._nextNodeCache.colorState) {
-                document.body.classList.add('has-' + this._nextNodeCache.colorState);
-            }
-
-            if (this._nextNodeCache.csrfToken && this._nextNodeCache.csrfToken.length > 0) {
-                (window as any).Laravel.csrfToken = this._nextNodeCache.csrfToken;
-            }
-
-            if (this._tmpStateData) {
-                if (this._nextNodeCache.url.length > 0) {
-                    this._tmpStateData.url = this._nextNodeCache.url;
-                }
-
-                window.history.pushState(this._tmpStateData, '', this._tmpStateData.url);
-                this._tmpStateData = null;
-            }
-
-            if (!this._isChildOnly) {
-                document.title = this._nextNodeCache.title + ' | ' + (window as any).siteName;
-                this._nodeHead.title = this._nextNodeCache.currentNodeTitle;
-                if (this._currentNodeContentElement) {
-                    this._currentNodeContentElement.innerHTML = this._nextNodeCache.currentNodeContent;
-                    
-                    this.setupFormEvents();
-                }
-            }
-            if (this._treeContentElement) {
-                this._treeContentElement.innerHTML = this._nextNodeCache.nodes;
-            }
-
-            this._nodeContentTree.loadNodes(this);
-            this.resize();
-
-            // コンポーネント初期化
-            componentManager.initializeComponents(this._nextNodeCache.components);
-
-            this._nextNodeCache = null;
-            this._isChanging = false;
-            
-            this.appear();
+        if (!this._nextNodeCache || this._appearStatus !== AppearStatus.DISAPPEARED) {
+            return;
         }
+        const cache = this._nextNodeCache;
+        this._nextNodeCache = null;
+
+        const updateType = cache.updateType ?? 'full';
+        if (updateType === 'children') {
+            this.applyChildrenResultFromCache(cache);
+        } else {
+            this.applyFullResultFromCache(cache);
+        }
+    }
+
+    /**
+     * 全体更新（既存 changeNode 相当）
+     */
+    private applyFullResultFromCache(cache: NextNodeCache): void
+    {
+        const componentManager = ComponentManager.getInstance();
+        componentManager.disposeComponents();
+        this.dispose();
+
+        if (cache.colorState) {
+            document.body.classList.add('has-' + cache.colorState);
+        }
+
+        if (cache.csrfToken && cache.csrfToken.length > 0) {
+            (window as any).Laravel.csrfToken = cache.csrfToken;
+        }
+
+        if (this._tmpStateData) {
+            if (cache.url.length > 0) {
+                this._tmpStateData.url = cache.url;
+            }
+            window.history.pushState(this._tmpStateData, '', this._tmpStateData.url);
+            this._tmpStateData = null;
+        }
+
+        if (!this._isChildOnly) {
+            document.title = cache.title + ' | ' + (window as any).siteName;
+            this._nodeHead.title = cache.currentNodeTitle;
+            if (this._currentNodeContentElement) {
+                this._currentNodeContentElement.innerHTML = cache.currentNodeContent;
+                this.setupFormEvents();
+            }
+        }
+        if (this._treeContentElement) {
+            this._treeContentElement.innerHTML = cache.nodes;
+        }
+
+        this._nodeContentTree.loadNodes(this);
+        this.resize();
+        componentManager.initializeComponents(cache.components);
+
+        this._isChanging = false;
+        this.appear();
+    }
+
+    /**
+     * 子ノードのみ更新（CurrentNode の見出し・本文は維持し、子ツリーだけ差し替え）
+     */
+    private applyChildrenResultFromCache(cache: NextNodeCache): void
+    {
+        const componentManager = ComponentManager.getInstance();
+        componentManager.disposeComponents();
+        this._nodeContentTree.disposeNodes();
+        this._accordionGroups = {};
+        this._homewardNode = null;
+
+        if (cache.colorState) {
+            document.body.classList.add('has-' + cache.colorState);
+        }
+        if (cache.csrfToken && cache.csrfToken.length > 0) {
+            (window as any).Laravel.csrfToken = cache.csrfToken;
+        }
+
+        if (this._tmpStateData) {
+            if (cache.url.length > 0) {
+                this._tmpStateData.url = cache.url;
+            }
+            window.history.pushState(this._tmpStateData, '', this._tmpStateData.url);
+            this._tmpStateData = null;
+        }
+
+        if (this._treeContentElement) {
+            const html = cache.currentChildrenHtml ?? cache.nodes;
+            this._treeContentElement.innerHTML = html;
+        }
+
+        this._nodeContentTree.loadNodes(this);
+        this.resize();
+        componentManager.initializeComponents(cache.components);
+
+        this._isChanging = false;
+        this.appear();
     }
 
     /**
@@ -319,32 +415,71 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     }
 
     /**
-     * 別のノードへ移動する
-     * 
-     * @param url 
-     * @param isFromPopState 
-     * @param isChildOnly 子ノードのみの場合はtrue
+     * 別のノードへ移動する（Phase1: 通常時は NavigationController に委譲、popstate 時は従来の fetch）
+     *
+     * @param url 取得 URL
+     * @param isFromPopState 履歴復元の場合は true
+     * @param isChildOnly 子ノードのみ更新の場合は true
      */
     public moveNode(url: string, isFromPopState: boolean, isChildOnly: boolean = false): void
     {
-        if (!isFromPopState) {
-            // pushStateで履歴に追加
-            this._tmpStateData = { url: url, isChildOnly: isChildOnly };
+        const nav = (window as any).hgn?.navigationController;
+        if (!isFromPopState && nav) {
+            nav.navigate({
+                url,
+                scope: isChildOnly ? 'children' : 'full',
+                urlPolicy: 'push',
+            });
+            return;
         }
 
         this._isChildOnly = isChildOnly;
+        if (!isFromPopState) {
+            this._tmpStateData = { url, isChildOnly };
+        } else {
+            this._tmpStateData = null;
+        }
+        this.fetchForMove(url);
+    }
 
-        const urlWithParam = Util.addParameterA(url);
-        fetch(urlWithParam, {
-                headers: {"X-Requested-With": "XMLHttpRequest"}
-            })
+    /**
+     * 従来の fetch で nextNodeCache をセット（popstate または NavigationController 未設定時）
+     */
+    private fetchForMove(url: string): void
+    {
+        const urlWithParam = this.buildTreeFetchUrl(url);
+        fetch(urlWithParam, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(response => response.json())
-            .then(data => {
-                this.nextNodeCache = data;
+            .then((data: Record<string, unknown>) => {
+                const cache = NextNodeCache.fromNavigationResult(this.normalizeFetchResult(data));
+                this._nextNodeCache = cache;
             })
             .catch(error => {
                 console.error('データの取得に失敗しました:', error);
             });
+    }
+
+    private buildTreeFetchUrl(url: string): string
+    {
+        return Util.addParameterA(url);
+    }
+
+    private normalizeFetchResult(data: Record<string, unknown>): NavigationResult
+    {
+        return {
+            updateType: (data.updateType as NavigationResult['updateType']) ?? 'full',
+            url: (data.url as string) ?? '',
+            title: (data.title as string) ?? '',
+            currentNodeTitle: data.currentNodeTitle as string | undefined,
+            currentNodeContent: data.currentNodeContent as string | undefined,
+            nodes: data.nodes as string | undefined,
+            currentChildrenHtml: data.currentChildrenHtml as string | undefined,
+            internalNodeHtml: data.internalNodeHtml as string | undefined,
+            targetNodeId: data.targetNodeId as string | undefined,
+            colorState: data.colorState as string | undefined,
+            csrfToken: data.csrfToken as string | undefined,
+            components: data.components as { [key: string]: any | null } | undefined,
+        };
     }
 
     public postData(url: string, data: any, isChildOnly: boolean = false, isNoPushState: boolean = false): void
@@ -420,14 +555,122 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     }
 
     /**
+     * Phase2: NavigationResult を request に応じて適用する。履歴更新は NavigationController 側で実施済み。
+     */
+    public applyNavigationResult(result: NavigationResult, request: NavigationRequest): void
+    {
+        const updateType = result.updateType ?? 'full';
+        if (updateType === 'children') {
+            this.applyChildrenResult(result, request);
+            return;
+        }
+        if (updateType === 'node') {
+            this.applyNodeResult(result, request);
+            return;
+        }
+        this.applyFullResult(result, request);
+    }
+
+    /**
+     * 全体更新。NextNodeCache 経由の changeNode では applyFullResultFromCache を使用。
+     */
+    private applyFullResult(result: NavigationResult, _request: NavigationRequest): void
+    {
+        const componentManager = ComponentManager.getInstance();
+        componentManager.disposeComponents();
+        this.dispose();
+
+        if (result.colorState) {
+            document.body.classList.add('has-' + result.colorState);
+        }
+        if (result.csrfToken && result.csrfToken.length > 0) {
+            (window as any).Laravel.csrfToken = result.csrfToken;
+        }
+
+        if (!this._isChildOnly) {
+            document.title = result.title + ' | ' + (window as any).siteName;
+            this._nodeHead.title = result.currentNodeTitle ?? '';
+            if (this._currentNodeContentElement && result.currentNodeContent) {
+                this._currentNodeContentElement.innerHTML = result.currentNodeContent;
+                this.setupFormEvents();
+            }
+        }
+        if (this._treeContentElement && result.nodes) {
+            this._treeContentElement.innerHTML = result.nodes;
+        }
+        this._nodeContentTree.loadNodes(this);
+        this.resize();
+        this._scopedHydrator.hydrate(this._treeContentElement as HTMLElement, result.components);
+
+        this._isChanging = false;
+        this.appear();
+    }
+
+    /**
+     * Phase2: 子ノードのみ差し替え。replaceChildren 経由で正式に差分更新。
+     */
+    private applyChildrenResult(result: NavigationResult, _request: NavigationRequest): void
+    {
+        const componentManager = ComponentManager.getInstance();
+        componentManager.disposeComponents();
+        this._accordionGroups = {};
+        this._homewardNode = null;
+
+        if (result.colorState) {
+            document.body.classList.add('has-' + result.colorState);
+        }
+        if (result.csrfToken && result.csrfToken.length > 0) {
+            (window as any).Laravel.csrfToken = result.csrfToken;
+        }
+
+        const html = result.currentChildrenHtml ?? result.nodes ?? '';
+        if (this._treeContentElement && html) {
+            this._nodeContentTree.replaceChildren(html);
+        }
+        this.resize();
+        this._scopedHydrator.hydrate(this._treeContentElement as HTMLElement, result.components);
+
+        this._isChanging = false;
+        this._nodeContentTree.appear();
+    }
+
+    /**
+     * Phase2: 選択ノード 1 個を差し替え。replaceNodeById 経由で正式に差分更新。
+     */
+    public applyNodeResult(result: NavigationResult, request: NavigationRequest): void
+    {
+        const html = result.internalNodeHtml;
+        if (!html || typeof html !== 'string') {
+            return;
+        }
+        const targetId = result.targetNodeId ?? request.sourceNodeId;
+        if (!targetId) {
+            return;
+        }
+        const newNode = this._nodeContentTree.replaceNodeById(targetId, html);
+        if (!newNode) {
+            return;
+        }
+        if ('appear' in newNode && typeof newNode.appear === 'function') {
+            (newNode as { appear: (a?: boolean, b?: boolean) => void }).appear(true, true);
+        }
+        this.resizeConnectionLine();
+        this._scopedHydrator.hydrate(newNode.nodeElement, result.components);
+    }
+
+    /**
      * rel="internal-node" 用: 指定ノード内のみ disappear → 取得 → DOM 差し替え → 再構築 → appear
+     * （Phase1 では NavigationController + applyNodeResult に委譲するため、主に後方互換）
      *
      * @param url 取得 URL（a=1&internal_node=1 を付与して fetch）
      * @param clickedNode クリックされたノード（差し替え対象の section.node）
      */
     public updateSingleNode(url: string, clickedNode: NodeType): void
     {
-        const parent = clickedNode.parentNode;
+        if (!('parentNode' in clickedNode)) {
+            return;
+        }
+        const parent = (clickedNode as { parentNode: TreeNodeInterface }).parentNode;
         const tree = parent.nodeContentTree;
         const nodeIndex = tree.getIndexByNode(clickedNode);
         if (nodeIndex < 0) {
