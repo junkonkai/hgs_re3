@@ -1,5 +1,4 @@
 import { Util } from "../../common/util";
-import { HgnTree } from "../../hgn-tree";
 
 /**
  * Phase3: 表示位置は transform: translate3d() で制御し、left/top の reflow を避ける。
@@ -113,7 +112,7 @@ export class FreePoint
 
     public moveTo(goalPos: { x: number; y: number }): void
     {
-        this._animationStartTime = HgnTree.getInstance().timestamp;
+        this._animationStartTime = (window as any).hgn.timestamp;
 
         this._animationGoalPos = {
             x: goalPos.x - this._element.clientWidth / 2,

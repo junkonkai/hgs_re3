@@ -7,7 +7,6 @@ import { NodeType } from "../common/type";
 import { Util } from "../common/util";
 import { Config } from "../common/config";
 import { Point } from "../common/point";
-import { HgnTree } from "../hgn-tree";
 
 export class TreeNode extends BasicNode implements TreeNodeInterface
 {
@@ -87,7 +86,7 @@ export class TreeNode extends BasicNode implements TreeNodeInterface
         
         if (this._curveRenderer.getProgress() === 1) {
             this._curveRenderer.setGradient(1, 1);
-            this._animationStartTime = HgnTree.getInstance().timestamp;
+            this._animationStartTime = (window as any).hgn.timestamp;
             this._appearAnimationFunc = this.appearAnimation2;
             this.freePt.show();
             this._nodeContentTree.appear(this._isFast, this._doNotAppearBehind);
@@ -134,7 +133,7 @@ export class TreeNode extends BasicNode implements TreeNodeInterface
     {
         this._nodeContentTree.disappearConnectionLine();
         this._appearAnimationFunc = this.homewardDisappearAnimation;
-        this._animationStartTime = HgnTree.getInstance().timestamp;
+        this._animationStartTime = (window as any).hgn.timestamp;
         this._nodeHead.disappear();
         this.disappearContents();
     }
@@ -142,7 +141,7 @@ export class TreeNode extends BasicNode implements TreeNodeInterface
     public homewardDisappearAnimation(): void
     {
         if (this._nodeContentTree.appearStatus === AppearStatus.DISAPPEARED) {
-            this._animationStartTime = HgnTree.getInstance().timestamp;
+            this._animationStartTime = (window as any).hgn.timestamp;
             this._curveRenderer.setProgress(1);
             this._appearAnimationFunc = this.homewardDisappearAnimation2;
 
@@ -214,22 +213,6 @@ export class TreeNode extends BasicNode implements TreeNodeInterface
     public getNodeById(id: string): NodeType | null
     {
         return this._nodeContentTree.getNodeById(id);
-    }
-
-    /**
-     * Phase5: 自ノードと子孫を深度付きで走査する。persistent 用の補助。
-     */
-    public walkDepth(visitor: (node: NodeType, depth: number) => void, startDepth?: number): void
-    {
-        const d = startDepth ?? 0;
-        visitor(this, d);
-        this._nodeContentTree.getDirectNodes().forEach(child => {
-            if ('walkDepth' in child && typeof (child as { walkDepth: (v: (n: NodeType, d: number) => void, s?: number) => void }).walkDepth === 'function') {
-                (child as { walkDepth: (v: (n: NodeType, d: number) => void, s?: number) => void }).walkDepth(visitor, d + 1);
-            } else {
-                visitor(child, d + 1);
-            }
-        });
     }
 
     /**

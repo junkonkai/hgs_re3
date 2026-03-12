@@ -114,12 +114,9 @@ export class SvgCurveRenderer implements CurveRenderer
         this._containerRect = this._svg.getBoundingClientRect();
     }
 
-    /**
-     * コンテナ（SVG）のビューポート座標。スクロール時にずれないよう毎回実測する。
-     */
     public getContainerRect(): DOMRect
     {
-        return this._svg.getBoundingClientRect();
+        return this._containerRect;
     }
 
     public clear(): void
