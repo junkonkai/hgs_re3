@@ -1,12 +1,18 @@
 import { AppearStatus } from "../../enum/appear-status";
 import { Util } from "../../common/util";
 import { Config } from "../../common/config";
+import { Easing } from "../../animation/easing";
 
+/**
+ * Phase3: 表示高さは transform: scaleY(progress) で制御し、要素の height は最終高さに固定して reflow を減らす。
+ */
 export class ConnectionLine
 {
     private _element: HTMLDivElement;
     private _height: number;
     private _animationHeight: number;
+    /** Phase3: 0..1。getAnimationHeight() 互換のため _animationHeight === _height * _progress */
+    private _progress: number;
     private _animationStartTime: number;
     private _appearAnimationFunc: (() => void) | null;
     private _appearStatus: AppearStatus;
@@ -50,12 +56,14 @@ export class ConnectionLine
         this._element = element;
         this._height = 0;
         this._animationHeight = 0;
+        this._progress = 0;
         this._animationStartTime = 0;
         this._appearAnimationFunc = null;
         this._appearStatus = AppearStatus.DISAPPEARED;
         this._disappearHeight = 0;
         this._appearType = 0;
         this._isFast = false;
+        this._element.style.transformOrigin = 'top';
         this.setHeight(0);
     }
 
@@ -80,11 +88,16 @@ export class ConnectionLine
     }
 
     /**
-     * アニメーションの高さを取得する
+     * アニメーションの高さを取得する（Phase3: _height * _progress で互換維持）
      */
     public getAnimationHeight(): number
     {
-        return this._animationHeight;
+        return this._height * this._progress;
+    }
+
+    private applyScaleY(): void
+    {
+        this._element.style.transform = `scaleY(${this._progress})`;
     }
 
     /**
@@ -120,7 +133,9 @@ export class ConnectionLine
         this._appearAnimationFunc = this.appearAnimation;
         this._appearStatus = AppearStatus.APPEARING;
         this._animationHeight = 0;
-        this._element.style.height = `${this._animationHeight}px`;
+        this._progress = 0;
+        this._element.style.height = `${this._height}px`;
+        this.applyScaleY();
         this.visible();
         this.setAppearType();
         this._isFast = isFast;
@@ -144,16 +159,19 @@ export class ConnectionLine
         if (this._appearType === 0) {
             this._animationHeight += this.getShortAppearSpeed();
         } else {
-            const progress = Util.getAnimationProgress(this._animationStartTime, this.getLongAppearTime());
-            this._animationHeight = this._height * progress;
+            const t = Util.getAnimationProgress(this._animationStartTime, this.getLongAppearTime());
+            const eased = Easing.easeOutCubic(t);
+            this._animationHeight = this._height * eased;
         }
         if (this._animationHeight >= this._height) {
             this._animationHeight = this._height;
+            this._progress = 1;
             this._appearAnimationFunc = null;
             this._appearStatus = AppearStatus.APPEARED;
+        } else {
+            this._progress = this._height > 0 ? this._animationHeight / this._height : 0;
         }
-
-        this._element.style.height = `${this._animationHeight}px`;
+        this.applyScaleY();
     }
 
     private getShortDisappearSpeed(): number
@@ -181,6 +199,8 @@ export class ConnectionLine
             this._animationStartTime = (window as any).hgn.timestamp;
             this._appearAnimationFunc = this.disappearAnimation;
             this._animationHeight = this._height;
+            this._progress = 1;
+            this._element.style.height = `${this._height}px`;
             this._isFast = isFast;
             this.setAppearType();
         }
@@ -191,24 +211,21 @@ export class ConnectionLine
      */
     private disappearAnimation(): void
     {
-        // if (this._appearType === 0) {
-        //     this._animationHeight -= this.getShortDisappearSpeed() * (window as any).hgn.disappearSpeedRate;
-        // } else {
-        //     const progress = 1 - Util.getAnimationProgress(this._animationStartTime, this.getLongDisappearTime());
-        //     this._animationHeight = this._height * progress;
-        // }
-
         this._animationHeight -= this.getShortDisappearSpeed() * (window as any).hgn.disappearSpeedRate;
 
         if (this._animationHeight <= this._disappearHeight) {
             this._animationHeight = this._disappearHeight;
         }
 
-        this._element.style.height = `${this._animationHeight}px`;
+        this._progress = this._height > 0 ? this._animationHeight / this._height : 0;
+        this.applyScaleY();
 
         if (this._animationHeight === this._disappearHeight) {
             this._appearAnimationFunc = null;
             this.setHeight(this._disappearHeight);
+            this._element.style.height = `${this._height}px`;
+            this._progress = 1;
+            this.applyScaleY();
             this._element.classList.remove('fade-out', 'fade-out-fast');
 
             if (this._height === 0) {
@@ -247,9 +264,12 @@ export class ConnectionLine
      */
     private onFadeOutComplete(): void
     {
-        // アニメーション完了後の処理
         this._appearStatus = AppearStatus.DISAPPEARED;
-        this.changeHeight(0);
+        this._height = 0;
+        this._animationHeight = 0;
+        this._progress = 0;
+        this._element.style.height = '0px';
+        this.applyScaleY();
         this._element.classList.remove('visible');
     }
 
@@ -262,9 +282,14 @@ export class ConnectionLine
         this._height = height;
 
         if (AppearStatus.isAppeared(this._appearStatus)) {
+            this._progress = 1;
+            this._animationHeight = this._height;
             this._element.style.height = `${this._height}px`;
+            this.applyScaleY();
         } else if (AppearStatus.isTransitioning(this._appearStatus)) {
-            this._element.style.height = `${this._animationHeight}px`;
+            this._progress = this._height > 0 ? this._animationHeight / this._height : 0;
+            this._element.style.height = `${this._height}px`;
+            this.applyScaleY();
         }
     }
 

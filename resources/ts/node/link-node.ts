@@ -51,8 +51,8 @@ export class LinkNode extends BasicNode implements ClickableNodeInterface
     public appearAnimation(): void
     {
         super.appearAnimation();
-        if (this._curveCanvas.appearProgress === 1) {
-            this._curveCanvas.gradientEndAlpha = 0.3;
+        if (this._curveRenderer.getProgress() === 1) {
+            this._curveRenderer.setGradient(1, 0.3);
         }
     }
 

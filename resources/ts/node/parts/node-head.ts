@@ -83,7 +83,8 @@ export class NodeHead
     {
         // 既存のアニメーションをキャンセル
         this.cancelCurrentAnimation();
-        
+
+        this._nodeElement.classList.remove('head-waiting-curve');
         this._nodePoint.appear();
         this._titleElement.classList.remove('head-fade-out');
         this._titleElement.classList.remove('head-reveal-out');

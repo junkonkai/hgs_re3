@@ -1,11 +1,18 @@
 import { CurrentNode } from "./node/current-node";
-import { Util } from "./common/util";
 import { AppearStatus } from "./enum/appear-status";
 import Cookies from "js-cookie";
+import { NavigationController } from "./navigation/navigation-controller";
+import { NavigationFetcher } from "./navigation/navigation-fetcher";
+import { NavigationStateStore } from "./navigation/navigation-state-store";
+import { HistoryCoordinator } from "./navigation/history-coordinator";
+import type { NavigationHistoryState } from "./navigation/types";
+import { AnimationScheduler } from "./animation/animation-scheduler";
+import type { Animatable } from "./animation/animatable";
 
 /**
  * ホラーゲームネットワーク
  * インターネット全体で見たら、ここも一つのノードと言えるでしょう。
+ * Phase3: 常時 rAF を廃止し、AnimationScheduler でアニメーション中だけループする。
  */
 export class HorrorGameNetwork
 {
@@ -14,7 +21,11 @@ export class HorrorGameNetwork
     private _mainElement: HTMLElement;
 
     private _currentNode: CurrentNode;
+    private _navigationController: NavigationController;
+    private _historyCoordinator: HistoryCoordinator;
     private _disappearSpeedRate: number = 1;
+    private _animationScheduler: AnimationScheduler;
+    private _sceneAnimatable: Animatable;
 
     public isForceResize: boolean = false;
 
@@ -53,9 +64,34 @@ export class HorrorGameNetwork
         return this._currentNode;
     }
 
+    /**
+     * Phase1: ナビゲーションコントローラーを取得
+     */
+    public get navigationController(): NavigationController
+    {
+        return this._navigationController;
+    }
+
     public get disappearSpeedRate(): number
     {
         return this._disappearSpeedRate;
+    }
+
+    /**
+     * Phase3: アニメーションスケジューラーを取得
+     */
+    public get animationScheduler(): AnimationScheduler
+    {
+        return this._animationScheduler;
+    }
+
+    /**
+     * Phase3: アニメーション開始時に登録＋requestTick する。静止時ループ停止後に再開する用。
+     */
+    public requestAnimationFrameIfNeeded(): void
+    {
+        this._animationScheduler.register(this._sceneAnimatable);
+        this._animationScheduler.requestTick();
     }
 
     /**
@@ -65,6 +101,19 @@ export class HorrorGameNetwork
     {
         this._mainElement = document.querySelector('main') as HTMLElement;
         this._currentNode = new CurrentNode(this._mainElement.querySelector('#current-node') as HTMLElement);
+        const stateStore = new NavigationStateStore();
+        const fetcher = new NavigationFetcher();
+        this._historyCoordinator = new HistoryCoordinator();
+        this._navigationController = new NavigationController(this._currentNode, fetcher, stateStore, this._historyCoordinator);
+        this._animationScheduler = new AnimationScheduler();
+        const self = this;
+        this._sceneAnimatable = {
+            update(timestamp: number): boolean
+            {
+                self.onAnimationFrame(timestamp);
+                return self._currentNode.hasActiveAnimation();
+            },
+        };
     }
 
     /**
@@ -80,12 +129,12 @@ export class HorrorGameNetwork
         const ro = new ResizeObserver(entries => {
           for (const entry of entries) {
             const { width, height } = entry.contentRect;
-            
-            // 高さが変化したらリサイズ
+
             if (height !== lastHeight) {
                 this.isForceResize = true;
+                this.requestAnimationFrameIfNeeded();
             }
-        
+
             lastWidth = width;
             lastHeight = height;
           }
@@ -109,21 +158,22 @@ export class HorrorGameNetwork
         });
 
         // popstateイベントの登録
-        window.addEventListener('popstate', (event) => {this.popState(event)});
-        
+        window.addEventListener('popstate', (event) => { this.popState(event); });
+
         this._currentNode.start();
         this.resize();
         this._currentNode.appear();
 
-        // 初期状態の履歴を設定
-        const initialState = {
-            type: 'link-node',
+        // Phase2: 初期状態の履歴を NavigationHistoryState 形式で設定
+        const initialState: NavigationHistoryState = {
             url: window.location.href,
-            anchorId: ''
+            scope: 'full',
+            urlPolicy: 'replace',
         };
         history.replaceState(initialState, '', window.location.href);
 
-        requestAnimationFrame((timestamp) => this.update(timestamp));
+        this._animationScheduler.register(this._sceneAnimatable);
+        this._animationScheduler.requestTick();
     }
 
     /**
@@ -135,9 +185,9 @@ export class HorrorGameNetwork
     }
 
     /**
-     * アニメーションの更新処理
+     * Phase3: Scheduler から必要時だけ呼ばれる 1 フレーム処理。
      */
-    private update(timestamp: number): void
+    private onAnimationFrame(timestamp: number): void
     {
         this._timestamp = timestamp;
 
@@ -147,10 +197,7 @@ export class HorrorGameNetwork
         }
 
         this._currentNode.update();
-        
         this.draw();
-
-        requestAnimationFrame((timestamp) => this.update(timestamp));
     }
 
     /**
@@ -162,23 +209,37 @@ export class HorrorGameNetwork
     }
 
     /**
-     * popstateイベントの処理
+     * popstateイベントの処理（Phase2: HistoryCoordinator で scope / sourceNodeId を復元）
      */
     private popState(event?: PopStateEvent): void
     {
-        // popstateイベントの引数から移動前のstateを取得
-        const previousState = event?.state;
-        
-        if (previousState) {
-            this._currentNode.moveNode(previousState.url, true, previousState.isChildOnly ?? false);
+        const state = event?.state;
+        if (!state?.url) {
+            return;
         }
 
-        if (AppearStatus.isAppeared(this._currentNode.appearStatus)) {
-            this._currentNode.disappear();
-        } else {
-            // アニメーション中だったら強制遷移
-            location.href = previousState.url;
+        // Phase2: 新形式 (scope, sourceNodeId) なら HistoryCoordinator で request 復元
+        const request = this.isNewHistoryState(state)
+            ? this._historyCoordinator.createRequestFromPopState(state as NavigationHistoryState)
+            : {
+                url: state.url,
+                scope: (state as { isChildOnly?: boolean }).isChildOnly === true ? 'children' as const : 'full' as const,
+                urlPolicy: 'popstate' as const,
+            };
+        if (!request) {
+            return;
         }
+
+        this._navigationController.navigate(request);
+
+        if (!AppearStatus.isAppeared(this._currentNode.appearStatus)) {
+            location.href = state.url;
+        }
+    }
+
+    private isNewHistoryState(state: unknown): state is NavigationHistoryState
+    {
+        return typeof state === 'object' && state !== null && 'scope' in state && typeof (state as NavigationHistoryState).scope === 'string';
     }
 
     public calculateDisappearSpeedRate(disappearStartPos: number): void
