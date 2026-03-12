@@ -74,9 +74,12 @@ export class CanvasCurveRenderer implements CurveRenderer
         this._containerRect = this._canvas.getBoundingClientRect();
     }
 
+    /**
+     * コンテナ（canvas）のビューポート座標。スクロール時にずれないよう毎回実測する。
+     */
     public getContainerRect(): DOMRect
     {
-        return this._containerRect;
+        return this._canvas.getBoundingClientRect();
     }
 
     public clear(): void

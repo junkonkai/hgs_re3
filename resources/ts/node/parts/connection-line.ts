@@ -2,6 +2,7 @@ import { AppearStatus } from "../../enum/appear-status";
 import { Util } from "../../common/util";
 import { Config } from "../../common/config";
 import { Easing } from "../../animation/easing";
+import { HgnTree } from "../../hgn-tree";
 
 /**
  * Phase3: 表示高さは transform: scaleY(progress) で制御し、要素の height は最終高さに固定して reflow を減らす。
@@ -129,7 +130,7 @@ export class ConnectionLine
      */
     public appear(isFast: boolean = false): void
     {
-        this._animationStartTime = (window as any).hgn.timestamp;
+        this._animationStartTime = HgnTree.getInstance().timestamp;
         this._appearAnimationFunc = this.appearAnimation;
         this._appearStatus = AppearStatus.APPEARING;
         this._animationHeight = 0;
@@ -196,7 +197,7 @@ export class ConnectionLine
 
         if (this._appearAnimationFunc === null) {
             this._appearStatus = AppearStatus.DISAPPEARING;
-            this._animationStartTime = (window as any).hgn.timestamp;
+            this._animationStartTime = HgnTree.getInstance().timestamp;
             this._appearAnimationFunc = this.disappearAnimation;
             this._animationHeight = this._height;
             this._progress = 1;
@@ -211,7 +212,7 @@ export class ConnectionLine
      */
     private disappearAnimation(): void
     {
-        this._animationHeight -= this.getShortDisappearSpeed() * (window as any).hgn.disappearSpeedRate;
+        this._animationHeight -= this.getShortDisappearSpeed() * HgnTree.getInstance().disappearSpeedRate;
 
         if (this._animationHeight <= this._disappearHeight) {
             this._animationHeight = this._disappearHeight;
