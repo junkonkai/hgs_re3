@@ -5,11 +5,14 @@ import { NavigationFetcher } from "./navigation-fetcher";
 import { HistoryCoordinator } from "./history-coordinator";
 import type { CurrentNode } from "../node/current-node";
 import type { NodeType } from "../common/type";
+import type { DepthSceneController } from "../depth/depth-scene-controller";
+import { DepthEffectController } from "../depth/depth-effect-controller";
 
 /**
  * クリック起点のナビゲーション要求を受け取り、
  * scope に応じて disappear / fetch / 適用 を調停する。
  * Phase2: 履歴更新は HistoryCoordinator、結果適用は applyNavigationResult に集約。
+ * Phase5: node 更新時に Z 軸演出（playExit → 差し替え → playEnter）を適用。
  */
 export class NavigationController
 {
@@ -17,7 +20,8 @@ export class NavigationController
         private _currentNode: CurrentNode,
         private _fetcher: NavigationFetcher,
         private _stateStore: NavigationStateStore,
-        private _historyCoordinator: HistoryCoordinator
+        private _historyCoordinator: HistoryCoordinator,
+        private _depthSceneController: DepthSceneController
     ) {}
 
     /**
@@ -78,10 +82,18 @@ export class NavigationController
                     this._stateStore.clear();
                 });
             };
-            if ('disappearOnlyThisNode' in sourceNode && typeof sourceNode.disappearOnlyThisNode === 'function') {
-                (sourceNode as { disappearOnlyThisNode: (cb?: () => void) => void }).disappearOnlyThisNode(runAfterDisappear);
+            const doDisappear = (): void => {
+                if ('disappearOnlyThisNode' in sourceNode && typeof sourceNode.disappearOnlyThisNode === 'function') {
+                    (sourceNode as { disappearOnlyThisNode: (cb?: () => void) => void }).disappearOnlyThisNode(runAfterDisappear);
+                } else {
+                    runAfterDisappear();
+                }
+            };
+            if (this._depthSceneController.mode === 'transition' && 'nodeElement' in sourceNode && sourceNode.nodeElement) {
+                const el = sourceNode.nodeElement as HTMLElement;
+                DepthEffectController.getInstance().playExit(el, 1).then(() => doDisappear());
             } else {
-                runAfterDisappear();
+                doDisappear();
             }
             return;
         }

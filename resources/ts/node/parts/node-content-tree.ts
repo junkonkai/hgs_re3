@@ -1,6 +1,5 @@
 import { Point } from "../../common/point";
 import { ConnectionLine } from "./connection-line";
-import { LinkNode } from "../link-node";
 import { AppearStatus } from "../../enum/appear-status";
 import { NodeType } from "../../common/type";
 import { NodeContent } from "./node-content";
@@ -87,10 +86,13 @@ export class NodeContentTree extends NodeContent
     /**
      * 要素からノードオブジェクトを1つ生成する（loadNodes と replaceLoadMoreWithNodes で共通利用）
      */
+    /**
+     * Phase6: link-node は BasicNode に統一（LinkNode 廃止）。アンカー駆動で遷移。
+     */
     private createNodeFromElement(nodeElement: HTMLElement, parentNode: TreeNodeInterface): NodeType
     {
         if (nodeElement.classList.contains('link-node')) {
-            return new LinkNode(nodeElement, parentNode);
+            return new BasicNode(nodeElement, parentNode);
         }
         if (nodeElement.classList.contains('link-tree-node')) {
             return new LinkTreeNode(nodeElement, parentNode);
@@ -241,6 +243,29 @@ export class NodeContentTree extends NodeContent
             return true;
         }
         return this._nodes.some(n => (n as { hasActiveAnimation?: () => boolean }).hasActiveAnimation?.() === true);
+    }
+
+    /**
+     * Phase5: 直下の子ノード配列を返す（applyDepthToNodes 等で利用）
+     */
+    public getDirectNodes(): NodeType[]
+    {
+        return this._nodes.slice();
+    }
+
+    /**
+     * Phase5: persistent モード用。直下の各ノードに depth を適用し、子 TreeNode には再帰する。
+     */
+    public applyDepthToNodes(startDepth: number): void
+    {
+        this._nodes.forEach(node => {
+            if ('applyDepth' in node && typeof (node as { applyDepth: (d: number) => void }).applyDepth === 'function') {
+                (node as { applyDepth: (d: number) => void }).applyDepth(startDepth);
+            }
+            if ('nodeContentTree' in node && (node as { nodeContentTree?: NodeContentTree }).nodeContentTree) {
+                (node as { nodeContentTree: NodeContentTree }).nodeContentTree.applyDepthToNodes(startDepth + 1);
+            }
+        });
     }
 
     public getNodeById(id: string): NodeType | null

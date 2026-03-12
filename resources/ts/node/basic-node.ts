@@ -12,8 +12,9 @@ import { SvgCurveRenderer } from "./parts/renderers/svg-curve-renderer";
 import { Config } from "../common/config";
 import { Point } from "../common/point";
 import { ClickableNodeInterface } from "./interface/clickable-node-interface";
-import { HorrorGameNetwork } from "../horror-game-network";
+import { HgnTree } from "../hgn-tree";
 import { CurrentNode } from "./current-node";
+import { DepthEffectController } from "../depth/depth-effect-controller";
 
 export class BasicNode extends NodeBase
 {
@@ -154,7 +155,7 @@ export class BasicNode extends NodeBase
     {
         this._appearStatus = AppearStatus.APPEARING;
         this._appearAnimationFunc = this.appearAnimation;
-        this._animationStartTime = (window as any).hgn.timestamp;
+        this._animationStartTime = HgnTree.getInstance().timestamp;
         this._curveRenderer.setProgress(0);
         this._curveRenderer.setGradient(1, 0);
         this._curveRenderer.show();
@@ -240,7 +241,7 @@ export class BasicNode extends NodeBase
         } else {
             this._isFast = isFast;
             this.disappearContents();
-            this._animationStartTime = (window as any).hgn.timestamp;
+            this._animationStartTime = HgnTree.getInstance().timestamp;
             this._curveRenderer.setGradient(1, 0);
             this._curveRenderer.hide();
             this._appearStatus = AppearStatus.DISAPPEARING;
@@ -288,7 +289,7 @@ export class BasicNode extends NodeBase
         this._onDisappearOnlyComplete = onComplete ?? null;
         this._isFast = false;
         this.disappearContents();
-        this._animationStartTime = (window as any).hgn.timestamp;
+        this._animationStartTime = HgnTree.getInstance().timestamp;
         this._curveRenderer.setGradient(1, 0);
         this._appearStatus = AppearStatus.DISAPPEARING;
         this._updateGradientEndAlphaFunc = null;
@@ -365,6 +366,22 @@ export class BasicNode extends NodeBase
     }
 
     /**
+     * Phase5: persistent モード用。自ノード要素に depth を適用する。
+     */
+    public applyDepth(depth: number): void
+    {
+        DepthEffectController.getInstance().applyDepth(this._nodeElement, depth);
+    }
+
+    /**
+     * Phase5: 自ノードから depth スタイルを削除する。
+     */
+    public clearDepth(): void
+    {
+        DepthEffectController.getInstance().clearDepth(this._nodeElement);
+    }
+
+    /**
      * Phase1: 遷移に使うアンカーを収集（node-head と node-content の <a href>）。
      * data-hgn-scope 未指定時は rel から scope を補うため、すべてのアンカーを対象にする。
      */
@@ -385,7 +402,7 @@ export class BasicNode extends NodeBase
             return;
         }
 
-        const nav = (window as any).hgn?.navigationController;
+        const nav = HgnTree.getInstance().navigationController;
         if (nav) {
             e.preventDefault();
             nav.navigateFromAnchor(anchor, this);
@@ -398,8 +415,7 @@ export class BasicNode extends NodeBase
             return;
         }
         e.preventDefault();
-        const hgn = (window as any).hgn as HorrorGameNetwork;
-        const currentNode = hgn.currentNode as CurrentNode;
+        const currentNode = HgnTree.getInstance().currentNode as CurrentNode;
         const rel = anchor.getAttribute('rel') ?? '';
         if (rel === 'internal-node') {
             currentNode.updateSingleNode(anchor.href, this);
@@ -415,8 +431,7 @@ export class BasicNode extends NodeBase
     public disappearStart(): void
     {
         const headPos = this.nodeHead.getConnectionPoint();
-        const hgn = (window as any).hgn as HorrorGameNetwork;
-        hgn.calculateDisappearSpeedRate(headPos.y + window.scrollY);
+        HgnTree.getInstance().calculateDisappearSpeedRate(headPos.y + window.scrollY);
 
         this.isHomewardDisappear = true;
         this.parentNode.prepareDisappear(this);
@@ -438,8 +453,7 @@ export class BasicNode extends NodeBase
             return;
         }
 
-        const hgn = (window as any).hgn as HorrorGameNetwork;
-        const currentNode = hgn.currentNode as CurrentNode;
+        const currentNode = HgnTree.getInstance().currentNode as CurrentNode;
         const isChildOnly = form.dataset.childOnly === '1';
 
         if (form.method.toUpperCase() !== 'POST') {
@@ -461,7 +475,6 @@ export class BasicNode extends NodeBase
     {
         const connectionPoint = this.nodeHead.getConnectionPoint();
 
-        const hgn = (window as any).hgn as HorrorGameNetwork;
         const freePt = this.freePt;
 
         const duration = Config.getInstance().CURVE_ANIMATION_DURATION;
@@ -472,7 +485,7 @@ export class BasicNode extends NodeBase
             this._curveRenderer.setGradient(1, 0);
             this._appearAnimationFunc = this.selectedDisappearAnimation2;
 
-            this._animationStartTime = hgn.timestamp;
+            this._animationStartTime = HgnTree.getInstance().timestamp;
         } else {
             const x = this.nodeHead.nodePoint.htmlElement.offsetWidth / 2;
             this._curveRenderer.setPath(new Point(x, 0), connectionPoint);
@@ -514,7 +527,6 @@ export class BasicNode extends NodeBase
         this.disappearContents();
 
         // TreeNodeの場合は_nodeContentTreeも消滾させる
-        const hgn = (window as any).hgn as HorrorGameNetwork;
         const freePt = this.freePt;
         this._updateGradientEndAlphaFunc = null;
 
@@ -525,7 +537,7 @@ export class BasicNode extends NodeBase
         
         this._nodeContentBehind?.disappear();
 
-        this._animationStartTime = hgn.timestamp;
+        this._animationStartTime = HgnTree.getInstance().timestamp;
         this._appearStatus = AppearStatus.DISAPPEARING;
         this._curveRenderer.setGradient(1, 0);
         this.nodeHead.disappear();

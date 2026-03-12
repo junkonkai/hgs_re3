@@ -39,7 +39,7 @@ export class Util
      * アニメーションの進行度を計算（0.0～1.0）
      * @param startTime アニメーションの開始時間
      * @param duration
-     * @returns 進行度（0.0～1.0）。currentTime は (window as any).hgn.timestamp を使用（後方互換）
+     * @returns 進行度（0.0～1.0）。currentTime は window.hgn（HgnTree）から取得。Util は循環参照回避のため HgnTree を import しない。
      */
     public static getAnimationProgress(startTime: number, duration: number): number
     {

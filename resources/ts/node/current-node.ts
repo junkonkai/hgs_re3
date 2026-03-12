@@ -1,16 +1,16 @@
 import { Util } from "../common/util";
 import { AppearStatus } from "../enum/appear-status";
-import { NextNodeCache } from "./parts/next-node-cache";
 import { NodeContentTree } from "./parts/node-content-tree";
 import { NodeBase } from "./node-base";
 import { TreeNodeInterface } from "./interface/tree-node-interface";
 import { NodeType } from "../common/type";
 import { AccordionTreeNode } from "./accordion-tree-node";
-import { HorrorGameNetwork } from "../horror-game-network";
+import { HgnTree } from "../hgn-tree";
 import { ComponentManager } from "../component-manager";
 import { ScopedHydrator } from "../hydrate/scoped-hydrator";
 import type { NavigationRequest } from "../navigation/types";
 import type { NavigationResult } from "../navigation/types";
+import { DepthEffectController } from "../depth/depth-effect-controller";
 
 export class CurrentNode extends NodeBase implements TreeNodeInterface
 {
@@ -18,7 +18,8 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
 
     private _isChanging: boolean = false;
     private _isChildOnly: boolean = false;
-    private _nextNodeCache: NextNodeCache | null = null;
+    /** Phase6: changeNode 用の保留結果（NextNodeCache 廃止） */
+    private _pendingResult: NavigationResult | null = null;
     private _homewardNode: NodeType | null = null;
     private _currentNodeContentElement: HTMLElement | null = null;
     private _accordionGroups: { [key: string]: AccordionTreeNode[] } = {};
@@ -28,6 +29,14 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     public get homewardNode(): NodeType | null
     {
         return this._homewardNode;
+    }
+
+    /**
+     * Phase5: DepthSceneController を取得（HgnTree 経由）
+     */
+    private get depthSceneController()
+    {
+        return HgnTree.getInstance().depthSceneController;
     }
 
     /**
@@ -110,8 +119,8 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
      */
     public requestAnimationFrameIfNeeded(): void
     {
-        const hgn = (window as any).hgn as HorrorGameNetwork;
-        if (hgn && typeof (hgn as { requestAnimationFrameIfNeeded?: () => void }).requestAnimationFrameIfNeeded === 'function') {
+        const hgn = HgnTree.getInstance();
+        if (typeof (hgn as { requestAnimationFrameIfNeeded?: () => void }).requestAnimationFrameIfNeeded === 'function') {
             (hgn as { requestAnimationFrameIfNeeded: () => void }).requestAnimationFrameIfNeeded();
         }
     }
@@ -155,8 +164,7 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     public appear(): void
     {
         this.requestAnimationFrameIfNeeded();
-        const hgn = (window as any).hgn as HorrorGameNetwork;
-        hgn.calculateDisappearSpeedRate(1);
+        HgnTree.getInstance().calculateDisappearSpeedRate(1);
 
         this._appearStatus = AppearStatus.APPEARING;
         if (!this._isChildOnly) {
@@ -188,7 +196,7 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     /**
      * 消滅アニメーション準備
      * 
-     * @param selectedLinkNode クリックしたリンクノード
+     * @param homewardNode クリックしたノード（帰路の起点）
      */
     public prepareDisappear(homewardNode: NodeType): void
     {
@@ -257,106 +265,38 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     }
 
     /**
-     * ノードの切り替え（updateType に応じて適用メソッドを分岐）
+     * ノードの切り替え（Phase6: NavigationResult を直接適用、NextNodeCache 廃止）
      */
     private changeNode(): void
     {
-        if (!this._nextNodeCache || this._appearStatus !== AppearStatus.DISAPPEARED) {
+        if (!this._pendingResult || this._appearStatus !== AppearStatus.DISAPPEARED) {
             return;
         }
-        const cache = this._nextNodeCache;
-        this._nextNodeCache = null;
+        const result = this._pendingResult;
+        this._pendingResult = null;
 
-        const updateType = cache.updateType ?? 'full';
+        if (this._tmpStateData) {
+            if (result.url && result.url.length > 0) {
+                this._tmpStateData.url = result.url;
+            }
+            window.history.pushState(this._tmpStateData, '', this._tmpStateData.url);
+            this._tmpStateData = null;
+        }
+
+        const updateType = result.updateType ?? 'full';
         if (updateType === 'children') {
-            this.applyChildrenResultFromCache(cache);
+            this.applyChildrenResult(result, { url: result.url, scope: 'children', urlPolicy: 'push' });
         } else {
-            this.applyFullResultFromCache(cache);
+            this.applyFullResult(result, { url: result.url, scope: 'full', urlPolicy: 'push' });
         }
     }
 
     /**
-     * 全体更新（既存 changeNode 相当）
+     * Phase6: fetchForMove / postData 用。保留結果をセットする。
      */
-    private applyFullResultFromCache(cache: NextNodeCache): void
+    private setPendingNavigationResult(result: NavigationResult): void
     {
-        const componentManager = ComponentManager.getInstance();
-        componentManager.disposeComponents();
-        this.dispose();
-
-        if (cache.colorState) {
-            document.body.classList.add('has-' + cache.colorState);
-        }
-
-        if (cache.csrfToken && cache.csrfToken.length > 0) {
-            (window as any).Laravel.csrfToken = cache.csrfToken;
-        }
-
-        if (this._tmpStateData) {
-            if (cache.url.length > 0) {
-                this._tmpStateData.url = cache.url;
-            }
-            window.history.pushState(this._tmpStateData, '', this._tmpStateData.url);
-            this._tmpStateData = null;
-        }
-
-        if (!this._isChildOnly) {
-            document.title = cache.title + ' | ' + (window as any).siteName;
-            this._nodeHead.title = cache.currentNodeTitle;
-            if (this._currentNodeContentElement) {
-                this._currentNodeContentElement.innerHTML = cache.currentNodeContent;
-                this.setupFormEvents();
-            }
-        }
-        if (this._treeContentElement) {
-            this._treeContentElement.innerHTML = cache.nodes;
-        }
-
-        this._nodeContentTree.loadNodes(this);
-        this.resize();
-        componentManager.initializeComponents(cache.components);
-
-        this._isChanging = false;
-        this.appear();
-    }
-
-    /**
-     * 子ノードのみ更新（CurrentNode の見出し・本文は維持し、子ツリーだけ差し替え）
-     */
-    private applyChildrenResultFromCache(cache: NextNodeCache): void
-    {
-        const componentManager = ComponentManager.getInstance();
-        componentManager.disposeComponents();
-        this._nodeContentTree.disposeNodes();
-        this._accordionGroups = {};
-        this._homewardNode = null;
-
-        if (cache.colorState) {
-            document.body.classList.add('has-' + cache.colorState);
-        }
-        if (cache.csrfToken && cache.csrfToken.length > 0) {
-            (window as any).Laravel.csrfToken = cache.csrfToken;
-        }
-
-        if (this._tmpStateData) {
-            if (cache.url.length > 0) {
-                this._tmpStateData.url = cache.url;
-            }
-            window.history.pushState(this._tmpStateData, '', this._tmpStateData.url);
-            this._tmpStateData = null;
-        }
-
-        if (this._treeContentElement) {
-            const html = cache.currentChildrenHtml ?? cache.nodes;
-            this._treeContentElement.innerHTML = html;
-        }
-
-        this._nodeContentTree.loadNodes(this);
-        this.resize();
-        componentManager.initializeComponents(cache.components);
-
-        this._isChanging = false;
-        this.appear();
+        this._pendingResult = result;
     }
 
     /**
@@ -409,10 +349,6 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     }
 
 
-    public set nextNodeCache(cache: NextNodeCache)
-    {
-        this._nextNodeCache = cache;
-    }
 
     /**
      * 別のノードへ移動する（Phase1: 通常時は NavigationController に委譲、popstate 時は従来の fetch）
@@ -423,7 +359,7 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
      */
     public moveNode(url: string, isFromPopState: boolean, isChildOnly: boolean = false): void
     {
-        const nav = (window as any).hgn?.navigationController;
+        const nav = HgnTree.getInstance().navigationController;
         if (!isFromPopState && nav) {
             nav.navigate({
                 url,
@@ -443,7 +379,7 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     }
 
     /**
-     * 従来の fetch で nextNodeCache をセット（popstate または NavigationController 未設定時）
+     * Phase6: popstate または NavigationController 未設定時の fetch。保留結果をセット。
      */
     private fetchForMove(url: string): void
     {
@@ -451,8 +387,7 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
         fetch(urlWithParam, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(response => response.json())
             .then((data: Record<string, unknown>) => {
-                const cache = NextNodeCache.fromNavigationResult(this.normalizeFetchResult(data));
-                this._nextNodeCache = cache;
+                this.setPendingNavigationResult(this.normalizeFetchResult(data));
             })
             .catch(error => {
                 console.error('データの取得に失敗しました:', error);
@@ -498,8 +433,8 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
             body: data
         })
         .then(response => response.json())
-        .then(data => {
-            this.nextNodeCache = data;
+        .then((data: Record<string, unknown>) => {
+            this.setPendingNavigationResult(this.normalizeFetchResult(data));
         })
         .catch(error => {
             console.error('データの送信に失敗しました:', error);
@@ -572,7 +507,7 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     }
 
     /**
-     * 全体更新。NextNodeCache 経由の changeNode では applyFullResultFromCache を使用。
+     * 全体更新（Phase6: changeNode からも NavigationResult で直接呼ぶ）
      */
     private applyFullResult(result: NavigationResult, _request: NavigationRequest): void
     {
@@ -624,10 +559,15 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
         }
 
         const html = result.currentChildrenHtml ?? result.nodes ?? '';
+        let newNodes: NodeType[] = [];
         if (this._treeContentElement && html) {
-            this._nodeContentTree.replaceChildren(html);
+            newNodes = this._nodeContentTree.replaceChildren(html);
         }
         this.resize();
+        if (this.depthSceneController.mode === 'transition' && newNodes.length > 0) {
+            const dec = DepthEffectController.getInstance();
+            newNodes.forEach(node => dec.playEnter(node.nodeElement, 1));
+        }
         this._scopedHydrator.hydrate(this._treeContentElement as HTMLElement, result.components);
 
         this._isChanging = false;
@@ -651,11 +591,25 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
         if (!newNode) {
             return;
         }
+        if (this.depthSceneController.mode === 'transition') {
+            DepthEffectController.getInstance().playEnter(newNode.nodeElement, 1);
+        }
         if ('appear' in newNode && typeof newNode.appear === 'function') {
             (newNode as { appear: (a?: boolean, b?: boolean) => void }).appear(true, true);
         }
         this.resizeConnectionLine();
         this._scopedHydrator.hydrate(newNode.nodeElement, result.components);
+    }
+
+    /**
+     * Phase5: persistent モード時、子ツリー全体に depth を適用する。
+     */
+    public applyDepthToTree(): void
+    {
+        if (this.depthSceneController.mode !== 'persistent') {
+            return;
+        }
+        this._nodeContentTree.applyDepthToNodes(0);
     }
 
     /**
