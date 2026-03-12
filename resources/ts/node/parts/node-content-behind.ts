@@ -4,6 +4,7 @@ import { AppearStatus } from "../../enum/appear-status";
 import { Util } from "../../common/util";
 import { Point } from "../../common/point";
 import { CurveRenderer } from "./renderers/curve-renderer";
+import { HgnTree } from "../../hgn-tree";
 
 export class NodeContentBehind extends NodeContent
 {
@@ -47,7 +48,7 @@ export class NodeContentBehind extends NodeContent
 
     public appear(): void
     {
-        this._animationStartTime = (window as any).hgn.timestamp;
+        this._animationStartTime = HgnTree.getInstance().timestamp;
         this._curveAppearProgress = [0, 0, 0, 0];
         this._appearStatus = AppearStatus.APPEARING;
         this._appearAnimationFunc = this.appearAnimation;

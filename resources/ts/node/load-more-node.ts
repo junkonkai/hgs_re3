@@ -6,7 +6,7 @@ import { AppearStatus } from "../enum/appear-status";
 
 /**
  * 「さらに表示」ボタン用ノード。
- * クリックで LinkNode と同じ head-reveal-out でフェードアウトし、
+ * クリックで link-node と同じ head-reveal-out でフェードアウトし、
  * その後 data-load-more-url から HTML を取得して親の NodeContentTree に渡す。
  */
 export class LoadMoreNode extends BasicNode

@@ -3,7 +3,7 @@ import { TreeNodeInterface } from "./interface/tree-node-interface";
 import { AppearStatus } from "../enum/appear-status";
 import { BasicNode } from "./basic-node";
 import { CurrentNode } from "./current-node";
-import { HorrorGameNetwork } from "../horror-game-network";
+import { HgnTree } from "../hgn-tree";
 import { Util } from "../common/util";
 import { ClickableNodeInterface } from "./interface/clickable-node-interface";
 import { NodeHeadClickable } from "./parts/node-head-clickable";
@@ -34,7 +34,7 @@ export class AccordionTreeNode extends TreeNode implements ClickableNodeInterfac
         this._startScrollY = 0;
         this._startPosY = 0;
 
-        const currentNode = window.hgn.currentNode as CurrentNode;
+        const currentNode = HgnTree.getInstance().currentNode as CurrentNode;
         if (currentNode) {
             currentNode.addAccordionGroup(this._groupId, this);
         }
@@ -122,7 +122,7 @@ export class AccordionTreeNode extends TreeNode implements ClickableNodeInterfac
      */
     private _toggleOtherNodesInGroup(action: 'open' | 'close'): void
     {
-        const currentNode = (window as any).hgn.currentNode as CurrentNode;
+        const currentNode = HgnTree.getInstance().currentNode as CurrentNode;
         if (currentNode) {
             const group = currentNode.getAccordionGroup(this._groupId);
             for (const node of group) {
@@ -143,7 +143,7 @@ export class AccordionTreeNode extends TreeNode implements ClickableNodeInterfac
     public hover(): void
     {
         this._nodeContentBehind?.hover();
-        this._animationStartTime = (window as any).hgn.timestamp;
+        this._animationStartTime = HgnTree.getInstance().timestamp;
         this._updateGradientEndAlphaFunc = this.updateGradientEndAlphaOnHover;
     }
 
@@ -153,7 +153,7 @@ export class AccordionTreeNode extends TreeNode implements ClickableNodeInterfac
     public unhover(): void
     {
         this._nodeContentBehind?.unhover();
-        this._animationStartTime = (window as any).hgn.timestamp;
+        this._animationStartTime = HgnTree.getInstance().timestamp;
         this._updateGradientEndAlphaFunc = this.updateGradientEndAlphaOnUnhover;
     }
 

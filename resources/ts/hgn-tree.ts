@@ -8,19 +8,21 @@ import { HistoryCoordinator } from "./navigation/history-coordinator";
 import type { NavigationHistoryState } from "./navigation/types";
 import { AnimationScheduler } from "./animation/animation-scheduler";
 import type { Animatable } from "./animation/animatable";
+import { DepthSceneController } from "./depth/depth-scene-controller";
 
 /**
- * ホラーゲームネットワーク
- * インターネット全体で見たら、ここも一つのノードと言えるでしょう。
+ * アプリ全体のルートクラス。
  * Phase3: 常時 rAF を廃止し、AnimationScheduler でアニメーション中だけループする。
+ * Phase6: 正式名称を HgnTree に統一。
  */
-export class HorrorGameNetwork
+export class HgnTree
 {
-    private static _instance: HorrorGameNetwork;
+    private static _instance: HgnTree;
     private _timestamp: number = 0;
     private _mainElement: HTMLElement;
 
     private _currentNode: CurrentNode;
+    private _depthSceneController: DepthSceneController;
     private _navigationController: NavigationController;
     private _historyCoordinator: HistoryCoordinator;
     private _disappearSpeedRate: number = 1;
@@ -32,12 +34,12 @@ export class HorrorGameNetwork
     /**
      * インスタンスを返す
      */
-    public static getInstance(): HorrorGameNetwork
+    public static getInstance(): HgnTree
     {
-        if (!HorrorGameNetwork._instance) {
-            HorrorGameNetwork._instance = new HorrorGameNetwork();
+        if (!HgnTree._instance) {
+            HgnTree._instance = new HgnTree();
         }
-        return HorrorGameNetwork._instance;
+        return HgnTree._instance;
     }
 
     /**
@@ -72,6 +74,14 @@ export class HorrorGameNetwork
         return this._navigationController;
     }
 
+    /**
+     * Phase5: Z軸演出のシーンコントローラーを取得
+     */
+    public get depthSceneController(): DepthSceneController
+    {
+        return this._depthSceneController;
+    }
+
     public get disappearSpeedRate(): number
     {
         return this._disappearSpeedRate;
@@ -101,10 +111,11 @@ export class HorrorGameNetwork
     {
         this._mainElement = document.querySelector('main') as HTMLElement;
         this._currentNode = new CurrentNode(this._mainElement.querySelector('#current-node') as HTMLElement);
+        this._depthSceneController = new DepthSceneController(this._currentNode.nodeElement);
         const stateStore = new NavigationStateStore();
         const fetcher = new NavigationFetcher();
         this._historyCoordinator = new HistoryCoordinator();
-        this._navigationController = new NavigationController(this._currentNode, fetcher, stateStore, this._historyCoordinator);
+        this._navigationController = new NavigationController(this._currentNode, fetcher, stateStore, this._historyCoordinator, this._depthSceneController);
         this._animationScheduler = new AnimationScheduler();
         const self = this;
         this._sceneAnimatable = {
@@ -163,6 +174,9 @@ export class HorrorGameNetwork
         this._currentNode.start();
         this.resize();
         this._currentNode.appear();
+
+        // Phase5: Z軸演出を transition モードで有効化
+        this._depthSceneController.setMode('transition');
 
         // Phase2: 初期状態の履歴を NavigationHistoryState 形式で設定
         const initialState: NavigationHistoryState = {
@@ -262,4 +276,7 @@ export class HorrorGameNetwork
     {
         Cookies.set('over_18', value ? '1' : '0');
     }
-} 
+}
+
+/** Phase6: 互換用。最終的には削除する。 */
+export { HgnTree as HorrorGameNetwork }; 
