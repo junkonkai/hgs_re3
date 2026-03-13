@@ -31,7 +31,7 @@
                             <td class="border border-gray-500 px-3 py-2">{{ $fearMeter->gameTitle->name }}</td>
                             <td class="border border-gray-500 px-3 py-2">{{ $fearMeter->fear_meter->text() }}</td>
                             <td class="border border-gray-500 px-3 py-2">
-                                <a href="{{ route('User.FearMeter.Form', ['titleKey' => $fearMeter->gameTitle->key, 'from' => 'fear-meter-list']) }}" rel="internal"><i class="bi bi-pencil"></i></a>
+                                <a href="{{ route('User.FearMeter.Form', ['titleKey' => $fearMeter->gameTitle->key, 'from' => 'fear-meter-list']) }}" data-hgn-scope="full"><i class="bi bi-pencil"></i></a>
                             </td>
                         </tr>
                     @endforeach

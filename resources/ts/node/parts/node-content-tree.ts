@@ -1,6 +1,5 @@
 import { Point } from "../../common/point";
 import { ConnectionLine } from "./connection-line";
-import { LinkNode } from "../link-node";
 import { AppearStatus } from "../../enum/appear-status";
 import { NodeType } from "../../common/type";
 import { NodeContent } from "./node-content";
@@ -87,10 +86,13 @@ export class NodeContentTree extends NodeContent
     /**
      * 要素からノードオブジェクトを1つ生成する（loadNodes と replaceLoadMoreWithNodes で共通利用）
      */
+    /**
+     * Phase6: link-node は BasicNode に統一（LinkNode 廃止）。アンカー駆動で遷移。
+     */
     private createNodeFromElement(nodeElement: HTMLElement, parentNode: TreeNodeInterface): NodeType
     {
         if (nodeElement.classList.contains('link-node')) {
-            return new LinkNode(nodeElement, parentNode);
+            return new BasicNode(nodeElement, parentNode);
         }
         if (nodeElement.classList.contains('link-tree-node')) {
             return new LinkTreeNode(nodeElement, parentNode);
@@ -105,6 +107,56 @@ export class NodeContentTree extends NodeContent
             return new TreeNode(nodeElement, parentNode);
         }
         return new BasicNode(nodeElement, parentNode);
+    }
+
+    /**
+     * Phase2: CurrentNode 直下の子ノード群を全部差し替える。
+     * 旧ノードを dispose し、新しい section.node 群を生成して返す。
+     */
+    public replaceChildren(html: string): NodeType[]
+    {
+        this.disposeNodes();
+        this._contentElement.innerHTML = html.trim();
+        this.loadNodes(this._parentNode as TreeNodeInterface);
+        this.resizeConnectionLine(this._parentNode.nodeHead.getConnectionPoint());
+        return this._nodes;
+    }
+
+    /**
+     * Phase2: 指定 id のノード 1 個を差し替える。見つからなければ子 TreeNode に再帰委譲。
+     * 置換後の新ノードを返す。見つからない場合は null。
+     */
+    public replaceNodeById(nodeId: string, html: string): NodeType | null
+    {
+        const index = this._nodes.findIndex(n => n.id === nodeId);
+        if (index >= 0) {
+            const oldNode = this._nodes[index];
+            const parentEl = oldNode.nodeElement.parentNode;
+            if (!parentEl) {
+                return null;
+            }
+            oldNode.dispose();
+            const temp = document.createElement('div');
+            temp.innerHTML = html.trim();
+            const newSection = temp.firstElementChild as HTMLElement;
+            if (!newSection) {
+                return null;
+            }
+            parentEl.replaceChild(newSection, oldNode.nodeElement);
+            const newNode = this.createNodeFromElement(newSection, this._parentNode as TreeNodeInterface);
+            this._nodes[index] = newNode;
+            this.resizeConnectionLine(this._parentNode.nodeHead.getConnectionPoint());
+            return newNode;
+        }
+        for (const n of this._nodes) {
+            if ('nodeContentTree' in n && n.nodeContentTree) {
+                const found = (n as TreeNodeInterface).nodeContentTree.replaceNodeById(nodeId, html);
+                if (found) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -177,6 +229,43 @@ export class NodeContentTree extends NodeContent
     public getIndexByNode(node: NodeType): number
     {
         return this._nodes.indexOf(node);
+    }
+
+    /**
+     * Phase3: 接続線または子ノードに進行中アニメーションがあるか。
+     */
+    public hasActiveAnimation(): boolean
+    {
+        if (AppearStatus.isTransitioning(this._connectionLine.appearStatus)) {
+            return true;
+        }
+        if (this.appearAnimationFunc !== null) {
+            return true;
+        }
+        return this._nodes.some(n => (n as { hasActiveAnimation?: () => boolean }).hasActiveAnimation?.() === true);
+    }
+
+    /**
+     * Phase5: 直下の子ノード配列を返す（applyDepthToNodes 等で利用）
+     */
+    public getDirectNodes(): NodeType[]
+    {
+        return this._nodes.slice();
+    }
+
+    /**
+     * Phase5: persistent モード用。直下の各ノードに depth を適用し、子 TreeNode には再帰する。
+     */
+    public applyDepthToNodes(startDepth: number): void
+    {
+        this._nodes.forEach(node => {
+            if ('applyDepth' in node && typeof (node as { applyDepth: (d: number) => void }).applyDepth === 'function') {
+                (node as { applyDepth: (d: number) => void }).applyDepth(startDepth);
+            }
+            if ('nodeContentTree' in node && (node as { nodeContentTree?: NodeContentTree }).nodeContentTree) {
+                (node as { nodeContentTree: NodeContentTree }).nodeContentTree.applyDepthToNodes(startDepth + 1);
+            }
+        });
     }
 
     public getNodeById(id: string): NodeType | null

@@ -23,7 +23,7 @@
             @if ($sameMediaMix->id === $mediaMix->id)
                 @continue
             @endif
-            <section class="node link-node" id="{{ $sameMediaMix->key }}-link-node">
+            <section class="node basic" id="{{ $sameMediaMix->key }}-link-node">
                 <div class="node-head">
                     <a href="{{ route('Game.MediaMixDetail', ['mediaMixKey' => $sameMediaMix->key]) }}" class="node-head-text">{{ $sameMediaMix->name }}</a>
                     <span class="node-pt">●</span>
@@ -41,19 +41,19 @@
             <span class="node-pt">●</span>
         </div>
         <div class="node-content tree">
-            <section class="node link-tree-node" id="back-to-franchise-detail-link-node">
+            <section class="node tree-node" id="back-to-franchise-detail-link-node">
                 <div class="node-head">
                     <a href="{{ route('Game.FranchiseDetail', ['franchiseKey' => $franchise->key]) }}" class="node-head-text">{{ $franchise->name }}フランチャイズ</a>
                     <span class="node-pt">●</span>
                 </div>
                 <div class="node-content tree">
-                    <section class="node link-tree-node" id="back-to-franchises-node">
+                    <section class="node tree-node" id="back-to-franchises-node">
                         <div class="node-head">
                             <a href="{{ route('Game.Franchises') }}" class="node-head-text">フランチャイズ</a>
                             <span class="node-pt">●</span>
                         </div>
                         <div class="node-content tree">
-                            <section class="node link-node" id="back-to-root-node">
+                            <section class="node basic" id="back-to-root-node">
                                 <div class="node-head">
                                     <a href="{{ route('Root') }}" class="node-head-text">ルート</a>
                                     <span class="node-pt">●</span>
@@ -67,7 +67,7 @@
             @include('common.shortcut_mynode')
         
             @if (is_admin_user())
-            <section class="node link-node" id="admin-link-node">
+            <section class="node basic" id="admin-link-node">
                 <div class="node-head">
                     <a href="{{ route('Admin.Game.MediaMix.Detail', $mediaMix) }}" class="node-head-text" rel="external">管理</a>
                     <span class="node-pt">●</span>
@@ -88,7 +88,7 @@
 
             @foreach ($relatedNetworks as $relatedNetwork)
                 <div class="node">
-                    <div class="link-node link-node-center fade">
+                    <div class="link-node-center fade">
                         <a href="{{ route('Game.MediaMixDetail', ['mediaMixKey' => $relatedNetwork->key]) }}">
                             {!! $relatedNetwork->node_name !!}
                         </a>
@@ -98,7 +98,7 @@
 
             @if ($mediaMix->getFranchise())
                 <div class="node">
-                    <div class="link-node link-node-center fade">
+                    <div class="link-node-center fade">
                         <a href="{{ route('Game.FranchiseDetail', ['franchiseKey' => $mediaMix->getFranchise()->key]) }}">
                             {{ $mediaMix->getFranchise()->node_name }}<br>
                             フランチャイズ

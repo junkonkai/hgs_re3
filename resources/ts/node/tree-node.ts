@@ -5,7 +5,9 @@ import { FreePoint } from "./parts/free-point";
 import { TreeNodeInterface } from "./interface/tree-node-interface";
 import { NodeType } from "../common/type";
 import { Util } from "../common/util";
+import { Config } from "../common/config";
 import { Point } from "../common/point";
+import { HgnTree } from "../hgn-tree";
 
 export class TreeNode extends BasicNode implements TreeNodeInterface
 {
@@ -26,6 +28,20 @@ export class TreeNode extends BasicNode implements TreeNodeInterface
     public get homewardNode(): NodeType | null
     {
         return this._homewardNode;
+    }
+
+    /**
+     * Phase3: 自身または子ツリーに進行中アニメーションがあるか。
+     */
+    public hasActiveAnimation(): boolean
+    {
+        if (this._appearAnimationFunc !== null) {
+            return true;
+        }
+        if (AppearStatus.isTransitioning(this._nodeContentTree.appearStatus)) {
+            return true;
+        }
+        return this._nodeContentTree.hasActiveAnimation();
     }
 
     /**
@@ -57,10 +73,10 @@ export class TreeNode extends BasicNode implements TreeNodeInterface
         this._nodeContentTree.update();
     }
 
-    public appear(isFast: boolean = false): void
+    public appear(isFast: boolean = false, doNotAppearBehind: boolean = false): void
     {
         if (AppearStatus.isDisappeared(this._appearStatus)) {
-            super.appear(isFast);
+            super.appear(isFast, doNotAppearBehind);
             this._appearAnimationFunc = this.appearAnimation;
         }
     }
@@ -69,12 +85,12 @@ export class TreeNode extends BasicNode implements TreeNodeInterface
     {
         super.appearAnimation();
         
-        if (this._curveCanvas.appearProgress === 1) {
-            this._nodeContentTree.appear(this._isFast);
-            this._curveCanvas.gradientEndAlpha = 1;
-            this._animationStartTime = (window as any).hgn.timestamp;
+        if (this._curveRenderer.getProgress() === 1) {
+            this._curveRenderer.setGradient(1, 1);
+            this._animationStartTime = HgnTree.getInstance().timestamp;
             this._appearAnimationFunc = this.appearAnimation2;
             this.freePt.show();
+            this._nodeContentTree.appear(this._isFast, this._doNotAppearBehind);
         }
     }
 
@@ -118,7 +134,7 @@ export class TreeNode extends BasicNode implements TreeNodeInterface
     {
         this._nodeContentTree.disappearConnectionLine();
         this._appearAnimationFunc = this.homewardDisappearAnimation;
-        this._animationStartTime = (window as any).hgn.timestamp;
+        this._animationStartTime = HgnTree.getInstance().timestamp;
         this._nodeHead.disappear();
         this.disappearContents();
     }
@@ -126,12 +142,12 @@ export class TreeNode extends BasicNode implements TreeNodeInterface
     public homewardDisappearAnimation(): void
     {
         if (this._nodeContentTree.appearStatus === AppearStatus.DISAPPEARED) {
-            this._animationStartTime = (window as any).hgn.timestamp;
-            this._curveCanvas.appearProgress = 1;
+            this._animationStartTime = HgnTree.getInstance().timestamp;
+            this._curveRenderer.setProgress(1);
             this._appearAnimationFunc = this.homewardDisappearAnimation2;
 
             const freePt = this.freePt;
-    
+
             const x = this.nodeHead.nodePoint.htmlElement.offsetWidth / 2;
             freePt.setPos(x, 0).setElementPos();
             freePt.show();
@@ -140,9 +156,9 @@ export class TreeNode extends BasicNode implements TreeNodeInterface
             const pos = Util.getQuadraticBezierPoint(
                 0, 0,
                 connectionPoint.x - x + 3, connectionPoint.y,
-                this._curveCanvas.appearProgress
+                this._curveRenderer.getProgress()
             );
-    
+
             freePt.moveOffset(pos.x, pos.y);
             this._nodeHead.nodePoint.hidden();
         }
@@ -153,31 +169,32 @@ export class TreeNode extends BasicNode implements TreeNodeInterface
         const connectionPoint = this._nodeHead.getConnectionPoint();
         const freePt = this.freePt;
 
-        this._curveCanvas.appearProgress = 1 - Util.getAnimationProgress(this._animationStartTime, 50);
-        this._curveCanvas.gradientStartAlpha = this._curveCanvas.appearProgress;
-        this._curveCanvas.gradientEndAlpha = this._curveCanvas.appearProgress / 3;
-        if (this._curveCanvas.appearProgress === 0) {
-            this._curveCanvas.gradientStartAlpha = 0;
-            this._curveCanvas.gradientEndAlpha = 0;
+        const duration = Config.getInstance().CURVE_ANIMATION_DURATION;
+        const progress = 1 - Util.getAnimationProgress(this._animationStartTime, duration);
+        this._curveRenderer.setProgress(progress);
+        this._curveRenderer.setGradient(progress, progress / 3);
+        if (progress === 0) {
+            this._curveRenderer.setGradient(0, 0);
             this._homewardNode = null;
             this._appearAnimationFunc = null;
             this._appearStatus = AppearStatus.DISAPPEARED;
 
             freePt.hide();
             this.parentNode.homewardDisappear();
-        } else { 
+        } else {
             const x = this.nodeHead.nodePoint.htmlElement.offsetWidth / 2;
-            this._curveCanvas.drawCurvedLine(new Point(x, 0), connectionPoint);
+            this._curveRenderer.setPath(new Point(x, 0), connectionPoint);
+            this._curveRenderer.setProgress(progress);
 
             const pos = Util.getQuadraticBezierPoint(
                 0, 0,
                 connectionPoint.x - 15, connectionPoint.y,
-                this._curveCanvas.appearProgress
+                progress
             );
-    
+
             freePt.moveOffset(pos.x, pos.y);
         }
-        
+
         this._isDraw = true;
     }
 
@@ -197,6 +214,22 @@ export class TreeNode extends BasicNode implements TreeNodeInterface
     public getNodeById(id: string): NodeType | null
     {
         return this._nodeContentTree.getNodeById(id);
+    }
+
+    /**
+     * Phase5: 自ノードと子孫を深度付きで走査する。persistent 用の補助。
+     */
+    public walkDepth(visitor: (node: NodeType, depth: number) => void, startDepth?: number): void
+    {
+        const d = startDepth ?? 0;
+        visitor(this, d);
+        this._nodeContentTree.getDirectNodes().forEach(child => {
+            if ('walkDepth' in child && typeof (child as { walkDepth: (v: (n: NodeType, d: number) => void, s?: number) => void }).walkDepth === 'function') {
+                (child as { walkDepth: (v: (n: NodeType, d: number) => void, s?: number) => void }).walkDepth(visitor, d + 1);
+            } else {
+                visitor(child, d + 1);
+            }
+        });
     }
 
     /**

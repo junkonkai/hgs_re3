@@ -23,7 +23,7 @@
             <span class="node-pt">●</span>
         </div>
         <div class="node-content tree">
-            <section class="node link-node">
+            <section class="node basic">
                 <div class="node-head">
                     <a href="{{ route('Root') }}" class="node-head-text">ルート</a>
                     <span class="node-pt main-node-pt">●</span>

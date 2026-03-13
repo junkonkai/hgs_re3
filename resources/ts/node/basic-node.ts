@@ -6,11 +6,15 @@ import { NodeContentBehind } from "./parts/node-content-behind";
 import { NodeHead } from "./parts/node-head";
 import { NodeHeadType } from "../common/type";
 import { NodeHeadClickable } from "./parts/node-head-clickable";
-import { CurveCanvas } from "./parts/curve-canvas";
+import { CurveRenderer } from "./parts/renderers/curve-renderer";
+import { CanvasCurveRenderer } from "./parts/renderers/canvas-curve-renderer";
+import { SvgCurveRenderer } from "./parts/renderers/svg-curve-renderer";
+import { Config } from "../common/config";
 import { Point } from "../common/point";
 import { ClickableNodeInterface } from "./interface/clickable-node-interface";
-import { HorrorGameNetwork } from "../horror-game-network";
+import { HgnTree } from "../hgn-tree";
 import { CurrentNode } from "./current-node";
+import { DepthEffectController } from "../depth/depth-effect-controller";
 
 export class BasicNode extends NodeBase
 {
@@ -19,7 +23,7 @@ export class BasicNode extends NodeBase
     protected _updateGradientEndAlphaFunc: (() => void) | null = null;
     protected _parentNode: TreeNodeInterface;
     protected _nodeContentBehind: NodeContentBehind | null;
-    protected _curveCanvas: CurveCanvas;
+    protected _curveRenderer: CurveRenderer;
     protected _isFast: boolean = false;
     protected _doNotAppearBehind: boolean = false;
     protected _onDisappearOnlyComplete: (() => void) | null = null;
@@ -29,14 +33,31 @@ export class BasicNode extends NodeBase
         return this._parentNode;
     }
 
-    public get curveCanvas(): CurveCanvas
+    public get curveRenderer(): CurveRenderer
     {
-        return this._curveCanvas;
+        return this._curveRenderer;
     }
 
     public get behindContent(): NodeContentBehind | null
     {
         return this._nodeContentBehind;
+    }
+
+    /**
+     * Phase3: 自身または behind に進行中アニメーションがあるか。
+     */
+    public hasActiveAnimation(): boolean
+    {
+        if (this._appearAnimationFunc !== null) {
+            return true;
+        }
+        if (this._updateGradientEndAlphaFunc !== null) {
+            return true;
+        }
+        if (this._nodeContentBehind && AppearStatus.isTransitioning(this._nodeContentBehind.appearStatus)) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -48,7 +69,9 @@ export class BasicNode extends NodeBase
 
         this._parentNode = parentNode;
 
-        this._curveCanvas = new CurveCanvas(this);
+        this._curveRenderer = Config.getInstance().USE_SVG_CURVE
+            ? new SvgCurveRenderer(this)
+            : new CanvasCurveRenderer(this);
         this._appearAnimationFunc = null;
         this._updateGradientEndAlphaFunc = null;
 
@@ -58,15 +81,8 @@ export class BasicNode extends NodeBase
             this._nodeContentBehind.loadNodes();
         }
 
-        // .node-content a かつ、relがinternalまたはinternal-nodeであるもの
-        const internalAnchors = Array.from(this._nodeElement.querySelectorAll(':scope > .node-content.basic a[rel="internal"]')) as HTMLAnchorElement[];
-        internalAnchors.forEach(anchor => {
-            anchor.addEventListener('click', (e) => {
-                this.clickLink(anchor, e);
-            });
-        });
-        const internalNodeAnchors = Array.from(this._nodeElement.querySelectorAll(':scope > .node-content.basic a[rel="internal-node"]')) as HTMLAnchorElement[];
-        internalNodeAnchors.forEach(anchor => {
+        // Phase1: node-head / node-content の <a href> を同一の遷移経路に乗せる
+        this.getNavigableAnchors().forEach(anchor => {
             anchor.addEventListener('click', (e) => {
                 this.clickLink(anchor, e);
             });
@@ -106,6 +122,7 @@ export class BasicNode extends NodeBase
      */
     public resize(): void
     {
+        this._curveRenderer.resize();
         this._nodeContentBehind?.resize();
         super.resize();
         this.setDraw();
@@ -138,15 +155,28 @@ export class BasicNode extends NodeBase
     {
         this._appearStatus = AppearStatus.APPEARING;
         this._appearAnimationFunc = this.appearAnimation;
-        this._animationStartTime = (window as any).hgn.timestamp;
-        this._curveCanvas.appearProgress = 0;
-        this._curveCanvas.gradientStartAlpha = 1;
-        this._curveCanvas.gradientEndAlpha = 0;
+        this._animationStartTime = HgnTree.getInstance().timestamp;
+        this._curveRenderer.setProgress(0);
+        this._curveRenderer.setGradient(1, 0);
+        this._curveRenderer.show();
+
+        // 曲線の path を最初のフレームで設定する（draw() は _isDraw が true のときのみ path を設定するため、
+        // ここで設定しないとボールだけ動き、曲線は終盤まで描画されない）
+        const connectionPoint = this._nodeHead.getConnectionPoint();
+        const startPoint = new Point(
+            Math.floor(this._parentNode.nodeHead.getNodePtWidth() / 2),
+            0
+        );
+        this._curveRenderer.setPath(startPoint, connectionPoint);
+
+        this._nodeElement.classList.add('node-waiting-curve');
+        this._nodeHead.nodeElement.classList.add('head-waiting-curve');
 
         this.freePt.setPos(Math.floor(this._parentNode.nodeHead.getNodePtWidth() / 2), 0).setElementPos();
         this.freePt.show();
         this._isFast = isFast;
         this._doNotAppearBehind = doNotAppearBehind;
+        this.setDraw();
     }
 
     /**
@@ -154,18 +184,22 @@ export class BasicNode extends NodeBase
      */
     public appearAnimation(): void
     {
-        this._curveCanvas.appearProgress = Util.getAnimationProgress(this._animationStartTime, this._isFast ? 50 : 100);
-        
+        const duration = Config.getInstance().CURVE_ANIMATION_DURATION;
+        const progress = Util.getAnimationProgress(this._animationStartTime, duration);
+        this._curveRenderer.setProgress(progress);
+
         const connectionPoint = this._nodeHead.getConnectionPoint();
         const pos = Util.getQuadraticBezierPoint(
             Math.floor(this._parentNode.nodeHead.getNodePtWidth() / 2), 0,
             connectionPoint.x, connectionPoint.y,
-            this._curveCanvas.appearProgress
+            progress
         );
 
         this.freePt.moveOffset(pos.x-10, pos.y);
-        if (this._curveCanvas.appearProgress === 1) {
-            this._curveCanvas.gradientEndAlpha = 1;
+        if (this._curveRenderer.getProgress() === 1) {
+            this._curveRenderer.setGradient(1, 1);
+            this._nodeElement.classList.remove('node-waiting-curve');
+            this._nodeHead.nodeElement.classList.remove('head-waiting-curve');
             this._nodeHead.appear();
             this.freePt.hide();
             this.freePt.setPos(connectionPoint.x, connectionPoint.y).setElementPos();
@@ -207,8 +241,9 @@ export class BasicNode extends NodeBase
         } else {
             this._isFast = isFast;
             this.disappearContents();
-            this._animationStartTime = (window as any).hgn.timestamp;
-            this._curveCanvas.gradientEndAlpha = 0;
+            this._animationStartTime = HgnTree.getInstance().timestamp;
+            this._curveRenderer.setGradient(1, 0);
+            this._curveRenderer.hide();
             this._appearStatus = AppearStatus.DISAPPEARING;
             this._updateGradientEndAlphaFunc = null;
 
@@ -230,6 +265,7 @@ export class BasicNode extends NodeBase
         if (this.curveDisappearAnimation()) {
             this._appearAnimationFunc = null;
             this._appearStatus = AppearStatus.DISAPPEARED;
+            this._curveRenderer.hide();
             this._nodeHead.disappearFadeOut();
             if (this._onDisappearOnlyComplete) {
                 const cb = this._onDisappearOnlyComplete;
@@ -253,8 +289,8 @@ export class BasicNode extends NodeBase
         this._onDisappearOnlyComplete = onComplete ?? null;
         this._isFast = false;
         this.disappearContents();
-        this._animationStartTime = (window as any).hgn.timestamp;
-        this._curveCanvas.gradientEndAlpha = 0;
+        this._animationStartTime = HgnTree.getInstance().timestamp;
+        this._curveRenderer.setGradient(1, 0);
         this._appearStatus = AppearStatus.DISAPPEARING;
         this._updateGradientEndAlphaFunc = null;
         this._nodeContentBehind?.disappear();
@@ -264,11 +300,11 @@ export class BasicNode extends NodeBase
 
     protected curveDisappearAnimation(): boolean
     {
-        this._curveCanvas.appearProgress = 0;//1 - Util.getAnimationProgress(this._animationStartTime, 10);
-        this._curveCanvas.gradientEndAlpha = this._curveCanvas.appearProgress * 0.7;
-        if (this._curveCanvas.appearProgress === 0) {
-            this._curveCanvas.gradientEndAlpha = 0;
-            this._curveCanvas.gradientStartAlpha = 0;
+        this._curveRenderer.setProgress(0);
+        const p = this._curveRenderer.getProgress();
+        this._curveRenderer.setGradient(p * 0.7, p * 0.7);
+        if (p === 0) {
+            this._curveRenderer.setGradient(0, 0);
             return true;
         }
 
@@ -280,8 +316,9 @@ export class BasicNode extends NodeBase
      */
     protected updateGradientEndAlphaOnHover(): void
     {
-        this._curveCanvas.gradientEndAlpha = Util.getAnimationValue(0.3, 1.0, this._animationStartTime, 300);
-        if (this._curveCanvas.gradientEndAlpha === 1) {
+        const endAlpha = Util.getAnimationValue(0.3, 1.0, this._animationStartTime, 300);
+        this._curveRenderer.setGradient(1, endAlpha);
+        if (endAlpha === 1) {
             this._updateGradientEndAlphaFunc = null;
         }
         this.setDraw();
@@ -292,11 +329,12 @@ export class BasicNode extends NodeBase
      */
     protected updateGradientEndAlphaOnUnhover(): void
     {
-        this._curveCanvas.gradientEndAlpha = Util.getAnimationValue(1.0, 0.3, this._animationStartTime, 300);
-        if (this._curveCanvas.gradientEndAlpha <= 0.3) {
-            this._curveCanvas.gradientEndAlpha = 0.3;
+        let endAlpha = Util.getAnimationValue(1.0, 0.3, this._animationStartTime, 300);
+        if (endAlpha <= 0.3) {
+            endAlpha = 0.3;
             this._updateGradientEndAlphaFunc = null;
         }
+        this._curveRenderer.setGradient(1, endAlpha);
         this.setDraw();
     }
 
@@ -309,7 +347,7 @@ export class BasicNode extends NodeBase
             return;
         }
 
-        this._curveCanvas.clearCanvas();
+        this._curveRenderer.clear();
 
         const connectionPoint = this._nodeHead.getConnectionPoint();
 
@@ -318,43 +356,75 @@ export class BasicNode extends NodeBase
             0
         );
 
-        this._curveCanvas.drawCurvedLine(startPoint, connectionPoint);
+        this._curveRenderer.setPath(startPoint, connectionPoint);
+        this._curveRenderer.setProgress(this._curveRenderer.getProgress());
 
         // 背景ノードの描画
-        this._nodeContentBehind?.draw(this._curveCanvas, connectionPoint);
+        this._nodeContentBehind?.draw(this._curveRenderer, connectionPoint);
     
         this._isDraw = false;
     }
 
     /**
-     * クリック時の処理
-     * @param anchor クリックしたアンカー
-     * @param e クリックイベント
+     * Phase5: persistent モード用。自ノード要素に depth を適用する。
+     */
+    public applyDepth(depth: number): void
+    {
+        DepthEffectController.getInstance().applyDepth(this._nodeElement, depth);
+    }
+
+    /**
+     * Phase5: 自ノードから depth スタイルを削除する。
+     */
+    public clearDepth(): void
+    {
+        DepthEffectController.getInstance().clearDepth(this._nodeElement);
+    }
+
+    /**
+     * Phase1: 遷移に使うアンカーを収集（node-head と node-content の <a href>）。
+     * data-hgn-scope 未指定時は rel から scope を補うため、すべてのアンカーを対象にする。
+     */
+    public getNavigableAnchors(): HTMLAnchorElement[]
+    {
+        const head = this._nodeElement.querySelectorAll(':scope > .node-head a[href]');
+        const content = this._nodeElement.querySelectorAll(':scope > .node-content a[href]');
+        const ownContentAnchors = Array.from(content).filter(anchor => {
+            const ownerNode = anchor.closest('section.node');
+            return ownerNode === this._nodeElement;
+        });
+        return [...Array.from(head), ...ownContentAnchors] as HTMLAnchorElement[];
+    }
+
+    /**
+     * クリック時の処理（Phase1: NavigationController に委譲、未設定時は従来の rel ベース）
      */
     public clickLink(anchor: HTMLAnchorElement, e: MouseEvent): void
     {
-        // 外部リンクの場合は処理しない
-        if (anchor.getAttribute('rel') === 'external') {
-            location.href = anchor.href;
-            return;
-        }
-
         const nodeContentTree = this.parentNode.nodeContentTree;
         if (!AppearStatus.isAppeared(nodeContentTree.appearStatus)) {
             return;
         }
 
+        const nav = HgnTree.getInstance().navigationController;
+        if (nav) {
+            e.preventDefault();
+            nav.navigateFromAnchor(anchor, this);
+            return;
+        }
+
+        // 後方互換: NavigationController 未設定時
+        if (anchor.getAttribute('rel') === 'external') {
+            location.href = anchor.href;
+            return;
+        }
         e.preventDefault();
-
+        const currentNode = HgnTree.getInstance().currentNode as CurrentNode;
         const rel = anchor.getAttribute('rel') ?? '';
-        const hgn = (window as any).hgn as HorrorGameNetwork;
-        const currentNode = hgn.currentNode as CurrentNode;
-
         if (rel === 'internal-node') {
             currentNode.updateSingleNode(anchor.href, this);
             return;
         }
-
         currentNode.moveNode(anchor.href, false);
         this.disappearStart();
     }
@@ -365,8 +435,7 @@ export class BasicNode extends NodeBase
     public disappearStart(): void
     {
         const headPos = this.nodeHead.getConnectionPoint();
-        const hgn = (window as any).hgn as HorrorGameNetwork;
-        hgn.calculateDisappearSpeedRate(headPos.y + window.scrollY);
+        HgnTree.getInstance().calculateDisappearSpeedRate(headPos.y + window.scrollY);
 
         this.isHomewardDisappear = true;
         this.parentNode.prepareDisappear(this);
@@ -388,8 +457,7 @@ export class BasicNode extends NodeBase
             return;
         }
 
-        const hgn = (window as any).hgn as HorrorGameNetwork;
-        const currentNode = hgn.currentNode as CurrentNode;
+        const currentNode = HgnTree.getInstance().currentNode as CurrentNode;
         const isChildOnly = form.dataset.childOnly === '1';
 
         if (form.method.toUpperCase() !== 'POST') {
@@ -411,26 +479,28 @@ export class BasicNode extends NodeBase
     {
         const connectionPoint = this.nodeHead.getConnectionPoint();
 
-        const hgn = (window as any).hgn as HorrorGameNetwork;
         const freePt = this.freePt;
 
-        this._curveCanvas.appearProgress = 1 - Util.getAnimationProgress(this._animationStartTime, 100);
+        const duration = Config.getInstance().CURVE_ANIMATION_DURATION;
+        const progress = 1 - Util.getAnimationProgress(this._animationStartTime, duration);
+        this._curveRenderer.setProgress(progress);
 
-        if (this._curveCanvas.appearProgress === 0) {
-            this._curveCanvas.gradientEndAlpha = 0;
+        if (this._curveRenderer.getProgress() === 0) {
+            this._curveRenderer.setGradient(1, 0);
             this._appearAnimationFunc = this.selectedDisappearAnimation2;
 
-            this._animationStartTime = hgn.timestamp;
+            this._animationStartTime = HgnTree.getInstance().timestamp;
         } else {
             const x = this.nodeHead.nodePoint.htmlElement.offsetWidth / 2;
-            this._curveCanvas.drawCurvedLine(new Point(x, 0), connectionPoint);
+            this._curveRenderer.setPath(new Point(x, 0), connectionPoint);
+            this._curveRenderer.setProgress(progress);
 
             const pos = Util.getQuadraticBezierPoint(
                 0, 0,
                 connectionPoint.x, connectionPoint.y,
-                this._curveCanvas.appearProgress
+                progress
             );
-    
+
             freePt.moveOffset(pos.x, pos.y);
         }
         
@@ -461,7 +531,6 @@ export class BasicNode extends NodeBase
         this.disappearContents();
 
         // TreeNodeの場合は_nodeContentTreeも消滾させる
-        const hgn = (window as any).hgn as HorrorGameNetwork;
         const freePt = this.freePt;
         this._updateGradientEndAlphaFunc = null;
 
@@ -472,9 +541,9 @@ export class BasicNode extends NodeBase
         
         this._nodeContentBehind?.disappear();
 
-        this._animationStartTime = hgn.timestamp;
+        this._animationStartTime = HgnTree.getInstance().timestamp;
         this._appearStatus = AppearStatus.DISAPPEARING;
-        this._curveCanvas.gradientEndAlpha = 0;
+        this._curveRenderer.setGradient(1, 0);
         this.nodeHead.disappear();
         this._isDraw = true;
 

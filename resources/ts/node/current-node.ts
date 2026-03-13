@@ -1,13 +1,16 @@
 import { Util } from "../common/util";
 import { AppearStatus } from "../enum/appear-status";
-import { NextNodeCache } from "./parts/next-node-cache";
 import { NodeContentTree } from "./parts/node-content-tree";
 import { NodeBase } from "./node-base";
 import { TreeNodeInterface } from "./interface/tree-node-interface";
 import { NodeType } from "../common/type";
 import { AccordionTreeNode } from "./accordion-tree-node";
-import { HorrorGameNetwork } from "../horror-game-network";
+import { HgnTree } from "../hgn-tree";
 import { ComponentManager } from "../component-manager";
+import { ScopedHydrator } from "../hydrate/scoped-hydrator";
+import type { NavigationRequest } from "../navigation/types";
+import type { NavigationResult } from "../navigation/types";
+import { DepthEffectController } from "../depth/depth-effect-controller";
 
 export class CurrentNode extends NodeBase implements TreeNodeInterface
 {
@@ -15,15 +18,41 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
 
     private _isChanging: boolean = false;
     private _isChildOnly: boolean = false;
-    private _nextNodeCache: NextNodeCache | null = null;
+    /** Phase6: changeNode 用の保留結果（NextNodeCache 廃止） */
+    private _pendingResult: NavigationResult | null = null;
     private _homewardNode: NodeType | null = null;
     private _currentNodeContentElement: HTMLElement | null = null;
     private _accordionGroups: { [key: string]: AccordionTreeNode[] } = {};
     private _tmpStateData: { url: string, isChildOnly: boolean } | null = null;
+    private _scopedHydrator: ScopedHydrator = new ScopedHydrator();
 
     public get homewardNode(): NodeType | null
     {
         return this._homewardNode;
+    }
+
+    /**
+     * Phase5: DepthSceneController を取得（HgnTree 経由）
+     */
+    private get depthSceneController()
+    {
+        return HgnTree.getInstance().depthSceneController;
+    }
+
+    /**
+     * Phase1: 子ノードのみ更新フラグを設定（NavigationController から呼ぶ）
+     */
+    public setChildOnly(isChildOnly: boolean): void
+    {
+        this._isChildOnly = isChildOnly;
+    }
+
+    /**
+     * Phase1: pushState 用の一時データを設定（NavigationController から呼ぶ）
+     */
+    public setTmpStateData(data: { url: string; isChildOnly: boolean } | null): void
+    {
+        this._tmpStateData = data;
     }
 
     /**
@@ -71,6 +100,59 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
         return this._nodeContentTree;
     }
 
+    /**
+     * Phase3: ノード切替待ちまたはアニメーション進行中か。
+     */
+    public hasActiveAnimation(): boolean
+    {
+        if (this._isChanging) {
+            return true;
+        }
+        if (this._appearAnimationFunc !== null) {
+            return true;
+        }
+        return this._nodeContentTree.hasActiveAnimation();
+    }
+
+    /**
+     * 現在のノードが完全に消滅するまで待機する（disappeared() が呼ばれスクロールも完了した状態）。
+     * 画面遷移時の中途半端なスクロール位置での適用を防ぐために使用する。
+     * 注: DISAPPEARED 時は _isChanging が true になるため、hasActiveAnimation() は使わない。
+     */
+    public waitUntilDisappeared(timeoutMs: number = 3000): Promise<void>
+    {
+        if (this.appearStatus === AppearStatus.DISAPPEARED) {
+            return Promise.resolve();
+        }
+
+        return new Promise(resolve => {
+            const start = performance.now();
+            const check = () => {
+                if (this.appearStatus === AppearStatus.DISAPPEARED) {
+                    resolve();
+                    return;
+                }
+                if (performance.now() - start >= timeoutMs) {
+                    resolve();
+                    return;
+                }
+                requestAnimationFrame(check);
+            };
+            requestAnimationFrame(check);
+        });
+    }
+
+    /**
+     * Phase3: アニメーション開始時に Scheduler を起動する。
+     */
+    public requestAnimationFrameIfNeeded(): void
+    {
+        const hgn = HgnTree.getInstance();
+        if (typeof (hgn as { requestAnimationFrameIfNeeded?: () => void }).requestAnimationFrameIfNeeded === 'function') {
+            (hgn as { requestAnimationFrameIfNeeded: () => void }).requestAnimationFrameIfNeeded();
+        }
+    }
+
     public resize(): void
     {
         super.resize();
@@ -109,8 +191,8 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
      */
     public appear(): void
     {
-        const hgn = (window as any).hgn as HorrorGameNetwork;
-        hgn.calculateDisappearSpeedRate(1);
+        this.requestAnimationFrameIfNeeded();
+        HgnTree.getInstance().calculateDisappearSpeedRate(1);
 
         this._appearStatus = AppearStatus.APPEARING;
         if (!this._isChildOnly) {
@@ -142,7 +224,7 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     /**
      * 消滅アニメーション準備
      * 
-     * @param selectedLinkNode クリックしたリンクノード
+     * @param homewardNode クリックしたノード（帰路の起点）
      */
     public prepareDisappear(homewardNode: NodeType): void
     {
@@ -158,6 +240,7 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
      */
     public disappear(): void
     {
+        this.requestAnimationFrameIfNeeded();
         this._appearStatus = AppearStatus.DISAPPEARING;
         this._nodeContentTree.disappear();
 
@@ -210,57 +293,38 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     }
 
     /**
-     * ノードの切り替え
+     * ノードの切り替え（Phase6: NavigationResult を直接適用、NextNodeCache 廃止）
      */
     private changeNode(): void
     {
-        if (this._nextNodeCache && this._appearStatus === AppearStatus.DISAPPEARED) {
-            const componentManager = ComponentManager.getInstance();
-            
-            componentManager.disposeComponents();
-            this.dispose();
-
-            if (this._nextNodeCache.colorState) {
-                document.body.classList.add('has-' + this._nextNodeCache.colorState);
-            }
-
-            if (this._nextNodeCache.csrfToken && this._nextNodeCache.csrfToken.length > 0) {
-                (window as any).Laravel.csrfToken = this._nextNodeCache.csrfToken;
-            }
-
-            if (this._tmpStateData) {
-                if (this._nextNodeCache.url.length > 0) {
-                    this._tmpStateData.url = this._nextNodeCache.url;
-                }
-
-                window.history.pushState(this._tmpStateData, '', this._tmpStateData.url);
-                this._tmpStateData = null;
-            }
-
-            if (!this._isChildOnly) {
-                document.title = this._nextNodeCache.title + ' | ' + (window as any).siteName;
-                this._nodeHead.title = this._nextNodeCache.currentNodeTitle;
-                if (this._currentNodeContentElement) {
-                    this._currentNodeContentElement.innerHTML = this._nextNodeCache.currentNodeContent;
-                    
-                    this.setupFormEvents();
-                }
-            }
-            if (this._treeContentElement) {
-                this._treeContentElement.innerHTML = this._nextNodeCache.nodes;
-            }
-
-            this._nodeContentTree.loadNodes(this);
-            this.resize();
-
-            // コンポーネント初期化
-            componentManager.initializeComponents(this._nextNodeCache.components);
-
-            this._nextNodeCache = null;
-            this._isChanging = false;
-            
-            this.appear();
+        if (!this._pendingResult || this._appearStatus !== AppearStatus.DISAPPEARED) {
+            return;
         }
+        const result = this._pendingResult;
+        this._pendingResult = null;
+
+        if (this._tmpStateData) {
+            if (result.url && result.url.length > 0) {
+                this._tmpStateData.url = result.url;
+            }
+            window.history.pushState(this._tmpStateData, '', this._tmpStateData.url);
+            this._tmpStateData = null;
+        }
+
+        const updateType = result.updateType ?? 'full';
+        if (updateType === 'children') {
+            this.applyChildrenResult(result, { url: result.url, scope: 'children', urlPolicy: 'push' });
+        } else {
+            this.applyFullResult(result, { url: result.url, scope: 'full', urlPolicy: 'push' });
+        }
+    }
+
+    /**
+     * Phase6: fetchForMove / postData 用。保留結果をセットする。
+     */
+    private setPendingNavigationResult(result: NavigationResult): void
+    {
+        this._pendingResult = result;
     }
 
     /**
@@ -313,38 +377,72 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     }
 
 
-    public set nextNodeCache(cache: NextNodeCache)
-    {
-        this._nextNodeCache = cache;
-    }
 
     /**
-     * 別のノードへ移動する
-     * 
-     * @param url 
-     * @param isFromPopState 
-     * @param isChildOnly 子ノードのみの場合はtrue
+     * 別のノードへ移動する（Phase1: 通常時は NavigationController に委譲、popstate 時は従来の fetch）
+     *
+     * @param url 取得 URL
+     * @param isFromPopState 履歴復元の場合は true
+     * @param isChildOnly 子ノードのみ更新の場合は true
      */
     public moveNode(url: string, isFromPopState: boolean, isChildOnly: boolean = false): void
     {
-        if (!isFromPopState) {
-            // pushStateで履歴に追加
-            this._tmpStateData = { url: url, isChildOnly: isChildOnly };
+        const nav = HgnTree.getInstance().navigationController;
+        if (!isFromPopState && nav) {
+            nav.navigate({
+                url,
+                scope: isChildOnly ? 'children' : 'full',
+                urlPolicy: 'push',
+            });
+            return;
         }
 
         this._isChildOnly = isChildOnly;
+        if (!isFromPopState) {
+            this._tmpStateData = { url, isChildOnly };
+        } else {
+            this._tmpStateData = null;
+        }
+        this.fetchForMove(url);
+    }
 
-        const urlWithParam = Util.addParameterA(url);
-        fetch(urlWithParam, {
-                headers: {"X-Requested-With": "XMLHttpRequest"}
-            })
+    /**
+     * Phase6: popstate または NavigationController 未設定時の fetch。保留結果をセット。
+     */
+    private fetchForMove(url: string): void
+    {
+        const urlWithParam = this.buildTreeFetchUrl(url);
+        fetch(urlWithParam, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(response => response.json())
-            .then(data => {
-                this.nextNodeCache = data;
+            .then((data: Record<string, unknown>) => {
+                this.setPendingNavigationResult(this.normalizeFetchResult(data));
             })
             .catch(error => {
                 console.error('データの取得に失敗しました:', error);
             });
+    }
+
+    private buildTreeFetchUrl(url: string): string
+    {
+        return Util.addParameterA(url);
+    }
+
+    private normalizeFetchResult(data: Record<string, unknown>): NavigationResult
+    {
+        return {
+            updateType: (data.updateType as NavigationResult['updateType']) ?? 'full',
+            url: (data.url as string) ?? '',
+            title: (data.title as string) ?? '',
+            currentNodeTitle: data.currentNodeTitle as string | undefined,
+            currentNodeContent: data.currentNodeContent as string | undefined,
+            nodes: data.nodes as string | undefined,
+            currentChildrenHtml: data.currentChildrenHtml as string | undefined,
+            internalNodeHtml: data.internalNodeHtml as string | undefined,
+            targetNodeId: data.targetNodeId as string | undefined,
+            colorState: data.colorState as string | undefined,
+            csrfToken: data.csrfToken as string | undefined,
+            components: data.components as { [key: string]: any | null } | undefined,
+        };
     }
 
     public postData(url: string, data: any, isChildOnly: boolean = false, isNoPushState: boolean = false): void
@@ -363,8 +461,8 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
             body: data
         })
         .then(response => response.json())
-        .then(data => {
-            this.nextNodeCache = data;
+        .then((data: Record<string, unknown>) => {
+            this.setPendingNavigationResult(this.normalizeFetchResult(data));
         })
         .catch(error => {
             console.error('データの送信に失敗しました:', error);
@@ -420,14 +518,159 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     }
 
     /**
+     * Phase2: NavigationResult を request に応じて適用する。履歴更新は NavigationController 側で実施済み。
+     */
+    public applyNavigationResult(result: NavigationResult, request: NavigationRequest): void
+    {
+        const updateType = result.updateType ?? 'full';
+        if (updateType === 'children') {
+            this.applyChildrenResult(result, request);
+            return;
+        }
+        if (updateType === 'node') {
+            this.applyNodeResult(result, request);
+            return;
+        }
+        this.applyFullResult(result, request);
+    }
+
+    /**
+     * 全体更新（Phase6: changeNode からも NavigationResult で直接呼ぶ）
+     */
+    private applyFullResult(result: NavigationResult, _request: NavigationRequest): void
+    {
+        const componentManager = ComponentManager.getInstance();
+        componentManager.disposeComponents();
+        this.dispose();
+
+        if (result.colorState) {
+            document.body.classList.add('has-' + result.colorState);
+        }
+        if (result.csrfToken && result.csrfToken.length > 0) {
+            (window as any).Laravel.csrfToken = result.csrfToken;
+        }
+
+        if (!this._isChildOnly) {
+            document.title = result.title + ' | ' + (window as any).siteName;
+            this._nodeHead.title = result.currentNodeTitle ?? '';
+            if (this._currentNodeContentElement && typeof result.currentNodeContent === 'string') {
+                this._currentNodeContentElement.innerHTML = result.currentNodeContent;
+                this.setupFormEvents();
+            }
+        }
+        if (this._treeContentElement && typeof result.nodes === 'string') {
+            this._treeContentElement.innerHTML = result.nodes;
+        }
+        this._nodeContentTree.loadNodes(this);
+        this.resize();
+        this._scopedHydrator.hydrate(this._treeContentElement as HTMLElement, result.components);
+
+        this._isChanging = false;
+        this.appear();
+    }
+
+    /**
+     * Phase2: 子ノードのみ差し替え。replaceChildren 経由で正式に差分更新。
+     */
+    private applyChildrenResult(result: NavigationResult, _request: NavigationRequest): void
+    {
+        const componentManager = ComponentManager.getInstance();
+        componentManager.disposeComponents();
+        this._accordionGroups = {};
+        this._homewardNode = null;
+
+        if (result.colorState) {
+            document.body.classList.add('has-' + result.colorState);
+        }
+        if (result.csrfToken && result.csrfToken.length > 0) {
+            (window as any).Laravel.csrfToken = result.csrfToken;
+        }
+
+        const html = result.currentChildrenHtml ?? result.nodes ?? '';
+        let newNodes: NodeType[] = [];
+        if (this._treeContentElement) {
+            newNodes = this._nodeContentTree.replaceChildren(html);
+        }
+        this.resize();
+        if (this.depthSceneController.mode === 'transition' && newNodes.length > 0) {
+            const dec = DepthEffectController.getInstance();
+            newNodes.forEach(node => dec.playEnter(node.nodeElement, 1));
+        }
+        this._scopedHydrator.hydrate(this._treeContentElement as HTMLElement, result.components);
+
+        this._isChanging = false;
+        this._nodeContentTree.appear();
+    }
+
+    /**
+     * Phase2: 選択ノード 1 個を差し替え。replaceNodeById 経由で正式に差分更新。
+     */
+    public applyNodeResult(result: NavigationResult, request: NavigationRequest): void
+    {
+        if (result.updateType && result.updateType !== 'node') {
+            this.applyNavigationResult(result, request);
+            return;
+        }
+        const html = result.internalNodeHtml;
+        if (!html || typeof html !== 'string') {
+            this.recoverFromNodeUpdateFailure(result, request, 'internalNodeHtml がありません');
+            return;
+        }
+        const targetId = result.targetNodeId ?? request.sourceNodeId;
+        if (!targetId) {
+            this.recoverFromNodeUpdateFailure(result, request, 'targetNodeId がありません');
+            return;
+        }
+        const newNode = this._nodeContentTree.replaceNodeById(targetId, html);
+        if (!newNode) {
+            this.recoverFromNodeUpdateFailure(result, request, '差し替え対象ノードが見つかりません');
+            return;
+        }
+        if (this.depthSceneController.mode === 'transition') {
+            DepthEffectController.getInstance().playEnter(newNode.nodeElement, 1);
+        }
+        if ('appear' in newNode && typeof newNode.appear === 'function') {
+            (newNode as { appear: (a?: boolean, b?: boolean) => void }).appear(true, true);
+        }
+        this.resizeConnectionLine();
+        this._scopedHydrator.hydrate(newNode.nodeElement, result.components);
+    }
+
+    private recoverFromNodeUpdateFailure(result: NavigationResult, request: NavigationRequest, reason: string): void
+    {
+        console.warn('node 更新の適用に失敗しました。通常遷移へフォールバックします:', reason);
+        const fallbackUrl = result.url || request.url;
+        if (fallbackUrl && fallbackUrl.length > 0) {
+            location.href = fallbackUrl;
+            return;
+        }
+        location.reload();
+    }
+
+    /**
+     * Phase5: persistent モード時、子ツリー全体に depth を適用する。
+     */
+    public applyDepthToTree(): void
+    {
+        if (this.depthSceneController.mode !== 'persistent') {
+            return;
+        }
+        this._nodeContentTree.applyDepthToNodes(0);
+    }
+
+    /**
      * rel="internal-node" 用: 指定ノード内のみ disappear → 取得 → DOM 差し替え → 再構築 → appear
+     * （Phase1 では NavigationController + applyNodeResult に委譲するため、主に後方互換）
      *
      * @param url 取得 URL（a=1&internal_node=1 を付与して fetch）
      * @param clickedNode クリックされたノード（差し替え対象の section.node）
      */
     public updateSingleNode(url: string, clickedNode: NodeType): void
     {
-        const parent = clickedNode.parentNode;
+        if (!('parentNode' in clickedNode)) {
+            return;
+        }
+        const parent = (clickedNode as { parentNode: TreeNodeInterface }).parentNode;
         const tree = parent.nodeContentTree;
         const nodeIndex = tree.getIndexByNode(clickedNode);
         if (nodeIndex < 0) {

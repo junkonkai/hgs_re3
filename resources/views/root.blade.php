@@ -10,14 +10,14 @@
             <span class="node-pt">●</span>
         </div>
         <div class="node-content tree">
-            <section class="node link-node" id="search-link-node">
+            <section class="node basic" id="search-link-node">
                 <div class="node-head">
                     <a href="{{ route('Game.Search') }}" class="node-head-text">タイトル検索</a>
                     <span class="node-pt">●</span>
                 </div>
             </section>
 
-            <section class="node link-node" id="lineup-link-node">
+            <section class="node basic" id="lineup-link-node">
                 <div class="node-head">
                     <a href="{{ route('Game.Lineup') }}" class="node-head-text">ラインナップ</a>
                     <span class="node-pt">●</span>
@@ -35,7 +35,7 @@
                 </div>
             </section>
 
-            <section class="node link-node" id="platform-link-node">
+            <section class="node basic" id="platform-link-node">
                 <div class="node-head">
                     <a href="{{ route('Game.Platform') }}" class="node-head-text">プラットフォーム</a>
                     <span class="node-pt">●</span>
@@ -54,7 +54,7 @@
             </section>
 
             {{--
-            <section class="node link-node" id="maker-link-node">
+            <section class="node basic" id="maker-link-node">
                 <div class="node-head">
                     <a href="{{ route('Game.Maker') }}" class="node-head-text">ゲームメーカー</a>
                     <span class="node-pt">●</span>
@@ -74,7 +74,7 @@
             --}}
         </div>
     </section>
-    <section class="node link-node" id="information-node">
+    <section class="node basic" id="information-node">
         <div class="node-head">
             <a href="{{ route('Informations') }}" class="node-head-text">お知らせ</a>
             <span class="node-pt">●</span>
@@ -101,26 +101,26 @@
         </div>
         <div class="node-content tree">
             @if (!Auth::check())
-            <section class="node link-node" id="login-link-node">
+            <section class="node basic" id="login-link-node">
                 <div class="node-head">
                     <a href="{{ route('Account.Login') }}" class="node-head-text">ログイン</a>
                     <span class="node-pt">●</span>
                 </div>
             </section>
-            <section class="node link-node" id="login-link-node">
+            <section class="node basic" id="login-link-node">
                 <div class="node-head">
                     <a href="{{ route('Account.Register') }}" class="node-head-text">新規登録</a>
                     <span class="node-pt">●</span>
                 </div>
             </section>
             @else
-            <section class="node link-node" id="logout-link-node">
+            <section class="node basic" id="logout-link-node">
                 <div class="node-head">
                     <a href="{{ route('User.MyNode.Top') }}" class="node-head-text">マイページ</a>
                     <span class="node-pt">●</span>
                 </div>
             </section>
-            <section class="node link-node" id="logout-link-node">
+            <section class="node basic" id="logout-link-node">
                 <div class="node-head">
                     <a href="{{ route('Account.Logout') }}" class="node-head-text">ログアウト</a>
                     <span class="node-pt">●</span>
@@ -130,19 +130,19 @@
         </div>
     </section>
 
-    <section class="node link-node" id="about-node">
+    <section class="node basic" id="about-node">
         <div class="node-head">
             <a href="{{ route('About') }}" class="node-head-text" id="about-a">このサイトについて</a>
             <span class="node-pt">●</span>
         </div>
     </section>
-    <section class="node link-node" id="privacy-policy-node">
+    <section class="node basic" id="privacy-policy-node">
         <div class="node-head">
             <a href="{{ route('PrivacyPolicy') }}" class="node-head-text" id="privacy-policy-a">プライバシーポリシー</a>
             <span class="node-pt">●</span>
         </div>
     </section>
-    <section class="node link-node" id="contact-node">
+    <section class="node basic" id="contact-node">
         <div class="node-head">
             <a href="{{ route('Contact') }}" class="node-head-text" id="contact-a">問い合わせ</a>
             <span class="node-pt">●</span>

@@ -4,7 +4,7 @@
 @section('current-node-title', '新規登録')
 @section('current-node-content')
     <p class="alert alert-info">
-        最新の<a href="{{ route('PrivacyPolicy') }}" rel="internal">プライバシーポリシー</a>に同意いただいたものとして新規登録を受け付けます。
+        最新の<a href="{{ route('PrivacyPolicy') }}" data-hgn-scope="full">プライバシーポリシー</a>に同意いただいたものとして新規登録を受け付けます。
     </p>
 @endsection
 

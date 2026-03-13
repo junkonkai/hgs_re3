@@ -149,7 +149,7 @@
         </div>
         <div class="node-content basic">
             <p>
-                <a href="{{ route('Contact') }}" rel="internal">問い合わせ</a>機能を使ってください。
+                <a href="{{ route('Contact') }}" data-hgn-scope="full">問い合わせ</a>機能を使ってください。
             </p>
             <p>
                 個人情報の削除のみ、なるべく急ぎで対応します。<br>
@@ -235,7 +235,7 @@
                 ライセンスは<a href="https://github.com/hucklefriend/hgs_re3/blob/develop/LICENSE" target="_blank" rel="external">AGPL-3.0-or-later</a>です。<br>
                 <br>
                 基本的にプルリクエスト等は受け付けておりません。<br>
-                不具合の報告は<a href="{{ route('Contact') }}" rel="internal">問い合わせ</a>からお願いします。<br>
+                不具合の報告は<a href="{{ route('Contact') }}" data-hgn-scope="full">問い合わせ</a>からお願いします。<br>
             </p>
         </div>
     </section>

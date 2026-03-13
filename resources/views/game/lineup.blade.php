@@ -21,7 +21,7 @@
                 @if ($p == $page)
                     <span class="me-2">{{ $p }}</span>
                 @else
-                    <a href="{{ route('Game.Lineup', ['page' => $p]) }}" rel="internal-node" class="me-2">{{ $p }}</a>
+                    <a href="{{ route('Game.Lineup', ['page' => $p]) }}" data-hgn-scope="full" class="me-2">{{ $p }}</a>
                 @endif
             @endfor
         </div>
@@ -40,7 +40,7 @@
         <span class="node-pt">●</span>
     </div>
     <div class="node-content tree">
-        <section class="node link-node">
+        <section class="node basic">
             <div class="node-head">
                 <a href="{{ route('Root') }}" class="node-head-text">ルート</a>
                 <span class="node-pt main-node-pt">●</span>

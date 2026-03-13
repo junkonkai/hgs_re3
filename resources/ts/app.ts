@@ -1,12 +1,12 @@
-import { HorrorGameNetwork } from './horror-game-network';
+import { HgnTree } from './hgn-tree';
 
 declare global {
     interface Window {
-        hgn: HorrorGameNetwork;
+        hgn: HgnTree;
     }
 }
 
 window.addEventListener('load', () => {
-    window.hgn = HorrorGameNetwork.getInstance();
+    window.hgn = HgnTree.getInstance();
     window.hgn.start();
 });

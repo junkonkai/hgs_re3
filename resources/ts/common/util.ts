@@ -38,18 +38,28 @@ export class Util
     /**
      * アニメーションの進行度を計算（0.0～1.0）
      * @param startTime アニメーションの開始時間
-     * @param duration 
-     * @returns 進行度（0.0～1.0）
+     * @param duration
+     * @returns 進行度（0.0～1.0）。currentTime は window.hgn（HgnTree）から取得。Util は循環参照回避のため HgnTree を import しない。
      */
     public static getAnimationProgress(startTime: number, duration: number): number
     {
-        const currentTime = (window as any).hgn.timestamp;
+        const currentTime = (window as any).hgn?.timestamp ?? performance.now();
+        return Util.getLinearProgress(currentTime, startTime, duration);
+    }
+
+    /**
+     * Phase3: 線形進行度（0.0～1.0）。timestamp を引数で渡すことで hgn 依存を避けられる。
+     */
+    public static getLinearProgress(currentTime: number, startTime: number, duration: number): number
+    {
         const elapsedTime = currentTime - startTime;
-        
-        if (elapsedTime <= duration) {
-            return elapsedTime / duration;
+        if (elapsedTime <= 0) {
+            return 0;
         }
-        return 1.0;
+        if (elapsedTime >= duration) {
+            return 1.0;
+        }
+        return elapsedTime / duration;
     }
 
     /**
