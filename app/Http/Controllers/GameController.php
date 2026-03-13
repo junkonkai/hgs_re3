@@ -128,7 +128,7 @@ class GameController extends Controller
             compact('text', 'franchises', 'franchiseIds', 'series', 'titles', 'searchResultIds')));
     }
 
-    private const LINEUP_PER_PAGE = 30;
+    private const LINEUP_PER_PAGE = 10;
 
     /**
      * ラインナップ用フランチャイズ一覧を取得（シリーズ・タイトル付き）
@@ -208,7 +208,6 @@ class GameController extends Controller
     /**
      * ホラーゲームラインナップ
      * last_title_update_at 降順のフランチャイズと、紐づくシリーズ・タイトルをツリー形式で表示する。
-     * ページングで30件ずつ表示。rel="internal-node" によりノード内のみ更新。
      *
      * @param Request $request
      * @return JsonResponse|Application|Factory|View
