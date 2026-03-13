@@ -221,7 +221,7 @@ class GameController extends Controller
 
         [$franchises, $hasMore, $total] = $this->getLineupFranchises($offset, self::LINEUP_PER_PAGE);
         $totalPages = (int) ceil($total / self::LINEUP_PER_PAGE);
-        $pager = new Pager($page, $totalPages, 'Game.Lineup', []);
+        $pager = new Pager($page, $totalPages, 'Game.Lineup', [], 'children');
 
         return $this->tree(view('game.lineup', compact('franchises', 'pager', 'total')));
     }
