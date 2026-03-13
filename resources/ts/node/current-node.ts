@@ -115,6 +115,34 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     }
 
     /**
+     * 現在のノードが完全に消滅するまで待機する（disappeared() が呼ばれスクロールも完了した状態）。
+     * 画面遷移時の中途半端なスクロール位置での適用を防ぐために使用する。
+     * 注: DISAPPEARED 時は _isChanging が true になるため、hasActiveAnimation() は使わない。
+     */
+    public waitUntilDisappeared(timeoutMs: number = 3000): Promise<void>
+    {
+        if (this.appearStatus === AppearStatus.DISAPPEARED) {
+            return Promise.resolve();
+        }
+
+        return new Promise(resolve => {
+            const start = performance.now();
+            const check = () => {
+                if (this.appearStatus === AppearStatus.DISAPPEARED) {
+                    resolve();
+                    return;
+                }
+                if (performance.now() - start >= timeoutMs) {
+                    resolve();
+                    return;
+                }
+                requestAnimationFrame(check);
+            };
+            requestAnimationFrame(check);
+        });
+    }
+
+    /**
      * Phase3: アニメーション開始時に Scheduler を起動する。
      */
     public requestAnimationFrameIfNeeded(): void
@@ -525,12 +553,12 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
         if (!this._isChildOnly) {
             document.title = result.title + ' | ' + (window as any).siteName;
             this._nodeHead.title = result.currentNodeTitle ?? '';
-            if (this._currentNodeContentElement && result.currentNodeContent) {
+            if (this._currentNodeContentElement && typeof result.currentNodeContent === 'string') {
                 this._currentNodeContentElement.innerHTML = result.currentNodeContent;
                 this.setupFormEvents();
             }
         }
-        if (this._treeContentElement && result.nodes) {
+        if (this._treeContentElement && typeof result.nodes === 'string') {
             this._treeContentElement.innerHTML = result.nodes;
         }
         this._nodeContentTree.loadNodes(this);
@@ -560,7 +588,7 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
 
         const html = result.currentChildrenHtml ?? result.nodes ?? '';
         let newNodes: NodeType[] = [];
-        if (this._treeContentElement && html) {
+        if (this._treeContentElement) {
             newNodes = this._nodeContentTree.replaceChildren(html);
         }
         this.resize();
@@ -579,16 +607,23 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
      */
     public applyNodeResult(result: NavigationResult, request: NavigationRequest): void
     {
+        if (result.updateType && result.updateType !== 'node') {
+            this.applyNavigationResult(result, request);
+            return;
+        }
         const html = result.internalNodeHtml;
         if (!html || typeof html !== 'string') {
+            this.recoverFromNodeUpdateFailure(result, request, 'internalNodeHtml がありません');
             return;
         }
         const targetId = result.targetNodeId ?? request.sourceNodeId;
         if (!targetId) {
+            this.recoverFromNodeUpdateFailure(result, request, 'targetNodeId がありません');
             return;
         }
         const newNode = this._nodeContentTree.replaceNodeById(targetId, html);
         if (!newNode) {
+            this.recoverFromNodeUpdateFailure(result, request, '差し替え対象ノードが見つかりません');
             return;
         }
         if (this.depthSceneController.mode === 'transition') {
@@ -599,6 +634,17 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
         }
         this.resizeConnectionLine();
         this._scopedHydrator.hydrate(newNode.nodeElement, result.components);
+    }
+
+    private recoverFromNodeUpdateFailure(result: NavigationResult, request: NavigationRequest, reason: string): void
+    {
+        console.warn('node 更新の適用に失敗しました。通常遷移へフォールバックします:', reason);
+        const fallbackUrl = result.url || request.url;
+        if (fallbackUrl && fallbackUrl.length > 0) {
+            location.href = fallbackUrl;
+            return;
+        }
+        location.reload();
     }
 
     /**

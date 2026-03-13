@@ -26,17 +26,19 @@ export class NavigationController
 
     /**
      * アンカーとソースノードから NavigationRequest を組み立てて navigate する。
+     * クリック元の sourceNode をそのまま渡すため、ノードに id がなくてもボール追従の消失アニメーションが動作する。
      */
     public navigateFromAnchor(anchor: HTMLAnchorElement, sourceNode: NodeType): void
     {
         const request = this.buildRequestFromAnchor(anchor, sourceNode);
-        this.navigate(request);
+        this.navigate(request, sourceNode);
     }
 
     /**
      * 既に組み立てた要求でナビゲーションする。（popstate やフォーム送信から利用）
+     * @param sourceNodeOverride アンカークリック時など、呼び出し元が持っているソースノード。指定時は getNodeById を使わずこれで消失アニメーションを始める。
      */
-    public navigate(request: NavigationRequest): void
+    public navigate(request: NavigationRequest, sourceNodeOverride?: NodeType): void
     {
         if (request.scope === 'external') {
             location.href = request.url;
@@ -44,9 +46,9 @@ export class NavigationController
         }
 
         this._stateStore.start(request);
-        const sourceNode = request.sourceNodeId
+        const sourceNode = sourceNodeOverride ?? (request.sourceNodeId
             ? this._currentNode.getNodeById(request.sourceNodeId)
-            : null;
+            : null);
 
         // Phase2: 履歴更新は request 実行前に実施
         if (request.urlPolicy === 'push') {
@@ -63,11 +65,12 @@ export class NavigationController
                 this._currentNode.disappear();
             }
             this._fetcher.fetch(request).then(result => {
-                this._currentNode.applyNavigationResult(result, request);
-                this._stateStore.resolve(result);
+                this._currentNode.waitUntilDisappeared().then(() => {
+                    this._currentNode.applyNavigationResult(result, request);
+                    this._stateStore.resolve(result);
+                });
             }).catch(err => {
-                console.error('ナビゲーション取得に失敗しました:', err);
-                this._stateStore.clear();
+                this.handleNavigationError(request, err, 'ナビゲーション取得に失敗しました');
             });
             return;
         }
@@ -78,8 +81,7 @@ export class NavigationController
                     this._currentNode.applyNodeResult(result, request);
                     this._stateStore.resolve(result);
                 }).catch(err => {
-                    console.error('ノード更新の取得に失敗しました:', err);
-                    this._stateStore.clear();
+                    this.handleNavigationError(request, err, 'ノード更新の取得に失敗しました');
                 });
             };
             const doDisappear = (): void => {
@@ -107,8 +109,7 @@ export class NavigationController
             this._currentNode.applyNavigationResult(result, request);
             this._stateStore.resolve(result);
         }).catch(err => {
-            console.error('ナビゲーション取得に失敗しました:', err);
-            this._stateStore.clear();
+            this.handleNavigationError(request, err, 'ナビゲーション取得に失敗しました');
         });
     }
 
@@ -130,15 +131,32 @@ export class NavigationController
     private scopeFromRel(anchor: HTMLAnchorElement): NavigationScope
     {
         const rel = anchor.getAttribute('rel') ?? '';
-        if (rel === 'external') {
+        const relTokens = rel
+            .split(/\s+/)
+            .map(token => token.trim())
+            .filter(token => token.length > 0);
+        if (relTokens.includes('external')) {
             return 'external';
         }
-        if (rel === 'internal-node') {
+        if (relTokens.includes('internal-node')) {
             return 'node';
         }
-        if (rel === 'internal') {
+        if (relTokens.includes('internal')) {
             return 'full';
         }
         return 'full';
+    }
+
+    private handleNavigationError(request: NavigationRequest, error: unknown, message: string): void
+    {
+        console.error(message + ':', error);
+        this._stateStore.clear();
+
+        // disappear 済みのまま固まるのを防ぐため、通常遷移にフォールバックする。
+        if (request.url && request.url.length > 0) {
+            location.href = request.url;
+        } else {
+            location.reload();
+        }
     }
 }

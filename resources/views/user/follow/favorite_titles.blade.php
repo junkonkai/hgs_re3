@@ -22,7 +22,7 @@
             </div>
             <div class="node-content tree">
                 @foreach ($favoriteTitles as $title)
-                <section class="node link-node" id="favorite-title-{{ $title->id }}-link-node">
+                <section class="node basic" id="favorite-title-{{ $title->id }}-link-node">
                     <div class="node-head">
                         <a href="{{ route('Game.TitleDetail', ['titleKey' => $title->key]) }}" class="node-head-text">{{ $title->name }}</a>
                         <span class="node-pt">●</span>

@@ -26,7 +26,7 @@
             </div>
             <div class="node-content tree">
                 @foreach ($titles as $title)
-                    <section class="node link-node" id="{{ $title->key }}-link-node">
+                    <section class="node basic" id="{{ $title->key }}-link-node">
                         <div class="node-head">
                             <a href="{{ route('Game.TitleDetail', ['titleKey' => $title->key]) }}" class="node-head-text">{{ $title->name }}</a>
                             <span class="node-pt">●</span>
@@ -43,13 +43,13 @@
             <span class="node-pt">●</span>
         </div>
         <div class="node-content tree">
-            <section class="node link-tree-node" id="back-to-platforms-node">
+            <section class="node tree-node" id="back-to-platforms-node">
                 <div class="node-head">
                     <a href="{{ route('Game.Maker') }}" class="node-head-text">ゲームメーカー</a>
                     <span class="node-pt">●</span>
                 </div>
                 <div class="node-content tree">
-                    <section class="node link-node" id="back-to-root-node">
+                    <section class="node basic" id="back-to-root-node">
                         <div class="node-head">
                             <a href="{{ route('Root') }}" class="node-head-text">ルート</a>
                             <span class="node-pt">●</span>
@@ -61,7 +61,7 @@
             @include('common.shortcut_mynode')
         
             @if (is_admin_user())
-            <section class="node link-node">
+            <section class="node basic">
                 <div class="node-head">
                     <a href="{{ route('Admin.Game.Maker.Detail', $maker) }}" class="node-head-text" rel="external">管理</a>
                     <span class="node-pt">●</span>

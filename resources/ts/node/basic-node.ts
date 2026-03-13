@@ -389,7 +389,11 @@ export class BasicNode extends NodeBase
     {
         const head = this._nodeElement.querySelectorAll(':scope > .node-head a[href]');
         const content = this._nodeElement.querySelectorAll(':scope > .node-content a[href]');
-        return [...Array.from(head), ...Array.from(content)] as HTMLAnchorElement[];
+        const ownContentAnchors = Array.from(content).filter(anchor => {
+            const ownerNode = anchor.closest('section.node');
+            return ownerNode === this._nodeElement;
+        });
+        return [...Array.from(head), ...ownContentAnchors] as HTMLAnchorElement[];
     }
 
     /**
