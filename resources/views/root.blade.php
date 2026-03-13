@@ -10,6 +10,13 @@
             <span class="node-pt">●</span>
         </div>
         <div class="node-content tree">
+            <section class="node basic" id="search-link-node">
+                <div class="node-head">
+                    <a href="{{ route('Game.Search') }}" class="node-head-text">タイトル検索</a>
+                    <span class="node-pt">●</span>
+                </div>
+            </section>
+
             <section class="node basic" id="lineup-link-node">
                 <div class="node-head">
                     <a href="{{ route('Game.Lineup') }}" class="node-head-text">ラインナップ</a>
