@@ -341,7 +341,7 @@ div.connection-line {
     }
 }
 
-.link-node, .link-tree-node, .load-more-node {
+.node.basic, .node.tree-node, .load-more-node {
     .node-head-text {
         & + .node-pt {
             color: var(--node-pt-dark);

@@ -19,7 +19,7 @@
         @if ($paginator->onFirstPage())
             <span class="text-gray-400" aria-disabled="true">&lt;</span>
         @else
-            <a href="{{ $paginator->previousPageUrl() }}" rel="internal" class="hover:underline">&lt;</a>
+            <a href="{{ $paginator->previousPageUrl() }}" data-hgn-scope="full" class="hover:underline">&lt;</a>
         @endif
 
         @foreach ($pages as $i => $page)
@@ -29,13 +29,13 @@
             @if ($page === $current)
                 <span class="font-bold" aria-current="page">{{ $page }}</span>
             @else
-                <a href="{{ $paginator->url($page) }}" rel="internal" class="hover:underline">{{ $page }}</a>
+                <a href="{{ $paginator->url($page) }}" data-hgn-scope="full" class="hover:underline">{{ $page }}</a>
             @endif
         @endforeach
 
         {{-- 1つ次 --}}
         @if ($paginator->hasMorePages())
-            <a href="{{ $paginator->nextPageUrl() }}" rel="internal" class="hover:underline">&gt;</a>
+            <a href="{{ $paginator->nextPageUrl() }}" data-hgn-scope="full" class="hover:underline">&gt;</a>
         @else
             <span class="text-gray-400" aria-disabled="true">&gt;</span>
         @endif

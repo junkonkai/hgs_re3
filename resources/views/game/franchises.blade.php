@@ -23,7 +23,7 @@
             </div>
             <div class="node-content tree" id="acc1-a">
                 @foreach ($prefixFranchises as $franchise)
-                <section class="node link-node" id="search-node">
+                <section class="node basic" id="search-node">
                     <div class="node-head">
                         <a href="{{ route('Game.FranchiseDetail', ['franchiseKey' => $franchise->key]) }}" class="node-head-text">
                             {{ $franchise->name }}
@@ -50,7 +50,7 @@
             <span class="node-pt">●</span>
         </div>
         <div class="node-content tree">
-            <section class="node link-node">
+            <section class="node basic">
                 <div class="node-head">
                     <a href="{{ route('Root') }}" class="node-head-text">ルート</a>
                     <span class="node-pt">●</span>
@@ -60,7 +60,7 @@
             @include('common.shortcut_mynode')
         
             @if (is_admin_user())
-            <section class="node link-node">
+            <section class="node basic">
                 <div class="node-head">
                     <a href="{{ route('Admin.Game.Franchise') }}" class="node-head-text" rel="external">管理</a>
                     <span class="node-pt">●</span>

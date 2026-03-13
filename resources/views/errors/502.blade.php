@@ -15,7 +15,7 @@
                 サーバーの一時的な問題の可能性があります。<br>
                 <br>
                 しばらく待ってから再度お試しください。<br>
-                問題が解決しない場合は、<a href="{{ route('Contact') }}" rel="internal">問い合わせ</a>ください。
+                問題が解決しない場合は、<a href="{{ route('Contact') }}" data-hgn-scope="full">問い合わせ</a>ください。
             </p>
         </div>
     </section>
@@ -26,7 +26,7 @@
             <span class="node-pt">●</span>
         </div>
         <div class="node-content tree">
-            <section class="node link-node">
+            <section class="node basic">
                 <div class="node-head">
                     <a href="{{ route('Root') }}" class="node-head-text">ルート</a>
                     <span class="node-pt main-node-pt">●</span>

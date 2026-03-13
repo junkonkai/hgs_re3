@@ -1,5 +1,5 @@
 @foreach ($franchises as $franchise)
-<section class="node link-tree-node" id="franchise-{{ $franchise->key }}-link-node">
+<section class="node tree-node" id="franchise-{{ $franchise->key }}-link-node">
     <div class="node-head">
         <a href="{{ route('Game.FranchiseDetail', ['franchiseKey' => $franchise->key]) }}" class="node-head-text">{{ $franchise->name }} フランチャイズ</a>
         <span class="node-pt">●</span>
@@ -13,7 +13,7 @@
             </div>
             <div class="node-content tree">
                 @foreach ($series->searchTitles ?? [] as $title)
-                <section class="node link-node" id="{{ $title->key }}-link-node">
+                <section class="node basic" id="{{ $title->key }}-link-node">
                     <div class="node-head">
                         <a href="{{ route('Game.TitleDetail', ['titleKey' => $title->key]) }}" class="node-head-text">{{ $title->name }}</a>
                         <span class="node-pt">●</span>
@@ -24,7 +24,7 @@
         </section>
         @endforeach
         @foreach ($franchise->searchTitles ?? [] as $title)
-        <section class="node link-node" id="{{ $title->key }}-link-node">
+        <section class="node basic" id="{{ $title->key }}-link-node">
             <div class="node-head">
                 <a href="{{ route('Game.TitleDetail', ['titleKey' => $title->key]) }}" class="node-head-text">{{ $title->name }}</a>
                 <span class="node-pt">●</span>
