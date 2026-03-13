@@ -43,17 +43,9 @@
             </div>
 
             @if ($loop->last)
-            @if (isset($totalPages) && $totalPages > 1)
-            <div class="node-content basic mt-10">
-                @for ($p = 1; $p <= $totalPages; $p++)
-                    @if ($p == $page)
-                        <span class="me-2">{{ $p }}</span>
-                    @else
-                        <a href="{{ route('Game.Lineup', ['page' => $p]) }}" data-hgn-scope="full" class="me-2">{{ $p }}</a>
-                    @endif
-                @endfor
-            </div>
-            @endif
+            @isset($pager)
+                @include('common.pager', ['pager' => $pager])
+            @endisset
             @endif
         </section>
         @endforeach

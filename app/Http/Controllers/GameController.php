@@ -19,6 +19,7 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Support\Pager;
 use Illuminate\Support\Facades\Auth;
 
 class GameController extends Controller
@@ -220,8 +221,9 @@ class GameController extends Controller
 
         [$franchises, $hasMore, $total] = $this->getLineupFranchises($offset, self::LINEUP_PER_PAGE);
         $totalPages = (int) ceil($total / self::LINEUP_PER_PAGE);
+        $pager = new Pager($page, $totalPages, 'Game.Lineup', []);
 
-        return $this->tree(view('game.lineup', compact('franchises', 'totalPages', 'page', 'total')));
+        return $this->tree(view('game.lineup', compact('franchises', 'pager', 'total')));
     }
 
     /**

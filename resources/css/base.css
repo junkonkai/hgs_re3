@@ -391,3 +391,29 @@ div > dl {
 div > dl:last-child {
     @apply mb-0;
 }
+
+/* 共通ページネーション（Bing風） */
+.pager .pager-arrow,
+.pager .pager-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+}
+.pager .pager-arrow:hover,
+.pager .pager-num:hover {
+    text-decoration: none;
+}
+.pager .pager-current {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    background-color: rgba(204, 238, 204, 0.15);
+    color: #CCEECC;
+}
