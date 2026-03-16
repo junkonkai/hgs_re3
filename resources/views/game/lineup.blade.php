@@ -3,6 +3,15 @@
 @section('title', 'ホラーゲームラインナップ')
 @section('current-node-title', 'ラインナップ')
 
+@section('current-node-content')
+<form id="search-form" method="GET" action="{{ route('Game.Lineup') }}" data-child-only="1">
+    <div class="form-row" style="max-width: 400px;">
+        <input type="text" id="search-input" name="text" value="{{ $text ?? '' }}" class="input input-default">
+        <button type="submit" class="btn btn-default btn-sm">検索</button>
+    </div>
+</form>
+@endsection
+
 @section('nodes')
 @isset($franchises)
 
@@ -53,7 +62,7 @@
 
     @if ($franchises->isEmpty())
     <div class="node-content basic">
-        表示するフランチャイズがありません。
+        この検索条件では、何も見つからないようだ。
     </div>
     @endif
 @endisset

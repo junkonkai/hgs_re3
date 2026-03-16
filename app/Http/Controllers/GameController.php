@@ -24,112 +24,110 @@ use Illuminate\Support\Facades\Auth;
 
 class GameController extends Controller
 {
-    const ITEM_PER_PAGE = 50;
+    private const LINEUP_PER_PAGE = 10;
 
     /**
-     * ホラーゲームの検索
+     * ホラーゲームラインナップ
+     * last_title_update_at 降順のフランチャイズと、紐づくシリーズ・タイトルをツリー形式で表示する。
+     * text が指定された場合は GameTitle で検索し、検索結果を表示する。
      *
      * @param Request $request
      * @return JsonResponse|Application|Factory|View
+     * @throws \Throwable
      */
-    public function search(Request $request): JsonResponse|Application|Factory|View
+    public function lineup(Request $request): JsonResponse|Application|Factory|View
     {
         $text = trim($request->input('text', ''));
 
-        if (empty($text)) {
-            return $this->tree(view('game.search', compact('text')));
-        }
+        if (!empty($text)) {
+            // GameTitle による検索（search() と同じロジック）
+            $searchText = mb_convert_kana($text, 'a');
+            $words = array_filter(explode(' ', $searchText), function ($word) {
+                return !empty(trim($word));
+            });
 
-        // 全角文字を半角に変換
-        $text = mb_convert_kana($text, 'a');
-
-        // 半角スペースで分割して各単語で検索
-        $words = array_filter(explode(' ', $text), function ($word) {
-            return !empty(trim($word));
-        });
-        
-        $searchResultIds = [];
-        foreach ($words as $word) {
-            $word = trim($word);
-            if (empty($word)) {
-                continue;
+            $searchResultIds = [];
+            foreach ($words as $word) {
+                $word = trim($word);
+                if (empty($word)) {
+                    continue;
+                }
+                $searchResults = GameTitle::search($word)->get();
+                $ids = $searchResults->pluck('id')->toArray();
+                $searchResultIds = array_merge($searchResultIds, $ids);
             }
-            
-            // 各単語でMeilisearch検索
-            $searchResults = GameTitle::search($word)->get();
-            $ids = $searchResults->pluck('id')->toArray();
-            
-            // 検索結果のIDを追加（重複は後で除去）
-            $searchResultIds = array_merge($searchResultIds, $ids);
-        }
-        
-        // 重複を除去（順序は保持）
-        $searchResultIds = array_values(array_unique($searchResultIds));
-        
-        // 検索結果からIDを取得し、必要なカラムのみを取得（検索結果の順序を保持）
-        $titles = GameTitle::select(['id', 'key', 'name', 'game_series_id', 'game_franchise_id', 'rating'])
-            ->whereIn('id', $searchResultIds)
-            ->get()
-            ->values();
+            $searchResultIds = array_values(array_unique($searchResultIds));
 
-        // series_idがnullでないものを取得
-        $seriesIds = $titles->whereNotNull('game_series_id')
-            ->unique('game_series_id')
-            ->pluck('game_series_id')
-            ->toArray();
+            $titles = GameTitle::select(['id', 'key', 'name', 'game_series_id', 'game_franchise_id', 'rating'])
+                ->whereIn('id', $searchResultIds)
+                ->get()
+                ->values();
 
-        // seriesを取得（idが配列のキーになるように）
-        $series = GameSeries::whereIn('id', $seriesIds)->get()->keyBy('id');
-        $franchiseIds = [];
-        foreach ($series as $s) {
-            $s->searchTitles = [];
-            $franchiseIds[] = $s->game_franchise_id;
-        }
+            $seriesIds = $titles->whereNotNull('game_series_id')
+                ->unique('game_series_id')
+                ->pluck('game_series_id')
+                ->toArray();
 
-        $franchiseIds = array_merge(
-            $franchiseIds, 
-            $titles->whereNotNull('game_franchise_id')
-                ->pluck('game_franchise_id')
-                ->unique('game_franchise_id')
-                ->toArray()
-        );
-
-        // franchiseを取得
-        $franchises = GameFranchise::whereIn('id', $franchiseIds)->get()->keyBy('id');
-
-        // franchiseに$seriesと$titlesInFranchiseを紐づけ
-        foreach ($franchises as $franchise) {
-            $franchise->searchTitles = [];
-            $franchise->searchSeries = [];
-        }
-
-        foreach ($titles as $title) {
-            if (!empty($title->game_series_id)) {
-                $s = $series[$title->game_series_id];
-                $searchTitles = $s->searchTitles ?? [];
-                $searchTitles[] = $title;
-                $s->searchTitles = $searchTitles;
-            } else if (!empty($title->game_franchise_id)) {
-                $f = $franchises[$title->game_franchise_id];
-                $searchTitles = $f->searchTitles ?? [];
-                $searchTitles[] = $title;
-                $f->searchTitles = $searchTitles;
+            $series = GameSeries::whereIn('id', $seriesIds)->get()->keyBy('id');
+            $franchiseIds = [];
+            foreach ($series as $s) {
+                $s->searchTitles = [];
+                $franchiseIds[] = $s->game_franchise_id;
             }
-        }
-        foreach ($series as $s) {
-            if (isset($franchises[$s->game_franchise_id])) {
-                $f = $franchises[$s->game_franchise_id];
-                $searchSeries = $f->searchSeries ?? [];
-                $searchSeries[] = $s;
-                $f->searchSeries = $searchSeries;
+
+            $franchiseIds = array_merge(
+                $franchiseIds,
+                $titles->whereNotNull('game_franchise_id')
+                    ->pluck('game_franchise_id')
+                    ->unique('game_franchise_id')
+                    ->toArray()
+            );
+
+            $franchises = GameFranchise::whereIn('id', $franchiseIds)->get()->keyBy('id');
+
+            foreach ($franchises as $franchise) {
+                $franchise->searchTitles = [];
+                $franchise->searchSeries = [];
             }
+
+            foreach ($titles as $title) {
+                if (!empty($title->game_series_id)) {
+                    $s = $series[$title->game_series_id];
+                    $searchTitles = $s->searchTitles ?? [];
+                    $searchTitles[] = $title;
+                    $s->searchTitles = $searchTitles;
+                } elseif (!empty($title->game_franchise_id)) {
+                    $f = $franchises[$title->game_franchise_id];
+                    $searchTitles = $f->searchTitles ?? [];
+                    $searchTitles[] = $title;
+                    $f->searchTitles = $searchTitles;
+                }
+            }
+            foreach ($series as $s) {
+                if (isset($franchises[$s->game_franchise_id])) {
+                    $f = $franchises[$s->game_franchise_id];
+                    $searchSeries = $f->searchSeries ?? [];
+                    $searchSeries[] = $s;
+                    $f->searchSeries = $searchSeries;
+                }
+            }
+
+            $franchises = $franchises->values();
+            $pager = null;
+            $total = 0;
+
+            return $this->tree(view('game.lineup', compact('text', 'franchises', 'pager', 'total')));
         }
 
-        return $this->tree(view('game.search',
-            compact('text', 'franchises', 'franchiseIds', 'series', 'titles', 'searchResultIds')));
+        $page = max(1, (int) $request->input('page', 1));
+        $offset = ($page - 1) * self::LINEUP_PER_PAGE;
+
+        [$franchises, $hasMore, $total] = $this->getLineupFranchises($offset, self::LINEUP_PER_PAGE);
+        $totalPages = (int) ceil($total / self::LINEUP_PER_PAGE);
+        $pager = new Pager($page, $totalPages, 'Game.Lineup', [], 'children');
+
+        return $this->tree(view('game.lineup', compact('text', 'franchises', 'pager', 'total')));
     }
-
-    private const LINEUP_PER_PAGE = 10;
 
     /**
      * ラインナップ用フランチャイズ一覧を取得（シリーズ・タイトル付き）
@@ -204,26 +202,6 @@ class GameController extends Controller
         }
 
         return [$franchises, $hasMore, $total];
-    }
-
-    /**
-     * ホラーゲームラインナップ
-     * last_title_update_at 降順のフランチャイズと、紐づくシリーズ・タイトルをツリー形式で表示する。
-     *
-     * @param Request $request
-     * @return JsonResponse|Application|Factory|View
-     * @throws \Throwable
-     */
-    public function lineup(Request $request): JsonResponse|Application|Factory|View
-    {
-        $page = max(1, (int) $request->input('page', 1));
-        $offset = ($page - 1) * self::LINEUP_PER_PAGE;
-
-        [$franchises, $hasMore, $total] = $this->getLineupFranchises($offset, self::LINEUP_PER_PAGE);
-        $totalPages = (int) ceil($total / self::LINEUP_PER_PAGE);
-        $pager = new Pager($page, $totalPages, 'Game.Lineup', [], 'children');
-
-        return $this->tree(view('game.lineup', compact('franchises', 'pager', 'total')));
     }
 
     /**
