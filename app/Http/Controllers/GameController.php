@@ -29,7 +29,7 @@ class GameController extends Controller
     /**
      * ホラーゲームラインナップ
      * last_title_update_at 降順のフランチャイズと、紐づくシリーズ・タイトルをツリー形式で表示する。
-     * text が指定された場合は GameTitle で検索し、検索結果を表示する。
+     * text またはフィルタが指定された場合は Meilisearch で検索し、検索結果を表示する。
      *
      * @param Request $request
      * @return JsonResponse|Application|Factory|View
@@ -38,85 +38,63 @@ class GameController extends Controller
     public function lineup(Request $request): JsonResponse|Application|Factory|View
     {
         $text = trim($request->input('text', ''));
+        $platformId = $request->integer('platform_id', 0) > 0 ? $request->integer('platform_id') : null;
+        $makerId = $request->integer('maker_id', 0) > 0 ? $request->integer('maker_id') : null;
+        $fearMeterMin = $request->filled('fear_meter_min') ? $request->integer('fear_meter_min') : null;
+        $fearMeterMax = $request->filled('fear_meter_max') ? $request->integer('fear_meter_max') : null;
+        $releaseFrom = $request->integer('release_from', 0) > 0 ? $request->integer('release_from') : null;
+        $releaseTo = $request->integer('release_to', 0) > 0 ? $request->integer('release_to') : null;
 
-        if (!empty($text)) {
-            // GameTitle による検索（search() と同じロジック）
-            $searchText = mb_convert_kana($text, 'a');
-            $words = array_filter(explode(' ', $searchText), function ($word) {
-                return !empty(trim($word));
-            });
+        $hasFilters = $platformId !== null || $makerId !== null
+            || $fearMeterMin !== null || $fearMeterMax !== null
+            || $releaseFrom !== null || $releaseTo !== null;
 
-            $searchResultIds = [];
-            foreach ($words as $word) {
-                $word = trim($word);
-                if (empty($word)) {
-                    continue;
-                }
-                $searchResults = GameTitle::search($word)->get();
-                $ids = $searchResults->pluck('id')->toArray();
-                $searchResultIds = array_merge($searchResultIds, $ids);
+        $platforms = GamePlatform::select(['id', 'name', 'acronym'])->orderBy('sort_order')->get();
+
+        $makerName = '';
+        if ($makerId !== null) {
+            $makerModel = GameMaker::select(['id', 'name'])->find($makerId);
+            $makerName = $makerModel?->name ?? '';
+            if ($makerModel === null) {
+                $makerId = null;
             }
-            $searchResultIds = array_values(array_unique($searchResultIds));
+        }
 
-            $titles = GameTitle::select(['id', 'key', 'name', 'game_series_id', 'game_franchise_id', 'rating'])
-                ->whereIn('id', $searchResultIds)
-                ->get()
-                ->values();
-
-            $seriesIds = $titles->whereNotNull('game_series_id')
-                ->unique('game_series_id')
-                ->pluck('game_series_id')
-                ->toArray();
-
-            $series = GameSeries::whereIn('id', $seriesIds)->get()->keyBy('id');
-            $franchiseIds = [];
-            foreach ($series as $s) {
-                $s->searchTitles = [];
-                $franchiseIds[] = $s->game_franchise_id;
-            }
-
-            $franchiseIds = array_merge(
-                $franchiseIds,
-                $titles->whereNotNull('game_franchise_id')
-                    ->pluck('game_franchise_id')
-                    ->unique('game_franchise_id')
-                    ->toArray()
+        if (!empty($text) || $hasFilters) {
+            $searchResultIds = $this->searchTitleIds(
+                $text,
+                $platformId,
+                $makerId,
+                $fearMeterMin,
+                $fearMeterMax,
+                $releaseFrom,
+                $releaseTo,
             );
 
-            $franchises = GameFranchise::whereIn('id', $franchiseIds)->get()->keyBy('id');
+            $allFranchises = $this->buildFranchiseTree($searchResultIds);
+            $total = $allFranchises->count();
+            $page = max(1, $request->integer('page', 1));
+            $totalPages = (int) ceil($total / self::LINEUP_PER_PAGE);
+            $franchises = $allFranchises->slice(($page - 1) * self::LINEUP_PER_PAGE, self::LINEUP_PER_PAGE)->values();
 
-            foreach ($franchises as $franchise) {
-                $franchise->searchTitles = [];
-                $franchise->searchSeries = [];
-            }
+            $routeParams = array_filter([
+                'text'           => $text ?: null,
+                'platform_id'    => $platformId,
+                'maker_id'       => $makerId,
+                'maker_name'     => $makerName ?: null,
+                'fear_meter_min' => $fearMeterMin,
+                'fear_meter_max' => $fearMeterMax,
+                'release_from'   => $releaseFrom,
+                'release_to'     => $releaseTo,
+            ], fn ($v) => $v !== null);
 
-            foreach ($titles as $title) {
-                if (!empty($title->game_series_id)) {
-                    $s = $series[$title->game_series_id];
-                    $searchTitles = $s->searchTitles ?? [];
-                    $searchTitles[] = $title;
-                    $s->searchTitles = $searchTitles;
-                } elseif (!empty($title->game_franchise_id)) {
-                    $f = $franchises[$title->game_franchise_id];
-                    $searchTitles = $f->searchTitles ?? [];
-                    $searchTitles[] = $title;
-                    $f->searchTitles = $searchTitles;
-                }
-            }
-            foreach ($series as $s) {
-                if (isset($franchises[$s->game_franchise_id])) {
-                    $f = $franchises[$s->game_franchise_id];
-                    $searchSeries = $f->searchSeries ?? [];
-                    $searchSeries[] = $s;
-                    $f->searchSeries = $searchSeries;
-                }
-            }
+            $pager = new Pager($page, $totalPages, 'Game.Lineup', $routeParams, 'children');
 
-            $franchises = $franchises->values();
-            $pager = null;
-            $total = 0;
-
-            return $this->tree(view('game.lineup', compact('text', 'franchises', 'pager', 'total')));
+            return $this->tree(view('game.lineup', compact(
+                'text', 'franchises', 'pager', 'total',
+                'platforms', 'platformId', 'makerId', 'makerName',
+                'fearMeterMin', 'fearMeterMax', 'releaseFrom', 'releaseTo',
+            )));
         }
 
         $page = max(1, (int) $request->input('page', 1));
@@ -126,7 +104,161 @@ class GameController extends Controller
         $totalPages = (int) ceil($total / self::LINEUP_PER_PAGE);
         $pager = new Pager($page, $totalPages, 'Game.Lineup', [], 'children');
 
-        return $this->tree(view('game.lineup', compact('text', 'franchises', 'pager', 'total')));
+        return $this->tree(view('game.lineup', compact(
+            'text', 'franchises', 'pager', 'total',
+            'platforms', 'platformId', 'makerId', 'makerName',
+            'fearMeterMin', 'fearMeterMax', 'releaseFrom', 'releaseTo',
+        )));
+    }
+
+    /**
+     * Meilisearch でタイトルIDを検索して返す
+     *
+     * @param string $text
+     * @param int|null $platformId
+     * @param int|null $makerId
+     * @param int|null $fearMeterMin
+     * @param int|null $fearMeterMax
+     * @param int|null $releaseFrom 年（例: 2020）
+     * @param int|null $releaseTo 年（例: 2023）
+     * @return array
+     */
+    private function searchTitleIds(
+        string $text,
+        ?int $platformId,
+        ?int $makerId,
+        ?int $fearMeterMin,
+        ?int $fearMeterMax,
+        ?int $releaseFrom,
+        ?int $releaseTo,
+    ): array {
+        $filters = [];
+
+        if ($platformId !== null) {
+            $filters[] = "platform_ids = {$platformId}";
+        }
+        if ($makerId !== null) {
+            $filters[] = "maker_ids = {$makerId}";
+        }
+        if ($fearMeterMin !== null && $fearMeterMax !== null) {
+            if ($fearMeterMin === $fearMeterMax) {
+                $filters[] = "fear_meter = {$fearMeterMin}";
+            } else {
+                $filters[] = "fear_meter >= {$fearMeterMin} AND fear_meter <= {$fearMeterMax}";
+            }
+        } elseif ($fearMeterMin !== null) {
+            $filters[] = "fear_meter >= {$fearMeterMin}";
+        } elseif ($fearMeterMax !== null) {
+            $filters[] = "fear_meter <= {$fearMeterMax}";
+        }
+        if ($releaseFrom !== null) {
+            $filters[] = "first_release_int >= {$releaseFrom}0101";
+        }
+        if ($releaseTo !== null) {
+            $filters[] = "first_release_int <= {$releaseTo}1231";
+        }
+
+        $filterStr = implode(' AND ', $filters);
+
+        if (!empty($text)) {
+            $searchText = mb_convert_kana($text, 'a');
+            $words = array_filter(explode(' ', $searchText), fn ($w) => trim($w) !== '');
+
+            $resultIds = [];
+            foreach ($words as $word) {
+                $word = trim($word);
+                if ($word === '') {
+                    continue;
+                }
+                $query = GameTitle::search($word);
+                if ($filterStr !== '') {
+                    $query->options(['filter' => $filterStr]);
+                }
+                $ids = $query->get()->pluck('id')->toArray();
+                $resultIds = array_merge($resultIds, $ids);
+            }
+
+            return array_values(array_unique($resultIds));
+        }
+
+        // フィルタのみ（テキストなし）
+        $query = GameTitle::search('');
+        if ($filterStr !== '') {
+            $query->options(['filter' => $filterStr]);
+        }
+
+        return $query->get()->pluck('id')->toArray();
+    }
+
+    /**
+     * タイトルIDの配列からフランチャイズ→シリーズ→タイトルのツリーを構築して返す
+     *
+     * @param array $titleIds
+     * @return \Illuminate\Support\Collection
+     */
+    private function buildFranchiseTree(array $titleIds): \Illuminate\Support\Collection
+    {
+        if (empty($titleIds)) {
+            return collect();
+        }
+
+        $titles = GameTitle::select(['id', 'key', 'name', 'game_series_id', 'game_franchise_id', 'rating'])
+            ->whereIn('id', $titleIds)
+            ->get()
+            ->values();
+
+        $seriesIds = $titles->whereNotNull('game_series_id')
+            ->unique('game_series_id')
+            ->pluck('game_series_id')
+            ->toArray();
+
+        $series = GameSeries::whereIn('id', $seriesIds)->get()->keyBy('id');
+
+        $franchiseIds = [];
+        foreach ($series as $s) {
+            $s->searchTitles = [];
+            $franchiseIds[] = $s->game_franchise_id;
+        }
+
+        $franchiseIds = array_merge(
+            $franchiseIds,
+            $titles->whereNotNull('game_franchise_id')
+                ->pluck('game_franchise_id')
+                ->unique()
+                ->toArray()
+        );
+
+        $franchises = GameFranchise::whereIn('id', $franchiseIds)->get()->keyBy('id');
+
+        foreach ($franchises as $franchise) {
+            $franchise->searchTitles = [];
+            $franchise->searchSeries = [];
+        }
+
+        foreach ($titles as $title) {
+            if (!empty($title->game_series_id) && isset($series[$title->game_series_id])) {
+                $s = $series[$title->game_series_id];
+                $searchTitles = $s->searchTitles;
+                $searchTitles[] = $title;
+                $s->searchTitles = $searchTitles;
+            } elseif (!empty($title->game_franchise_id) && isset($franchises[$title->game_franchise_id])) {
+                $f = $franchises[$title->game_franchise_id];
+                $searchTitles = $f->searchTitles;
+                $searchTitles[] = $title;
+                $f->searchTitles = $searchTitles;
+            }
+        }
+
+        foreach ($series as $s) {
+            if (isset($franchises[$s->game_franchise_id])) {
+                $f = $franchises[$s->game_franchise_id];
+                $searchSeries = $f->searchSeries;
+                $searchSeries[] = $s;
+                $f->searchSeries = $searchSeries;
+            }
+        }
+
+        return $franchises->values();
     }
 
     /**

@@ -232,6 +232,15 @@ class GameTitle extends Model
             $array['search_synonyms'] = [];
         }
 
+        // フィルタ用フィールド（パッケージグループ経由でプラットフォーム・メーカーを取得）
+        $this->loadMissing(['packageGroups.packages.makers', 'fearMeterStatistic']);
+        $packages = $this->packageGroups->flatMap(fn ($pg) => $pg->packages);
+
+        $array['platform_ids'] = $packages->pluck('game_platform_id')->filter()->unique()->values()->toArray();
+        $array['maker_ids'] = $packages->flatMap(fn ($p) => $p->makers)->pluck('id')->unique()->values()->toArray();
+        $array['fear_meter'] = $this->fearMeterStatistic?->fear_meter;
+        $array['first_release_int'] = $this->first_release_int;
+
         return $array;
     }
 }
