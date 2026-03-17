@@ -169,50 +169,156 @@ p.rating-warning {
     }
 }
 
+/* ラインナップ検索フォームを左寄せ（親の中央寄せを上書き） */
+#current-node-content:has(#lineup-search-form) {
+    @apply flex flex-col items-start text-left;
+}
+
 #lineup-search-form {
-    .advanced-search-wrapper {
-        display: grid;
-        grid-template-rows: 0fr;
-        transition: grid-template-rows 0.3s ease;
-        overflow: hidden;
-    }
-    .advanced-search-wrapper.open {
-        grid-template-rows: 1fr;
-        overflow: visible;
-    }
-    .advanced-search-wrapper__inner {
-        min-height: 0;
-        opacity: 0;
-        visibility: hidden;
-        transform: translateY(-6px);
-        pointer-events: none;
-        transition: opacity 0.12s ease, transform 0.12s ease, visibility 0s linear 0.12s;
-    }
-    .advanced-search-wrapper.open .advanced-search-wrapper__inner {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
-        pointer-events: auto;
-        transition: opacity 0.18s ease 0.12s, transform 0.18s ease 0.12s, visibility 0s linear 0s;
-    }
-    .maker-suggest-list {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background-color: #1a1a1a;
-        border: 1px solid #616161;
-        border-radius: 4px;
-        z-index: 100;
-        max-height: 200px;
-        overflow-y: auto;
-    }
-    .maker-suggest-item {
-        padding: 8px 10px;
-        cursor: pointer;
-        font-size: inherit;
-    }
-    .maker-suggest-item:hover {
-        background-color: #2a2a2a;
-    }
+    @apply ml-0 mr-auto w-full max-w-[500px] text-left;
+}
+
+/* 子孫セレクタでは @apply が使えないため、Tailwind 相当を通常 CSS で記述 */
+#lineup-search-form > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+#lineup-search-form .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+}
+
+/* タイトル・プラットフォームの入力幅をメーカー欄と同じに */
+#lineup-search-form .form-row > .input,
+#lineup-search-form .form-row > select.input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#lineup-search-form .lineup-search-form__toggle-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#lineup-search-form #advanced-search-toggle {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+    font: inherit;
+    color: inherit;
+    font-size: 0.875rem;
+    color: #888888;
+}
+
+#lineup-search-form .lineup-search-form__buttons-row {
+    flex-direction: row;
+}
+
+#lineup-search-form .lineup-search-form__label {
+    font-size: 0.875rem;
+    color: #888888;
+}
+
+#lineup-search-form .advanced-search-wrapper {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s ease;
+    overflow: hidden;
+}
+
+#lineup-search-form .advanced-search-wrapper.open {
+    grid-template-rows: 1fr;
+    overflow: visible;
+}
+
+#lineup-search-form .advanced-search-wrapper__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 0;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    pointer-events: none;
+    transition: opacity 0.12s ease, transform 0.12s ease, visibility 0s linear 0.12s;
+}
+
+#lineup-search-form .advanced-search-wrapper.open .advanced-search-wrapper__inner {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition: opacity 0.18s ease 0.12s, transform 0.18s ease 0.12s, visibility 0s linear 0s;
+}
+
+#lineup-search-form .advanced-search-wrapper__inner > .form-row:last-of-type {
+    margin-bottom: 0.75rem;
+}
+
+#lineup-search-form #lineup-platform-id {
+    flex: 1;
+}
+
+#lineup-search-form .lineup-search-form__maker-row {
+    position: relative;
+}
+
+#lineup-search-form .lineup-search-form__maker-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+#lineup-search-form .lineup-search-form__maker-input-wrap .input {
+    flex: 1;
+    min-width: 0;
+}
+
+#lineup-search-form #maker-clear-btn {
+    flex-shrink: 0;
+}
+
+#lineup-search-form .lineup-search-form__range-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+#lineup-search-form .lineup-search-form__range-row select,
+#lineup-search-form .lineup-search-form__range-row .input {
+    flex: 1;
+    min-width: 0;
+}
+
+#lineup-search-form .maker-suggest-list {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+    border-radius: 4px;
+    border: 1px solid #616161;
+    background-color: #1a1a1a;
+}
+
+#lineup-search-form .maker-suggest-item {
+    cursor: pointer;
+    padding: 0.5rem 0.625rem;
+    font-size: inherit;
+}
+
+#lineup-search-form .maker-suggest-item:hover {
+    background-color: #2a2a2a;
 }

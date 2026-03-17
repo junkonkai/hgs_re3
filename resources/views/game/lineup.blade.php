@@ -4,30 +4,28 @@
 @section('current-node-title', 'ラインナップ')
 @section('current-node-content')
 <form id="lineup-search-form" method="GET" action="{{ route('Game.Lineup') }}" data-child-only="1">
-    <div class="flex flex-col gap-3" style="max-width: 500px;">
+    <div>
         {{-- タイトル検索 --}}
         <div class="form-row">
+            <label for="search-input" class="lineup-search-form__label">タイトル</label>
             <input type="text" id="search-input" name="text" value="{{ $text ?? '' }}" placeholder="タイトル名" class="input input-default">
         </div>
 
-        <div class="form-row flex items-center justify-between">
-            <span class="text-xs text-muted">詳細検索</span>
-            <button
-                type="button"
-                id="advanced-search-toggle"
-                class="text-xs text-muted underline"
-            >
+        <div class="form-row lineup-search-form__toggle-row">
+            <span class="lineup-search-form__label">詳細検索</span>
+            <button type="button" id="advanced-search-toggle" class="lineup-search-form__label">
                 <span id="advanced-search-label">開く</span>
                 <span id="advanced-search-icon">▽</span>
             </button>
         </div>
 
         <div id="advanced-search-wrapper" class="advanced-search-wrapper">
-            <div class="advanced-search-wrapper__inner flex flex-col gap-3">
+            <div class="advanced-search-wrapper__inner">
             {{-- プラットフォーム --}}
             <div class="form-row">
-                <select name="platform_id" class="input input-default" style="flex:1;">
-                    <option value="0">プラットフォーム（すべて）</option>
+                <label for="lineup-platform-id" class="lineup-search-form__label">プラットフォーム</label>
+                <select id="lineup-platform-id" name="platform_id" class="input input-default">
+                    <option value="0">すべて</option>
                     @foreach ($platforms ?? [] as $platform)
                     <option value="{{ $platform->id }}" @selected(($platformId ?? null) == $platform->id)>
                         {{ $platform->name }}{{ $platform->acronym ? '（' . $platform->acronym . '）' : '' }}
@@ -37,68 +35,73 @@
             </div>
 
             {{-- メーカー --}}
-            <div class="form-row" style="position: relative;">
-                <input
-                    type="text"
-                    id="maker-name-input"
-                    name="maker_name"
-                    value="{{ $makerName ?? '' }}"
-                    placeholder="メーカー名（入力して選択）"
-                    class="input input-default"
-                    autocomplete="off"
-                >
+            <div class="form-row lineup-search-form__maker-row">
+                <label for="maker-name-input" class="lineup-search-form__label">メーカー</label>
+                <div class="lineup-search-form__maker-input-wrap">
+                    <input
+                        type="text"
+                        id="maker-name-input"
+                        name="maker_name"
+                        value="{{ $makerName ?? '' }}"
+                        placeholder="入力して選択"
+                        class="input input-default"
+                        autocomplete="off"
+                    >
+                    <button type="button" id="maker-clear-btn" class="btn btn-default btn-sm" style="{{ empty($makerName ?? '') ? 'display:none;' : '' }}">✕</button>
+                </div>
                 <input type="hidden" id="maker-id-input" name="maker_id" value="{{ $makerId ?? '' }}">
-                <button type="button" id="maker-clear-btn" class="btn btn-default btn-sm" style="{{ empty($makerName ?? '') ? 'display:none;' : '' }}">✕</button>
-                <div id="maker-suggestions" class="maker-suggest-list" style="display:none;"></div>
+                <div id="maker-suggestions" class="maker-suggest-list"></div>
             </div>
 
             {{-- 怖さメーター --}}
-            <div class="form-row items-center gap-2">
-                <span class="text-sm text-muted" style="white-space:nowrap;">怖さメーター</span>
-                <select name="fear_meter_min" id="fear-meter-min" class="input input-default" style="flex:1;">
-                    <option value="">下限なし</option>
-                    @for ($i = 0; $i <= 4; $i++)
-                    <option value="{{ $i }}" @selected(($fearMeterMin ?? null) !== null && $fearMeterMin == $i)>{{ $i }}</option>
-                    @endfor
-                </select>
-                <span class="text-sm text-muted">〜</span>
-                <select name="fear_meter_max" id="fear-meter-max" class="input input-default" style="flex:1;">
-                    <option value="">上限なし</option>
-                    @for ($i = 0; $i <= 4; $i++)
-                    <option value="{{ $i }}" @selected(($fearMeterMax ?? null) !== null && $fearMeterMax == $i)>{{ $i }}</option>
-                    @endfor
-                </select>
+            <div class="form-row">
+                <span class="lineup-search-form__label">怖さメーター</span>
+                <div class="lineup-search-form__range-row">
+                    <select name="fear_meter_min" id="fear-meter-min" class="input input-default">
+                        <option value="">下限なし</option>
+                        @for ($i = 0; $i <= 4; $i++)
+                        <option value="{{ $i }}" @selected(($fearMeterMin ?? null) !== null && $fearMeterMin == $i)>{{ $i }}</option>
+                        @endfor
+                    </select>
+                    <span class="lineup-search-form__label">〜</span>
+                    <select name="fear_meter_max" id="fear-meter-max" class="input input-default">
+                        <option value="">上限なし</option>
+                        @for ($i = 0; $i <= 4; $i++)
+                        <option value="{{ $i }}" @selected(($fearMeterMax ?? null) !== null && $fearMeterMax == $i)>{{ $i }}</option>
+                        @endfor
+                    </select>
+                </div>
             </div>
 
-            {{-- 発売時期 --}}
-            <div class="form-row items-center gap-2">
-                <span class="text-sm text-muted" style="white-space:nowrap;">発売年</span>
-                <input
-                    type="number"
-                    name="release_from"
-                    value="{{ $releaseFrom ?? '' }}"
-                    placeholder="開始年"
-                    min="1980"
-                    max="{{ date('Y') }}"
-                    class="input input-default"
-                    style="flex:1; min-width:0;"
-                >
-                <span class="text-sm text-muted">〜</span>
-                <input
-                    type="number"
-                    name="release_to"
-                    value="{{ $releaseTo ?? '' }}"
-                    placeholder="終了年"
-                    min="1980"
-                    max="{{ date('Y') }}"
-                    class="input input-default"
-                style="flex:1; min-width:0;"
-            >
+            {{-- 発売年 --}}
+            <div class="form-row">
+                <span class="lineup-search-form__label">発売年</span>
+                <div class="lineup-search-form__range-row">
+                    <input
+                        type="number"
+                        name="release_from"
+                        value="{{ $releaseFrom ?? '' }}"
+                        placeholder="開始年"
+                        min="1980"
+                        max="{{ date('Y') }}"
+                        class="input input-default"
+                    >
+                    <span class="lineup-search-form__label">〜</span>
+                    <input
+                        type="number"
+                        name="release_to"
+                        value="{{ $releaseTo ?? '' }}"
+                        placeholder="終了年"
+                        min="1980"
+                        max="{{ date('Y') }}"
+                        class="input input-default"
+                    >
+                </div>
             </div>
             </div>
         </div>
 
-        <div class="form-row">
+        <div class="form-row lineup-search-form__buttons-row">
             <button type="submit" class="btn btn-default btn-sm">検索</button>
             <button type="button" id="search-reset-btn" class="btn btn-default btn-sm">リセット</button>
         </div>
