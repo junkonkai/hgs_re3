@@ -1,4 +1,5 @@
 import { Component } from "./component";
+import { LineupSearch } from "./components/lineup_search";
 import { TitleDetailFavorite } from "./components/title_detail_favorite";
 
 /**
@@ -9,6 +10,7 @@ export class ComponentManager
     private static _instance: ComponentManager;
     private _components: Component[] = [];
     private _componentMap: { [key: string]: new (...args: any[]) => Component } = {
+        'LineupSearch': LineupSearch,
         'TitleDetailFavorite': TitleDetailFavorite,
     };
 

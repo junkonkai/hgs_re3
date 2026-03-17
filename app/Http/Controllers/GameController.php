@@ -90,11 +90,12 @@ class GameController extends Controller
 
             $pager = new Pager($page, $totalPages, 'Game.Lineup', $routeParams, 'children');
 
+            $lineupComponents = ['LineupSearch' => ['makerSuggestUrl' => route('api.game.maker.suggest')]];
             return $this->tree(view('game.lineup', compact(
                 'text', 'franchises', 'pager', 'total',
                 'platforms', 'platformId', 'makerId', 'makerName',
                 'fearMeterMin', 'fearMeterMax', 'releaseFrom', 'releaseTo',
-            )));
+            )), ['components' => $lineupComponents]);
         }
 
         $page = max(1, (int) $request->input('page', 1));
@@ -104,11 +105,12 @@ class GameController extends Controller
         $totalPages = (int) ceil($total / self::LINEUP_PER_PAGE);
         $pager = new Pager($page, $totalPages, 'Game.Lineup', [], 'children');
 
+        $lineupComponents = ['LineupSearch' => ['makerSuggestUrl' => route('api.game.maker.suggest')]];
         return $this->tree(view('game.lineup', compact(
             'text', 'franchises', 'pager', 'total',
             'platforms', 'platformId', 'makerId', 'makerName',
             'fearMeterMin', 'fearMeterMax', 'releaseFrom', 'releaseTo',
-        )));
+        )), ['components' => $lineupComponents]);
     }
 
     /**
