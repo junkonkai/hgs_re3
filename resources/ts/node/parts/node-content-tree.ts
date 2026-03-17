@@ -1,6 +1,5 @@
 import { Point } from "../../common/point";
 import { ConnectionLine } from "./connection-line";
-import { LinkNode } from "../link-node";
 import { AppearStatus } from "../../enum/appear-status";
 import { NodeType } from "../../common/type";
 import { NodeContent } from "./node-content";
@@ -9,6 +8,7 @@ import { TreeNodeInterface } from "../interface/tree-node-interface";
 import { BasicNode } from "../basic-node";
 import { AccordionTreeNode } from "../accordion-tree-node";
 import { LinkTreeNode } from "../link-tree-node";
+import { LoadMoreNode } from "../load-more-node";
 import { CurrentNode } from "../current-node";
 
 export class NodeContentTree extends NodeContent
@@ -24,6 +24,7 @@ export class NodeContentTree extends NodeContent
     protected _nodeCount: number;
     protected _isFast: boolean;
     protected _doNotAppearBehind: boolean;
+    protected _onDisappearedCallback: (() => void) | null = null;
 
     public get appearStatus(): AppearStatus
     {
@@ -77,26 +78,131 @@ export class NodeContentTree extends NodeContent
         this._nodeCount = 0;
         this.homewardNode = null;
         this._contentElement.querySelectorAll(':scope > section.node').forEach(nodeElement => {
-            // link-nodeクラスがあればLinkNodeを作成
-            if (nodeElement.classList.contains('link-node')) {
-                this._nodes.push(new LinkNode(nodeElement as HTMLElement, parentNode));
-                this._nodeCount++;
-            } else if (nodeElement.classList.contains('link-tree-node')) {
-                this._nodes.push(new LinkTreeNode(nodeElement as HTMLElement, parentNode));
-                this._nodeCount++;
-            } else if (nodeElement.classList.contains('tree-node')) {
-                if (nodeElement.classList.contains('accordion')) {
-                    this._nodes.push(new AccordionTreeNode(nodeElement as HTMLElement, parentNode));
-                } else {
-                    this._nodes.push(new TreeNode(nodeElement as HTMLElement, parentNode));
-                }
-                this._nodeCount++;
-            } else {
-                // どれにも当てはまらないものはベーシックノード
-                this._nodes.push(new BasicNode(nodeElement as HTMLElement, parentNode));
-                this._nodeCount++;
-            }
+            this._nodes.push(this.createNodeFromElement(nodeElement as HTMLElement, parentNode));
+            this._nodeCount++;
         });
+    }
+
+    /**
+     * 要素からノードオブジェクトを1つ生成する（loadNodes と replaceLoadMoreWithNodes で共通利用）
+     */
+    /**
+     * Phase6: link-node は BasicNode に統一（LinkNode 廃止）。アンカー駆動で遷移。
+     */
+    private createNodeFromElement(nodeElement: HTMLElement, parentNode: TreeNodeInterface): NodeType
+    {
+        if (nodeElement.classList.contains('link-node')) {
+            return new BasicNode(nodeElement, parentNode);
+        }
+        if (nodeElement.classList.contains('link-tree-node')) {
+            return new LinkTreeNode(nodeElement, parentNode);
+        }
+        if (nodeElement.classList.contains('load-more-node')) {
+            return new LoadMoreNode(nodeElement, parentNode);
+        }
+        if (nodeElement.classList.contains('tree-node')) {
+            if (nodeElement.classList.contains('accordion')) {
+                return new AccordionTreeNode(nodeElement, parentNode);
+            }
+            return new TreeNode(nodeElement, parentNode);
+        }
+        return new BasicNode(nodeElement, parentNode);
+    }
+
+    /**
+     * Phase2: CurrentNode 直下の子ノード群を全部差し替える。
+     * 旧ノードを dispose し、新しい section.node 群を生成して返す。
+     */
+    public replaceChildren(html: string): NodeType[]
+    {
+        this.disposeNodes();
+        this._contentElement.innerHTML = html.trim();
+        this.loadNodes(this._parentNode as TreeNodeInterface);
+        this.resizeConnectionLine(this._parentNode.nodeHead.getConnectionPoint());
+        return this._nodes;
+    }
+
+    /**
+     * Phase2: 指定 id のノード 1 個を差し替える。見つからなければ子 TreeNode に再帰委譲。
+     * 置換後の新ノードを返す。見つからない場合は null。
+     */
+    public replaceNodeById(nodeId: string, html: string): NodeType | null
+    {
+        const index = this._nodes.findIndex(n => n.id === nodeId);
+        if (index >= 0) {
+            const oldNode = this._nodes[index];
+            const parentEl = oldNode.nodeElement.parentNode;
+            if (!parentEl) {
+                return null;
+            }
+            oldNode.dispose();
+            const temp = document.createElement('div');
+            temp.innerHTML = html.trim();
+            const newSection = temp.firstElementChild as HTMLElement;
+            if (!newSection) {
+                return null;
+            }
+            parentEl.replaceChild(newSection, oldNode.nodeElement);
+            const newNode = this.createNodeFromElement(newSection, this._parentNode as TreeNodeInterface);
+            this._nodes[index] = newNode;
+            this.resizeConnectionLine(this._parentNode.nodeHead.getConnectionPoint());
+            return newNode;
+        }
+        for (const n of this._nodes) {
+            if ('nodeContentTree' in n && n.nodeContentTree) {
+                const found = (n as TreeNodeInterface).nodeContentTree.replaceNodeById(nodeId, html);
+                if (found) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 「さらに表示」クリック後: 取得した HTML を LoadMoreNode の位置に挿入し、追加ノードを登録・接続線を伸ばし・追加分のみ appear させる。
+     */
+    public replaceLoadMoreWithNodes(loadMoreNode: LoadMoreNode, html: string): void
+    {
+        const contentElement = this._contentElement;
+        const loadMoreElement = loadMoreNode.nodeElement;
+
+        const temp = document.createElement('div');
+        temp.innerHTML = html.trim();
+
+        const insertedElements: HTMLElement[] = [];
+        while (temp.firstElementChild) {
+            const child = temp.firstElementChild as HTMLElement;
+            contentElement.insertBefore(child, loadMoreElement);
+            insertedElements.push(child);
+        }
+
+        loadMoreElement.remove();
+
+        const loadMoreIndex = this._nodes.indexOf(loadMoreNode);
+        if (loadMoreIndex === -1) {
+            return;
+        }
+
+        this._nodes.splice(loadMoreIndex, 1);
+        this._nodeCount = this._nodes.length;
+
+        insertedElements.forEach((el, i) => {
+            const node = this.createNodeFromElement(el, this._parentNode as TreeNodeInterface);
+            this._nodes.splice(loadMoreIndex + i, 0, node);
+        });
+        this._nodeCount = this._nodes.length;
+
+        this.resizeConnectionLine(this._parentNode.nodeHead.getConnectionPoint());
+
+        const startIndex = loadMoreIndex;
+        const endIndex = loadMoreIndex + insertedElements.length;
+        for (let i = startIndex; i < endIndex; i++) {
+            const node = this._nodes[i];
+            if (AppearStatus.isDisappeared(node.appearStatus)) {
+                node.appear(true, true);
+            }
+        }
     }
 
     public get lastNode(): NodeType
@@ -104,9 +210,62 @@ export class NodeContentTree extends NodeContent
         return this._nodes[this._nodes.length - 1];
     }
 
+    /**
+     * 子ノードが存在する場合のみ lastNode を返す（空のときの undefined 参照を防ぐ）
+     */
+    public get lastNodeOrNull(): NodeType | null
+    {
+        return this._nodes.length > 0 ? this._nodes[this._nodes.length - 1] : null;
+    }
+
     public getNodeByIndex(index: number): NodeType
     {
         return this._nodes[index];
+    }
+
+    /**
+     * ノードのインデックスを取得（internal-node 更新時の差し替え位置の特定に利用）
+     */
+    public getIndexByNode(node: NodeType): number
+    {
+        return this._nodes.indexOf(node);
+    }
+
+    /**
+     * Phase3: 接続線または子ノードに進行中アニメーションがあるか。
+     */
+    public hasActiveAnimation(): boolean
+    {
+        if (AppearStatus.isTransitioning(this._connectionLine.appearStatus)) {
+            return true;
+        }
+        if (this.appearAnimationFunc !== null) {
+            return true;
+        }
+        return this._nodes.some(n => (n as { hasActiveAnimation?: () => boolean }).hasActiveAnimation?.() === true);
+    }
+
+    /**
+     * Phase5: 直下の子ノード配列を返す（applyDepthToNodes 等で利用）
+     */
+    public getDirectNodes(): NodeType[]
+    {
+        return this._nodes.slice();
+    }
+
+    /**
+     * Phase5: persistent モード用。直下の各ノードに depth を適用し、子 TreeNode には再帰する。
+     */
+    public applyDepthToNodes(startDepth: number): void
+    {
+        this._nodes.forEach(node => {
+            if ('applyDepth' in node && typeof (node as { applyDepth: (d: number) => void }).applyDepth === 'function') {
+                (node as { applyDepth: (d: number) => void }).applyDepth(startDepth);
+            }
+            if ('nodeContentTree' in node && (node as { nodeContentTree?: NodeContentTree }).nodeContentTree) {
+                (node as { nodeContentTree: NodeContentTree }).nodeContentTree.applyDepthToNodes(startDepth + 1);
+            }
+        });
     }
 
     public getNodeById(id: string): NodeType | null
@@ -133,19 +292,27 @@ export class NodeContentTree extends NodeContent
      */
     public disposeNodes(): void
     {
-        this._nodes.forEach(node => node.dispose());
+        this._nodes.forEach(node => {
+            if (node) {
+                node.dispose();
+            }
+        });
         this._nodes = [];
     }
 
     public resize(): void
     {
-        this._nodes.forEach(node => node.resize());
+        this._nodes.forEach(node => {
+            if (node) {
+                node.resize();
+            }
+        });
         this.resizeConnectionLine(this._parentNode.nodeHead.getConnectionPoint());
     }
 
     public resizeConnectionLine(headerPosition: Point): void
     {
-        if (this._connectionLine && !AppearStatus.isDisappeared(this._connectionLine.appearStatus)) {
+        if (this._connectionLine && !AppearStatus.isDisappeared(this._connectionLine.appearStatus) && this._nodes.length > 0) {
             this._connectionLine.setPosition(headerPosition.x - 1, headerPosition.y);
             this._connectionLine.changeHeight(this.lastNode.nodeElement.offsetTop - headerPosition.y + 2);
         }
@@ -155,7 +322,11 @@ export class NodeContentTree extends NodeContent
     public update(): void
     {
         this._connectionLine.update();
-        this._nodes.forEach(node => node.update());
+        this._nodes.forEach(node => {
+            if (node) {
+                node.update();
+            }
+        });
 
         if (this.appearAnimationFunc !== null) {
             this.appearAnimationFunc();
@@ -164,6 +335,11 @@ export class NodeContentTree extends NodeContent
 
     public appear(isFast: boolean = false, doNotAppearBehind: boolean = false): void
     {
+        if (this._nodes.length === 0) {
+            this._appearStatus = AppearStatus.APPEARED;
+            this.appearAnimationFunc = null;
+            return;
+        }
         const headerPosition = this._parentNode.nodeHead.getConnectionPoint();
         this._connectionLine.setPosition(headerPosition.x - 1, headerPosition.y);
         const conLineHeight = this.lastNode.nodeElement.offsetTop - headerPosition.y + 2;
@@ -186,6 +362,9 @@ export class NodeContentTree extends NodeContent
         freePt.moveOffset(0, conLineHeight);
         
         this._nodes.forEach(node => {
+            if (!node) {
+                return;
+            }
             if (AppearStatus.isDisappeared(node.appearStatus)) {
                 const top = node.nodeElement.offsetTop - headerPosition.y;
                 if (top <= conLineHeight) {
@@ -202,7 +381,8 @@ export class NodeContentTree extends NodeContent
 
     public appearAnimation2(): void
     {
-        if (this.lastNode.appearStatus === AppearStatus.APPEARED) {
+        const last = this._nodes.length > 0 ? this.lastNode : null;
+        if (last && last.appearStatus === AppearStatus.APPEARED) {
             this.appeared();
         }
     }
@@ -238,13 +418,20 @@ export class NodeContentTree extends NodeContent
             this._connectionLine.disappearFadeOut(isFast);
             this._appearStatus = AppearStatus.DISAPPEARING;
             this.appearAnimationFunc = this.disappearAnimation2;
-            this._nodes.forEach(node => node.disappear(this._isFast, this._doNotAppearBehind));
+            this._nodes.forEach(node => {
+                if (node) {
+                    node.disappear(this._isFast, this._doNotAppearBehind);
+                }
+            });
         }
     }
 
     private disappeareUnderLine(conLineHeight: number, headerPosition: Point): void
     {
         this._nodes.forEach(node => {
+            if (!node) {
+                return;
+            }
             if (AppearStatus.isAppeared(node.appearStatus)) {
                 const top = node.nodeElement.offsetTop - headerPosition.y;
                 if (top >= conLineHeight) {
@@ -314,6 +501,19 @@ export class NodeContentTree extends NodeContent
     {
         this._appearStatus = AppearStatus.DISAPPEARED;
         this.appearAnimationFunc = null;
+        if (this._onDisappearedCallback) {
+            const cb = this._onDisappearedCallback;
+            this._onDisappearedCallback = null;
+            cb();
+        }
+    }
+
+    /**
+     * 消滅完了時に呼ばれるコールバックを設定（internal-node 用）
+     */
+    public setOnDisappearedCallback(cb: (() => void) | null): void
+    {
+        this._onDisappearedCallback = cb;
     }
 
     public disappearConnectionLine(): void
@@ -326,7 +526,11 @@ export class NodeContentTree extends NodeContent
 
     public draw(): void
     {
-        this._nodes.forEach(node => node.draw());
+        this._nodes.forEach(node => {
+            if (node) {
+                node.draw();
+            }
+        });
     }
 
     public noDisplay(): void

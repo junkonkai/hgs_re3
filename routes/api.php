@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\GameMakerController;
 use App\Http\Controllers\Api\Test\AccountController;
 use App\Http\Controllers\Api\Test\FearMeterController;
 use App\Http\Controllers\Api\UserFavoriteController;
@@ -16,6 +17,9 @@ if (!app()->environment('production')) {
     Route::post('test/fear-meter/recalculate', [FearMeterController::class, 'recalculate'])->name('api.test.fear-meter.recalculate');
     Route::get('test/fear-meter/statistics', [FearMeterController::class, 'statistics'])->name('api.test.fear-meter.statistics');
 }
+
+// ゲーム関連API
+Route::get('game/maker/suggest', [GameMakerController::class, 'suggest'])->name('api.game.maker.suggest');
 
 // 認証が必要なAPI
 Route::middleware(['web', 'auth:web'])->group(function () {

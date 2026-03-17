@@ -33,6 +33,21 @@ class GameTitle extends Model
     ];
 
     /**
+     * モデルの起動処理
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::updated(function (GameTitle $title) {
+            $franchise = $title->getFranchise();
+            if ($franchise !== null) {
+                $franchise->update(['last_title_update_at' => now()]);
+            }
+        });
+    }
+
+    /**
      * フランチャイズを取得
      *
      * @return BelongsTo
@@ -216,6 +231,15 @@ class GameTitle extends Model
         } else {
             $array['search_synonyms'] = [];
         }
+
+        // フィルタ用フィールド（パッケージグループ経由でプラットフォーム・メーカーを取得）
+        $this->loadMissing(['packageGroups.packages.makers', 'fearMeterStatistic']);
+        $packages = $this->packageGroups->flatMap(fn ($pg) => $pg->packages);
+
+        $array['platform_ids'] = $packages->pluck('game_platform_id')->filter()->unique()->values()->toArray();
+        $array['maker_ids'] = $packages->flatMap(fn ($p) => $p->makers)->pluck('id')->unique()->values()->toArray();
+        $array['fear_meter'] = $this->fearMeterStatistic?->fear_meter;
+        $array['first_release_int'] = $this->first_release_int;
 
         return $array;
     }

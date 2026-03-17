@@ -1,5 +1,5 @@
 import { Point } from "../../common/point";
-import { HorrorGameNetwork } from "../../horror-game-network";
+import { HgnTree } from "../../hgn-tree";
 
 export class NodePoint
 {
@@ -56,7 +56,6 @@ export class NodePoint
     public getAbsoluteCenterPosition(): Point
     {
         const rect = this._htmlElement.getBoundingClientRect();
-        const hgn = (window as any).hgn as HorrorGameNetwork;
 
         return new Point(
             Math.floor((rect.left + rect.width / 2) + window.scrollX),

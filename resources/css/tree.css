@@ -86,6 +86,15 @@ div.connection-line {
 }
 
 
+/* カーブ出現中は子ノード全体を非表示。カーブ完了時に解除する */
+.node.node-waiting-curve {
+    visibility: hidden;
+}
+
+.node-head.head-waiting-curve {
+    visibility: hidden;
+}
+
 .node-head-text {
     mask-image: linear-gradient(to left, transparent 0%, black 40%, black 100%);
     -webkit-mask-image: linear-gradient(to left, transparent 0%, black 40%, black 100%);
@@ -332,7 +341,7 @@ div.connection-line {
     }
 }
 
-.link-node, .link-tree-node {
+.node.basic, .node.tree-node, .load-more-node {
     .node-head-text {
         & + .node-pt {
             color: var(--node-pt-dark);
@@ -347,6 +356,15 @@ div.connection-line {
                 transition: color 0.3s ease, text-shadow 0.3s ease;
             }
         }
+    }
+}
+
+/* さらに表示ボタン: リンク風だがクリックで追加読み込み */
+.load-more-node {
+    cursor: pointer;
+
+    .node-head-text {
+        cursor: pointer;
     }
 }
 
@@ -367,13 +385,36 @@ canvas.node-canvas {
     position: absolute;
     top: 0;
     left: 0;
-    width: 200px;
-    height: 400px;
+    width: 100%;
+    height: 100%;
     z-index: -100;
     pointer-events: none;
     contain: layout style paint;
-    position: absolute;
     transform: translateZ(0);
+}
+
+/* Phase4: SVG 接続線（ノード全体に合わせて connectionLine と位置を一致させる） */
+svg.node-curve-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -100;
+    overflow: visible;
+    pointer-events: none;
+    contain: layout style paint;
+    transform: translateZ(0);
+}
+
+/* 出現・消失は JS の progress で毎フレーム更新するため transition は使わない（固定時間にすると曲線が伸びない） */
+svg.node-curve-svg .curve-path {
+    stroke: var(--node-pt-light);
+}
+
+svg.node-curve-svg .behind-path {
+    stroke: var(--node-pt-light);
+    transition: opacity 100ms linear, visibility 0s linear;
 }
 
 .blur {
@@ -429,5 +470,31 @@ div.free-pt {
             opacity: 1;
             position: static;
         }
+    }
+}
+
+/* Phase5: Z軸演出 */
+.tree-depth-root {
+    perspective: 1200px;
+    transform-style: preserve-3d;
+}
+
+.node-depth-layer {
+    transform-style: preserve-3d;
+    will-change: transform, opacity, filter;
+}
+
+.node-depth-entering {
+    transition: transform 220ms ease-out, opacity 220ms ease-out, filter 220ms ease-out;
+}
+
+.node-depth-exiting {
+    transition: transform 180ms ease-in, opacity 180ms ease-in, filter 180ms ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .node-depth-entering,
+    .node-depth-exiting {
+        transition-duration: 80ms;
     }
 }

@@ -17,8 +17,8 @@
                 18歳以上ですか？
             </p>
             <ul style="margin-top: 30px;">
-                <li style="margin-bottom: 10px;"><a href="{{ $currentUrl }}" rel="internal">はい、18歳以上です</a></li>
-                <li><a href="{{ route('Root') }}" rel="internal">いいえ、18歳未満です</a></li>
+                <li style="margin-bottom: 10px;"><a href="{{ $currentUrl }}" data-hgn-scope="full">はい、18歳以上です</a></li>
+                <li><a href="{{ route('Root') }}" data-hgn-scope="full">いいえ、18歳未満です</a></li>
             </ul>
         </div>
     </section>

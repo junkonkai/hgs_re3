@@ -17,7 +17,7 @@
                     [個人情報の削除]以外については、対応が遅くなるかもしれません。<br>
                     ご了承ください。<br>
                     <br>
-                    なお、当サイトで扱われる個人情報については<a href="{{ route('PrivacyPolicy') }}" rel="internal">プライバシーポリシー</a>をご確認ください。
+                    なお、当サイトで扱われる個人情報については<a href="{{ route('PrivacyPolicy') }}" data-hgn-scope="full">プライバシーポリシー</a>をご確認ください。
                 </p>
             </div>
             
@@ -90,7 +90,7 @@
             <span class="node-pt">●</span>
         </div>
         <div class="node-content tree">
-            <section class="node link-node">
+            <section class="node basic">
                 <div class="node-head">
                     <a href="{{ route('Root') }}" class="node-head-text">ルート</a>
                     <span class="node-pt main-node-pt">●</span>
@@ -99,7 +99,7 @@
             
         
             @if (\Illuminate\Support\Facades\Auth::guard('admin')->check())
-            <section class="node link-node">
+            <section class="node basic">
                 <div class="node-head">
                     <a href="{{ route('Admin.Manage.Contact') }}" class="node-head-text" rel="external">管理</a>
                     <span class="node-pt">●</span>

@@ -6,7 +6,7 @@
 <p class="alert alert-warning">
     休止前に登録されたアカウントは、個人情報保護の観点から削除しました。<br>
     2025年11月1日以前に登録頂いた方には大変申し訳ありませんが、<br>
-    改めて<a href="{{ route('Account.Register') }}" rel="internal">新規登録</a>をお願いします。
+    改めて<a href="{{ route('Account.Register') }}" data-hgn-scope="full">新規登録</a>をお願いします。
 </p>
 @endsection
 

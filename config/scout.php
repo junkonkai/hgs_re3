@@ -143,8 +143,9 @@ return [
             // 'users' => [
             //     'filterableAttributes'=> ['id', 'name', 'email'],
             // ],
-            'game_titles' => [
+            env('SCOUT_PREFIX', '') . 'game_titles' => [
                 'searchableAttributes' => ['name', 'phonetic', 'search_synonyms'],
+                'filterableAttributes' => ['platform_ids', 'maker_ids', 'fear_meter', 'first_release_int'],
             ],
         ],
     ],
