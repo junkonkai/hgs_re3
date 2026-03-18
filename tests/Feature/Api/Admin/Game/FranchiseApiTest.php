@@ -148,8 +148,12 @@ class FranchiseApiTest extends TestCase
             'description_source' => null,
         ]);
 
-        $this->putJson("/api/v1/admin/game/franchises/{$f->id}/series", [
-            'game_series_ids' => [$s1->id, $s2->id],
+        $this->postJson("/api/v1/admin/game/franchises/{$f->id}/series", [
+            'game_series_ids' => [$s1->id],
+        ])->assertOk();
+
+        $this->postJson("/api/v1/admin/game/franchises/{$f->id}/series", [
+            'game_series_ids' => [$s2->id],
         ])->assertOk();
 
         $index = $this->getJson("/api/v1/admin/game/franchises/{$f->id}/series");
@@ -187,8 +191,12 @@ class FranchiseApiTest extends TestCase
             'rating' => 0,
         ]);
 
-        $this->putJson("/api/v1/admin/game/franchises/{$f->id}/titles", [
-            'game_title_ids' => [$t1->id, $t2->id],
+        $this->postJson("/api/v1/admin/game/franchises/{$f->id}/titles", [
+            'game_title_ids' => [$t1->id],
+        ])->assertOk();
+
+        $this->postJson("/api/v1/admin/game/franchises/{$f->id}/titles", [
+            'game_title_ids' => [$t2->id],
         ])->assertOk();
 
         $this->getJson("/api/v1/admin/game/franchises/{$f->id}/titles")
@@ -232,6 +240,10 @@ class FranchiseApiTest extends TestCase
         );
 
         $this->putJson("/api/v1/admin/game/franchises/{$f->id}/titles", [
+            'game_title_ids' => [$tSeries->id],
+        ])->assertStatus(422);
+
+        $this->postJson("/api/v1/admin/game/franchises/{$f->id}/titles", [
             'game_title_ids' => [$tSeries->id],
         ])->assertStatus(422);
     }

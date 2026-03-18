@@ -147,6 +147,45 @@ class FranchiseController extends Controller
         return response()->json(['data' => $rows]);
     }
 
+    public function seriesAttach(Request $request, int $id): JsonResponse
+    {
+        $franchise = GameFranchise::query()->find($id);
+
+        if ($franchise === null) {
+            return response()->json(['message' => 'Not Found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $validated = $request->validate([
+            'game_series_ids' => 'required|array',
+            'game_series_ids.*' => 'integer|exists:game_series,id',
+        ]);
+        $ids = array_values(array_unique($validated['game_series_ids'] ?? []));
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($ids as $seriesId) {
+                $series = GameSeries::query()->find($seriesId);
+                if ($series !== null) {
+                    $series->game_franchise_id = $franchise->id;
+                    $series->save();
+                }
+            }
+
+            $franchise->refresh();
+            $franchise->load('titles');
+            $franchise->setTitleParam();
+            $franchise->save();
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+
+        return response()->json(['message' => 'OK']);
+    }
+
     public function seriesSync(Request $request, int $id): JsonResponse
     {
         $franchise = GameFranchise::query()->find($id);
@@ -235,6 +274,55 @@ class FranchiseController extends Controller
             ->all();
 
         return response()->json(['data' => $rows]);
+    }
+
+    public function titlesAttach(Request $request, int $id): JsonResponse
+    {
+        $franchise = GameFranchise::query()->find($id);
+
+        if ($franchise === null) {
+            return response()->json(['message' => 'Not Found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $validated = $request->validate([
+            'game_title_ids' => 'required|array',
+            'game_title_ids.*' => 'integer|exists:game_titles,id',
+        ]);
+        $ids = array_values(array_unique($validated['game_title_ids'] ?? []));
+
+        foreach ($ids as $titleId) {
+            $seriesId = GameTitle::query()->whereKey($titleId)->value('game_series_id');
+            if ($seriesId !== null) {
+                return response()->json([
+                    'message' => 'シリーズ未所属のタイトルのみ指定できます。',
+                    'errors' => ['game_title_ids' => ['シリーズ未所属のタイトルのみ指定できます。']],
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+        }
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($ids as $titleId) {
+                $title = GameTitle::query()->find($titleId);
+                if ($title !== null) {
+                    $title->game_franchise_id = $franchise->id;
+                    $title->save();
+                }
+            }
+
+            $franchise->refresh();
+            $franchise->load('titles');
+            $franchise->setTitleParam();
+            $franchise->save();
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+
+        return response()->json(['message' => 'OK']);
     }
 
     public function titlesSync(Request $request, int $id): JsonResponse

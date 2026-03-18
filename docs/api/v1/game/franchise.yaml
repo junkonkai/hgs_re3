@@ -154,6 +154,32 @@ paths:
                         name: { type: string }
         '404':
           description: Not Found
+    post:
+      summary: シリーズを追加紐づけ（既存の紐づけは維持）
+      operationId: attachFranchiseSeries
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_series_ids]
+              properties:
+                game_series_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
     put:
       summary: シリーズ紐づけを上書き（sync・外部キー）
       operationId: syncFranchiseSeries
@@ -224,6 +250,32 @@ paths:
                         name: { type: string }
         '404':
           description: Not Found
+    post:
+      summary: タイトルを追加紐づけ（既存の直下タイトルは維持・シリーズ未所属のみ）
+      operationId: attachFranchiseTitles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_title_ids]
+              properties:
+                game_title_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
     put:
       summary: タイトル紐づけを上書き（sync・シリーズ未所属のタイトルのみ指定可）
       operationId: syncFranchiseTitles
