@@ -1,0 +1,261 @@
+openapi: 3.0.3
+info:
+  title: Game Master API - Makers
+  description: メーカーのCRUDおよび紐づけ（packages）。name と phonetic で検索、synonyms 対応。
+  version: 1.0.0
+
+servers:
+  - url: /api/v1/admin/game
+security:
+  - bearerAuth: []
+
+paths:
+  /makers:
+    get:
+      summary: メーカー一覧（検索・ページネーション）
+      description: name と phonetic の両方で部分一致検索（OR）。synonym も検索対象。クエリ q で検索。
+      operationId: listMakers
+      parameters:
+        - $ref: common.yaml#/components/parameters/page
+        - $ref: common.yaml#/components/parameters/per_page
+        - $ref: common.yaml#/components/parameters/q
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Maker'
+                  meta:
+                    $ref: common.yaml#/components/schemas/PaginationMeta
+                  links:
+                    $ref: common.yaml#/components/schemas/PaginationLinks
+    post:
+      summary: メーカー追加
+      operationId: createMaker
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MakerRequest'
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Maker'
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+
+  /makers/{id}:
+    get:
+      summary: メーカー詳細
+      operationId: showMaker
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Maker'
+        '404':
+          description: Not Found
+    put:
+      summary: メーカー更新
+      operationId: updateMaker
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MakerRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Maker'
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+    delete:
+      summary: メーカー削除
+      operationId: deleteMaker
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /makers/{id}/packages:
+    get:
+      summary: 紐づくパッケージ一覧
+      operationId: listMakerPackages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    post:
+      summary: パッケージを紐づけに追加
+      operationId: attachMakerPackages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_package_ids]
+              properties:
+                game_package_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+    put:
+      summary: パッケージ紐づけを上書き（sync）
+      operationId: syncMakerPackages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_package_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+  /makers/{id}/packages/{packageId}:
+    delete:
+      summary: パッケージ紐づけを1件削除
+      operationId: detachMakerPackage
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: packageId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Bearer
+  schemas:
+    Maker:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        key: { type: string }
+        node_name: { type: string }
+        rating: { type: integer }
+        type: { type: integer }
+        related_game_maker_id: { type: integer, nullable: true }
+        description: { type: string, nullable: true }
+        description_source: { type: string, nullable: true }
+        synonyms: { type: array, items: { type: string }, description: 俗称一覧 }
+    MakerRequest:
+      type: object
+      required:
+        - name
+        - key
+        - node_name
+        - rating
+        - type
+      properties:
+        name: { type: string, maxLength: 100 }
+        key: { type: string, maxLength: 50 }
+        node_name: { type: string, maxLength: 200 }
+        rating: { type: integer }
+        type: { type: integer }
+        related_game_maker_id: { type: integer, nullable: true }
+        synonymsStr: { type: string }
+        description: { type: string, nullable: true }
+        description_source: { type: string, nullable: true }

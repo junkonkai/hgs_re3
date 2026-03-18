@@ -1,0 +1,461 @@
+openapi: 3.0.3
+info:
+  title: Game Master API - Titles
+  description: タイトル（ゲームタイトル）のCRUDおよび紐づけ（package-groups, related-products, media-mixes）
+  version: 1.0.0
+
+servers:
+  - url: /api/v1/admin/game
+    description: ゲームマスター管理API
+
+security:
+  - bearerAuth: []
+
+paths:
+  /titles:
+    get:
+      summary: タイトル一覧（検索・ページネーション）
+      description: |
+        name と phonetic の両方で部分一致検索（OR）。クエリ q で検索。スペース区切りはAND条件。synonym も検索対象。
+      operationId: listTitles
+      parameters:
+        - $ref: common.yaml#/components/parameters/page
+        - $ref: common.yaml#/components/parameters/per_page
+        - $ref: common.yaml#/components/parameters/q
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Title'
+                  meta:
+                    $ref: common.yaml#/components/schemas/PaginationMeta
+                  links:
+                    $ref: common.yaml#/components/schemas/PaginationLinks
+    post:
+      summary: タイトル追加
+      operationId: createTitle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TitleRequest'
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Title'
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+
+  /titles/{id}:
+    get:
+      summary: タイトル詳細
+      operationId: showTitle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Title'
+        '404':
+          description: Not Found
+    put:
+      summary: タイトル更新
+      operationId: updateTitle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TitleRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Title'
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+    delete:
+      summary: タイトル削除
+      operationId: deleteTitle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /titles/{id}/package-groups:
+    get:
+      summary: 紐づくパッケージグループ一覧
+      operationId: listTitlePackageGroups
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    post:
+      summary: パッケージグループを紐づけに追加
+      operationId: attachTitlePackageGroups
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_package_group_ids]
+              properties:
+                game_package_group_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+    put:
+      summary: パッケージグループ紐づけを上書き（sync）
+      operationId: syncTitlePackageGroups
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_package_group_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+  /titles/{id}/package-groups/{packageGroupId}:
+    delete:
+      summary: パッケージグループ紐づけを1件削除
+      operationId: detachTitlePackageGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: packageGroupId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /titles/{id}/related-products:
+    get:
+      summary: 紐づく関連商品一覧
+      operationId: listTitleRelatedProducts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    post:
+      summary: 関連商品を紐づけに追加
+      operationId: attachTitleRelatedProducts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_related_product_ids]
+              properties:
+                game_related_product_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+    put:
+      summary: 関連商品紐づけを上書き（sync）
+      operationId: syncTitleRelatedProducts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_related_product_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+  /titles/{id}/related-products/{relatedProductId}:
+    delete:
+      summary: 関連商品紐づけを1件削除
+      operationId: detachTitleRelatedProduct
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: relatedProductId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /titles/{id}/media-mixes:
+    get:
+      summary: 紐づくメディアミックス一覧
+      operationId: listTitleMediaMixes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    post:
+      summary: メディアミックスを紐づけに追加
+      operationId: attachTitleMediaMixes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_media_mix_ids]
+              properties:
+                game_media_mix_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+    put:
+      summary: メディアミックス紐づけを上書き（sync）
+      operationId: syncTitleMediaMixes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_media_mix_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+  /titles/{id}/media-mixes/{mediaMixId}:
+    delete:
+      summary: メディアミックス紐づけを1件削除
+      operationId: detachTitleMediaMix
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: mediaMixId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Bearer
+  schemas:
+    Title:
+      type: object
+      properties:
+        id: { type: integer }
+        game_franchise_id: { type: integer, nullable: true }
+        game_series_id: { type: integer, nullable: true }
+        name: { type: string }
+        key: { type: string }
+        phonetic: { type: string }
+        node_name: { type: string }
+        description: { type: string }
+        first_release_int: { type: integer }
+        rating: { type: integer }
+        use_ogp_description: { type: boolean }
+        search_synonyms: { type: string, nullable: true }
+    TitleRequest:
+      type: object
+      required:
+        - name
+        - key
+        - phonetic
+        - node_name
+        - first_release_int
+        - rating
+        - use_ogp_description
+      properties:
+        game_franchise_id: { type: integer, nullable: true }
+        game_series_id: { type: integer, nullable: true }
+        name: { type: string, maxLength: 200 }
+        key: { type: string, maxLength: 50 }
+        phonetic: { type: string, maxLength: 200 }
+        node_name: { type: string, maxLength: 200 }
+        original_package_id: { type: integer, nullable: true }
+        search_synonyms: { type: string }
+        description: { type: string }
+        description_source: { type: string, nullable: true }
+        first_release_int: { type: number }
+        use_ogp_description: { type: boolean }
+        rating: { type: integer }
+        issue: { type: string, nullable: true }
