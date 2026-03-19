@@ -1,0 +1,353 @@
+openapi: 3.0.3
+info:
+  title: Game Master API - Franchises
+  description: フランチャイズのCRUDおよび紐づけ（series, titles）。titles はシリーズ未所属のみ指定可。
+  version: 1.0.0
+
+servers:
+  - url: /api/v1/admin/game
+security:
+  - bearerAuth: []
+
+paths:
+  /franchises:
+    get:
+      summary: フランチャイズ一覧（検索・ページネーション）
+      description: name と phonetic の両方で部分一致検索（OR）。クエリ q で検索。
+      operationId: listFranchises
+      parameters:
+        - $ref: common.yaml#/components/parameters/page
+        - $ref: common.yaml#/components/parameters/per_page
+        - $ref: common.yaml#/components/parameters/q
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Franchise'
+                  meta:
+                    $ref: common.yaml#/components/schemas/PaginationMeta
+                  links:
+                    $ref: common.yaml#/components/schemas/PaginationLinks
+    post:
+      summary: フランチャイズ追加
+      operationId: createFranchise
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FranchiseRequest'
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Franchise'
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+
+  /franchises/{id}:
+    get:
+      summary: フランチャイズ詳細
+      operationId: showFranchise
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Franchise'
+        '404':
+          description: Not Found
+    put:
+      summary: フランチャイズ更新
+      operationId: updateFranchise
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FranchiseRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Franchise'
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+    delete:
+      summary: フランチャイズ削除
+      operationId: deleteFranchise
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /franchises/{id}/series:
+    get:
+      summary: 紐づくシリーズ一覧
+      operationId: listFranchiseSeries
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    post:
+      summary: シリーズを追加紐づけ（既存の紐づけは維持）
+      operationId: attachFranchiseSeries
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_series_ids]
+              properties:
+                game_series_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+    put:
+      summary: シリーズ紐づけを上書き（sync・外部キー）
+      operationId: syncFranchiseSeries
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_series_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+  /franchises/{id}/series/{seriesId}:
+    delete:
+      summary: シリーズ紐づけを1件削除（game_franchise_id を null に）
+      operationId: detachFranchiseSeries
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: seriesId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /franchises/{id}/titles:
+    get:
+      summary: 紐づくタイトル一覧（シリーズ未所属でフランチャイズ直下のもの）
+      operationId: listFranchiseTitles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    post:
+      summary: タイトルを追加紐づけ（既存の直下タイトルは維持・シリーズ未所属のみ）
+      operationId: attachFranchiseTitles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_title_ids]
+              properties:
+                game_title_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+    put:
+      summary: タイトル紐づけを上書き（sync・シリーズ未所属のタイトルのみ指定可）
+      operationId: syncFranchiseTitles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_title_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+  /franchises/{id}/titles/{titleId}:
+    delete:
+      summary: タイトル紐づけを1件削除
+      operationId: detachFranchiseTitle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: titleId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Bearer
+  schemas:
+    Franchise:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        key: { type: string }
+        phonetic: { type: string }
+        node_name: { type: string }
+        description: { type: string, nullable: true }
+        description_source: { type: string, nullable: true }
+    FranchiseRequest:
+      type: object
+      required:
+        - name
+        - key
+        - phonetic
+        - node_name
+      properties:
+        name: { type: string, maxLength: 200 }
+        key: { type: string, maxLength: 50 }
+        phonetic: { type: string, maxLength: 200 }
+        node_name: { type: string, maxLength: 200 }
+        description: { type: string, nullable: true }
+        description_source: { type: string, nullable: true }

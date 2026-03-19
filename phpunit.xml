@@ -19,6 +19,7 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <env name="APP_URL" value="http://localhost"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_DRIVER" value="array"/>
@@ -28,6 +29,8 @@
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="DB_DATABASE" value="hgs_re3_test"/>
+        <env name="VIEW_COMPILED_PATH" value="/tmp/hgs_re3_views"/>
+        <env name="GPTS_API_KEY" value="test-gpts-api-key"/>
     </php>
     <extensions>
         <bootstrap class="Tests\Extension"/>

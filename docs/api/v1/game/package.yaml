@@ -1,0 +1,535 @@
+openapi: 3.0.3
+info:
+  title: Game Master API - Packages
+  description: パッケージのCRUD、紐づけ（makers, package-groups）、ショップ子リソースのCRUD。作成は1 platform 1件ずつ。
+  version: 1.0.0
+
+servers:
+  - url: /api/v1/admin/game
+security:
+  - bearerAuth: []
+
+paths:
+  /packages:
+    get:
+      summary: パッケージ一覧（検索・ページネーション）
+      description: name で部分一致検索。クエリ q のほか platform_ids でプラットフォーム絞り込み可。
+      operationId: listPackages
+      parameters:
+        - $ref: common.yaml#/components/parameters/page
+        - $ref: common.yaml#/components/parameters/per_page
+        - $ref: common.yaml#/components/parameters/q
+        - name: platform_ids
+          in: query
+          description: プラットフォームIDで絞り込み（複数可）
+          schema:
+            type: array
+            items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Package'
+                  meta:
+                    $ref: common.yaml#/components/schemas/PaginationMeta
+                  links:
+                    $ref: common.yaml#/components/schemas/PaginationLinks
+    post:
+      summary: パッケージ追加（1 platform 1件）
+      operationId: createPackage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PackageRequest'
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Package'
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+
+  /packages/{id}:
+    get:
+      summary: パッケージ詳細
+      operationId: showPackage
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Package'
+        '404':
+          description: Not Found
+    put:
+      summary: パッケージ更新
+      operationId: updatePackage
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PackageRequestUpdate'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Package'
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+    delete:
+      summary: パッケージ削除
+      operationId: deletePackage
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /packages/{id}/makers:
+    get:
+      summary: 紐づくメーカー一覧
+      operationId: listPackageMakers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    post:
+      summary: メーカーを紐づけに追加
+      operationId: attachPackageMakers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_maker_ids]
+              properties:
+                game_maker_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+    put:
+      summary: メーカー紐づけを上書き（sync）
+      operationId: syncPackageMakers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_maker_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+  /packages/{id}/makers/{makerId}:
+    delete:
+      summary: メーカー紐づけを1件削除
+      operationId: detachPackageMaker
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: makerId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /packages/{id}/package-groups:
+    get:
+      summary: 紐づくパッケージグループ一覧
+      operationId: listPackagePackageGroups
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    post:
+      summary: パッケージグループを紐づけに追加
+      operationId: attachPackagePackageGroups
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_package_group_ids]
+              properties:
+                game_package_group_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+    put:
+      summary: パッケージグループ紐づけを上書き（sync）
+      operationId: syncPackagePackageGroups
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_package_group_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+  /packages/{id}/package-groups/{packageGroupId}:
+    delete:
+      summary: パッケージグループ紐づけを1件削除
+      operationId: detachPackagePackageGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: packageGroupId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /packages/{id}/shops:
+    get:
+      summary: ショップ一覧
+      operationId: listPackageShops
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PackageShop'
+        '404':
+          description: Not Found
+    post:
+      summary: ショップ追加
+      operationId: createPackageShop
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PackageShopRequest'
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PackageShop'
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+
+  /packages/{id}/shops/{shopId}:
+    get:
+      summary: ショップ1件詳細
+      operationId: showPackageShop
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: shopId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PackageShop'
+        '404':
+          description: Not Found
+    put:
+      summary: ショップ更新
+      operationId: updatePackageShop
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: shopId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PackageShopRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PackageShop'
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+    delete:
+      summary: ショップ削除
+      operationId: deletePackageShop
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: shopId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Bearer
+  schemas:
+    Package:
+      type: object
+      properties:
+        id: { type: integer }
+        game_platform_id: { type: integer }
+        name: { type: string }
+        acronym: { type: string, nullable: true }
+        node_name: { type: string }
+        release_at: { type: string }
+        sort_order: { type: integer }
+        default_img_type: { type: integer }
+        rating: { type: integer }
+    PackageRequest:
+      type: object
+      required:
+        - name
+        - game_platform_id
+        - release_at
+        - sort_order
+        - default_img_type
+        - rating
+      properties:
+        name: { type: string, maxLength: 200 }
+        acronym: { type: string, maxLength: 30, nullable: true }
+        node_name: { type: string, maxLength: 200, nullable: true }
+        game_platform_id: { type: integer }
+        game_maker_ids: { type: array, items: { type: integer }, nullable: true }
+        release_at: { type: string, maxLength: 100 }
+        sort_order: { type: integer }
+        default_img_type: { type: integer }
+        rating: { type: integer }
+    PackageRequestUpdate:
+      type: object
+      required:
+        - name
+        - release_at
+        - sort_order
+        - default_img_type
+        - rating
+      properties:
+        name: { type: string, maxLength: 200 }
+        acronym: { type: string, maxLength: 30, nullable: true }
+        node_name: { type: string, maxLength: 200, nullable: true }
+        game_maker_ids: { type: array, items: { type: integer }, nullable: true }
+        release_at: { type: string, maxLength: 100 }
+        sort_order: { type: integer }
+        default_img_type: { type: integer }
+        rating: { type: integer }
+    PackageShop:
+      type: object
+      properties:
+        id: { type: integer }
+        game_package_id: { type: integer }
+        shop_id: { type: integer }
+        url: { type: string }
+        img_tag: { type: string, nullable: true }
+        param1: { type: string, nullable: true }
+        param2: { type: string, nullable: true }
+        param3: { type: string, nullable: true }
+    PackageShopRequest:
+      type: object
+      required:
+        - shop_id
+        - url
+      properties:
+        shop_id: { type: integer }
+        url: { type: string }
+        img_tag: { type: string, nullable: true }
+        param1: { type: string, nullable: true }
+        param2: { type: string, nullable: true }
+        param3: { type: string, nullable: true }

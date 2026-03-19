@@ -1,0 +1,126 @@
+# ゲームマスターAPI 共通定義
+# 各リソースYAMLから $ref: common.yaml#/components/... で参照する
+
+openapi: 3.0.3
+info:
+  title: Game Master API (Common)
+  description: 共通のスキーマ・パラメータ・セキュリティ定義
+  version: 1.0.0
+
+servers:
+  - url: /api/v1/admin/game
+    description: ゲームマスター管理API ベースURL
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Bearer
+      description: |
+        Sanctum Personal Access Token（Authorization: Bearer）。
+        管理者ユーザーに `php artisan game-master:issue-token {email}` で発行。
+        トークンには ability（既定: game-master:access、環境変数 GAME_MASTER_API_TOKEN_ABILITY）が付与されること。
+
+  parameters:
+    page:
+      name: page
+      in: query
+      description: ページ番号（1始まり）
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    per_page:
+      name: per_page
+      in: query
+      description: 1ページあたりの件数
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    q:
+      name: q
+      in: query
+      description: 検索文字列（部分一致）。name と phonetic があるリソースは両方で検索。スペース区切りでAND条件。
+      schema:
+        type: string
+
+  schemas:
+    PaginationMeta:
+      type: object
+      properties:
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+        from:
+          type: integer
+          nullable: true
+        to:
+          type: integer
+          nullable: true
+    PaginationLinks:
+      type: object
+      properties:
+        first:
+          type: string
+          format: uri
+        last:
+          type: string
+          format: uri
+        prev:
+          type: string
+          format: uri
+          nullable: true
+        next:
+          type: string
+          format: uri
+          nullable: true
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+    IdListRequest:
+      description: 紐づけ用のID配列（追加・更新で使用）
+      type: object
+      properties:
+        game_package_group_ids:
+          type: array
+          items: { type: integer }
+        game_title_ids:
+          type: array
+          items: { type: integer }
+        game_series_ids:
+          type: array
+          items: { type: integer }
+        game_related_product_ids:
+          type: array
+          items: { type: integer }
+        game_media_mix_ids:
+          type: array
+          items: { type: integer }
+        game_package_ids:
+          type: array
+          items: { type: integer }
+        game_maker_ids:
+          type: array
+          items: { type: integer }
+        game_platform_ids:
+          type: array
+          items: { type: integer }

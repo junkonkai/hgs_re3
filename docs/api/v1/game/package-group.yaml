@@ -1,0 +1,346 @@
+openapi: 3.0.3
+info:
+  title: Game Master API - Package Groups
+  description: パッケージグループのCRUDおよび紐づけ（titles, packages）
+  version: 1.0.0
+
+servers:
+  - url: /api/v1/admin/game
+security:
+  - bearerAuth: []
+
+paths:
+  /package-groups:
+    get:
+      summary: パッケージグループ一覧（検索・ページネーション）
+      description: name で部分一致検索。クエリ q で検索。
+      operationId: listPackageGroups
+      parameters:
+        - $ref: common.yaml#/components/parameters/page
+        - $ref: common.yaml#/components/parameters/per_page
+        - $ref: common.yaml#/components/parameters/q
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PackageGroup'
+                  meta:
+                    $ref: common.yaml#/components/schemas/PaginationMeta
+                  links:
+                    $ref: common.yaml#/components/schemas/PaginationLinks
+    post:
+      summary: パッケージグループ追加
+      operationId: createPackageGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PackageGroupRequest'
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PackageGroup'
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+
+  /package-groups/{id}:
+    get:
+      summary: パッケージグループ詳細
+      operationId: showPackageGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PackageGroup'
+        '404':
+          description: Not Found
+    put:
+      summary: パッケージグループ更新
+      operationId: updatePackageGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PackageGroupRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PackageGroup'
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+    delete:
+      summary: パッケージグループ削除
+      operationId: deletePackageGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /package-groups/{id}/titles:
+    get:
+      summary: 紐づくタイトル一覧
+      operationId: listPackageGroupTitles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    post:
+      summary: タイトルを紐づけに追加
+      operationId: attachPackageGroupTitles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_title_ids]
+              properties:
+                game_title_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+    put:
+      summary: タイトル紐づけを上書き（sync）
+      operationId: syncPackageGroupTitles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_title_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+  /package-groups/{id}/titles/{titleId}:
+    delete:
+      summary: タイトル紐づけを1件削除
+      operationId: detachPackageGroupTitle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: titleId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /package-groups/{id}/packages:
+    get:
+      summary: 紐づくパッケージ一覧
+      operationId: listPackageGroupPackages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    post:
+      summary: パッケージを紐づけに追加
+      operationId: attachPackageGroupPackages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_package_ids]
+              properties:
+                game_package_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+    put:
+      summary: パッケージ紐づけを上書き（sync）
+      operationId: syncPackageGroupPackages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_package_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+  /package-groups/{id}/packages/{packageId}:
+    delete:
+      summary: パッケージ紐づけを1件削除
+      operationId: detachPackageGroupPackage
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: packageId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Bearer
+  schemas:
+    PackageGroup:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        node_name: { type: string }
+        sort_order: { type: integer }
+        description: { type: string, nullable: true }
+        description_source: { type: string, nullable: true }
+        simple_shop_text: { type: string, nullable: true }
+    PackageGroupRequest:
+      type: object
+      required:
+        - name
+        - node_name
+        - sort_order
+      properties:
+        name: { type: string, maxLength: 200 }
+        node_name: { type: string, maxLength: 200 }
+        sort_order: { type: integer }
+        description: { type: string, nullable: true }
+        description_source: { type: string, nullable: true }
+        simple_shop_text: { type: string, nullable: true }

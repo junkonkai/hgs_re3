@@ -1,0 +1,229 @@
+openapi: 3.0.3
+info:
+  title: Game Master API - Media Mix Groups
+  description: メディアミックスグループのCRUDおよび紐づけ（media-mixes）。media-mixes は外部キーで所属を変更。
+  version: 1.0.0
+
+servers:
+  - url: /api/v1/admin/game
+security:
+  - bearerAuth: []
+
+paths:
+  /media-mix-groups:
+    get:
+      summary: メディアミックスグループ一覧（検索・ページネーション）
+      description: name で部分一致検索。クエリ q で検索。
+      operationId: listMediaMixGroups
+      parameters:
+        - $ref: common.yaml#/components/parameters/page
+        - $ref: common.yaml#/components/parameters/per_page
+        - $ref: common.yaml#/components/parameters/q
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MediaMixGroup'
+                  meta:
+                    $ref: common.yaml#/components/schemas/PaginationMeta
+                  links:
+                    $ref: common.yaml#/components/schemas/PaginationLinks
+    post:
+      summary: メディアミックスグループ追加
+      operationId: createMediaMixGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaMixGroupRequest'
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MediaMixGroup'
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+
+  /media-mix-groups/{id}:
+    get:
+      summary: メディアミックスグループ詳細
+      operationId: showMediaMixGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MediaMixGroup'
+        '404':
+          description: Not Found
+    put:
+      summary: メディアミックスグループ更新
+      operationId: updateMediaMixGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaMixGroupRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MediaMixGroup'
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+    delete:
+      summary: メディアミックスグループ削除
+      operationId: deleteMediaMixGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /media-mix-groups/{id}/media-mixes:
+    get:
+      summary: 紐づくメディアミックス一覧（当グループに所属するもの）
+      operationId: listMediaMixGroupMediaMixes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    put:
+      summary: メディアミックス所属を上書き（外部キー付け替え）
+      operationId: syncMediaMixGroupMediaMixes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_media_mix_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+  /media-mix-groups/{id}/media-mixes/{mediaMixId}:
+    delete:
+      summary: メディアミックス所属を1件解除（game_media_mix_group_id を null に）
+      operationId: detachMediaMixGroupMediaMix
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: mediaMixId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Bearer
+  schemas:
+    MediaMixGroup:
+      type: object
+      properties:
+        id: { type: integer }
+        game_franchise_id: { type: integer }
+        name: { type: string }
+        node_name: { type: string }
+        description: { type: string, nullable: true }
+        sort_order: { type: integer }
+    MediaMixGroupRequest:
+      type: object
+      required:
+        - game_franchise_id
+        - name
+        - node_name
+        - sort_order
+      properties:
+        game_franchise_id: { type: integer }
+        name: { type: string, maxLength: 200 }
+        node_name: { type: string, maxLength: 200 }
+        description: { type: string, nullable: true }
+        sort_order: { type: integer }

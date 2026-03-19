@@ -1,0 +1,264 @@
+openapi: 3.0.3
+info:
+  title: Game Master API - Platforms
+  description: プラットフォームのCRUDおよび紐づけ（related-products）。synonyms 対応。
+  version: 1.0.0
+
+servers:
+  - url: /api/v1/admin/game
+security:
+  - bearerAuth: []
+
+paths:
+  /platforms:
+    get:
+      summary: プラットフォーム一覧（検索・ページネーション）
+      description: name で部分一致検索。synonym も検索対象。クエリ q で検索。
+      operationId: listPlatforms
+      parameters:
+        - $ref: common.yaml#/components/parameters/page
+        - $ref: common.yaml#/components/parameters/per_page
+        - $ref: common.yaml#/components/parameters/q
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Platform'
+                  meta:
+                    $ref: common.yaml#/components/schemas/PaginationMeta
+                  links:
+                    $ref: common.yaml#/components/schemas/PaginationLinks
+    post:
+      summary: プラットフォーム追加
+      operationId: createPlatform
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlatformRequest'
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Platform'
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+
+  /platforms/{id}:
+    get:
+      summary: プラットフォーム詳細
+      operationId: showPlatform
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Platform'
+        '404':
+          description: Not Found
+    put:
+      summary: プラットフォーム更新
+      operationId: updatePlatform
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlatformRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Platform'
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+    delete:
+      summary: プラットフォーム削除
+      operationId: deletePlatform
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /platforms/{id}/related-products:
+    get:
+      summary: 紐づく関連商品一覧
+      operationId: listPlatformRelatedProducts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    post:
+      summary: 関連商品を紐づけに追加
+      operationId: attachPlatformRelatedProducts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_related_product_ids]
+              properties:
+                game_related_product_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+    put:
+      summary: 関連商品紐づけを上書き（sync）
+      operationId: syncPlatformRelatedProducts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_related_product_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+  /platforms/{id}/related-products/{relatedProductId}:
+    delete:
+      summary: 関連商品紐づけを1件削除
+      operationId: detachPlatformRelatedProduct
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: relatedProductId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Bearer
+  schemas:
+    Platform:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        key: { type: string }
+        acronym: { type: string }
+        node_name: { type: string }
+        type: { type: integer }
+        sort_order: { type: integer }
+        game_maker_id: { type: integer, nullable: true }
+        description: { type: string }
+        description_source: { type: string, nullable: true }
+        synonyms: { type: array, items: { type: string }, description: 俗称一覧 }
+    PlatformRequest:
+      type: object
+      required:
+        - name
+        - key
+        - acronym
+        - node_name
+        - type
+        - sort_order
+      properties:
+        name: { type: string, maxLength: 200 }
+        key: { type: string, maxLength: 50 }
+        acronym: { type: string, maxLength: 30 }
+        node_name: { type: string, maxLength: 200 }
+        type: { type: integer }
+        sort_order: { type: integer, minimum: 0, maximum: 99999999 }
+        game_maker_id: { type: integer, nullable: true }
+        description: { type: string }
+        description_source: { type: string, nullable: true }
+        synonymsStr: { type: string, description: 俗称（改行区切りなど、実装に依存） }

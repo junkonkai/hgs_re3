@@ -16,6 +16,11 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        $viewCompiledPath = env('VIEW_COMPILED_PATH');
+        if (is_string($viewCompiledPath) && $viewCompiledPath !== '' && !is_dir($viewCompiledPath)) {
+            @mkdir($viewCompiledPath, 0777, true);
+        }
+
         // スキーマ復元はテスト用DB（hgs_re3_test）に対してのみ実行する
         $connection = DB::connection();
         $databaseName = $connection->getDatabaseName();

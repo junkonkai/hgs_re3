@@ -1,0 +1,359 @@
+openapi: 3.0.3
+info:
+  title: Game Master API - Media Mixes
+  description: メディアミックスのCRUDおよび紐づけ（titles, related-products）
+  version: 1.0.0
+
+servers:
+  - url: /api/v1/admin/game
+security:
+  - bearerAuth: []
+
+paths:
+  /media-mixes:
+    get:
+      summary: メディアミックス一覧（検索・ページネーション）
+      description: name で部分一致検索。クエリ q で検索。
+      operationId: listMediaMixes
+      parameters:
+        - $ref: common.yaml#/components/parameters/page
+        - $ref: common.yaml#/components/parameters/per_page
+        - $ref: common.yaml#/components/parameters/q
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MediaMix'
+                  meta:
+                    $ref: common.yaml#/components/schemas/PaginationMeta
+                  links:
+                    $ref: common.yaml#/components/schemas/PaginationLinks
+    post:
+      summary: メディアミックス追加
+      operationId: createMediaMix
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaMixRequest'
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MediaMix'
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+
+  /media-mixes/{id}:
+    get:
+      summary: メディアミックス詳細
+      operationId: showMediaMix
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MediaMix'
+        '404':
+          description: Not Found
+    put:
+      summary: メディアミックス更新
+      operationId: updateMediaMix
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaMixRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MediaMix'
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+    delete:
+      summary: メディアミックス削除
+      operationId: deleteMediaMix
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /media-mixes/{id}/titles:
+    get:
+      summary: 紐づくタイトル一覧
+      operationId: listMediaMixTitles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    post:
+      summary: タイトルを紐づけに追加
+      operationId: attachMediaMixTitles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_title_ids]
+              properties:
+                game_title_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+    put:
+      summary: タイトル紐づけを上書き（sync）
+      operationId: syncMediaMixTitles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_title_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+  /media-mixes/{id}/titles/{titleId}:
+    delete:
+      summary: タイトル紐づけを1件削除
+      operationId: detachMediaMixTitle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: titleId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /media-mixes/{id}/related-products:
+    get:
+      summary: 紐づく関連商品一覧
+      operationId: listMediaMixRelatedProducts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    post:
+      summary: 関連商品を紐づけに追加
+      operationId: attachMediaMixRelatedProducts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_related_product_ids]
+              properties:
+                game_related_product_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+    put:
+      summary: 関連商品紐づけを上書き（sync）
+      operationId: syncMediaMixRelatedProducts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_related_product_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+  /media-mixes/{id}/related-products/{relatedProductId}:
+    delete:
+      summary: 関連商品紐づけを1件削除
+      operationId: detachMediaMixRelatedProduct
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: relatedProductId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Bearer
+  schemas:
+    MediaMix:
+      type: object
+      properties:
+        id: { type: integer }
+        type: { type: integer }
+        name: { type: string }
+        key: { type: string }
+        node_name: { type: string }
+        game_franchise_id: { type: integer, nullable: true }
+        game_media_mix_group_id: { type: integer, nullable: true }
+        rating: { type: integer }
+        sort_order: { type: number }
+        description: { type: string, nullable: true }
+        use_ogp_description: { type: boolean }
+    MediaMixRequest:
+      type: object
+      required:
+        - type
+        - name
+        - key
+        - node_name
+        - rating
+        - sort_order
+        - use_ogp_description
+      properties:
+        type: { type: integer }
+        name: { type: string, maxLength: 200 }
+        key: { type: string, maxLength: 50 }
+        node_name: { type: string, maxLength: 200 }
+        game_franchise_id: { type: integer, nullable: true }
+        game_media_mix_group_id: { type: integer, nullable: true }
+        rating: { type: integer }
+        sort_order: { type: number }
+        description: { type: string, nullable: true }
+        description_source: { type: string, nullable: true }
+        use_ogp_description: { type: boolean }

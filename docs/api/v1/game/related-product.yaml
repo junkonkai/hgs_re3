@@ -1,0 +1,603 @@
+openapi: 3.0.3
+info:
+  title: Game Master API - Related Products
+  description: 関連商品のCRUD、紐づけ（platforms, titles, media-mixes）、ショップ子リソースのCRUD
+  version: 1.0.0
+
+servers:
+  - url: /api/v1/admin/game
+security:
+  - bearerAuth: []
+
+paths:
+  /related-products:
+    get:
+      summary: 関連商品一覧（検索・ページネーション）
+      description: name で部分一致検索。クエリ q で検索。
+      operationId: listRelatedProducts
+      parameters:
+        - $ref: common.yaml#/components/parameters/page
+        - $ref: common.yaml#/components/parameters/per_page
+        - $ref: common.yaml#/components/parameters/q
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RelatedProduct'
+                  meta:
+                    $ref: common.yaml#/components/schemas/PaginationMeta
+                  links:
+                    $ref: common.yaml#/components/schemas/PaginationLinks
+    post:
+      summary: 関連商品追加
+      operationId: createRelatedProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RelatedProductRequest'
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/RelatedProduct'
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+
+  /related-products/{id}:
+    get:
+      summary: 関連商品詳細
+      operationId: showRelatedProduct
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/RelatedProduct'
+        '404':
+          description: Not Found
+    put:
+      summary: 関連商品更新
+      operationId: updateRelatedProduct
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RelatedProductRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/RelatedProduct'
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+    delete:
+      summary: 関連商品削除
+      operationId: deleteRelatedProduct
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /related-products/{id}/platforms:
+    get:
+      summary: 紐づくプラットフォーム一覧
+      operationId: listRelatedProductPlatforms
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    post:
+      summary: プラットフォームを紐づけに追加
+      operationId: attachRelatedProductPlatforms
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_platform_ids]
+              properties:
+                game_platform_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+    put:
+      summary: プラットフォーム紐づけを上書き（sync）
+      operationId: syncRelatedProductPlatforms
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_platform_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+  /related-products/{id}/platforms/{platformId}:
+    delete:
+      summary: プラットフォーム紐づけを1件削除
+      operationId: detachRelatedProductPlatform
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: platformId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /related-products/{id}/titles:
+    get:
+      summary: 紐づくタイトル一覧
+      operationId: listRelatedProductTitles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    post:
+      summary: タイトルを紐づけに追加
+      operationId: attachRelatedProductTitles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_title_ids]
+              properties:
+                game_title_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+    put:
+      summary: タイトル紐づけを上書き（sync）
+      operationId: syncRelatedProductTitles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_title_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+  /related-products/{id}/titles/{titleId}:
+    delete:
+      summary: タイトル紐づけを1件削除
+      operationId: detachRelatedProductTitle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: titleId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /related-products/{id}/media-mixes:
+    get:
+      summary: 紐づくメディアミックス一覧
+      operationId: listRelatedProductMediaMixes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        '404':
+          description: Not Found
+    post:
+      summary: メディアミックスを紐づけに追加
+      operationId: attachRelatedProductMediaMixes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [game_media_mix_ids]
+              properties:
+                game_media_mix_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+    put:
+      summary: メディアミックス紐づけを上書き（sync）
+      operationId: syncRelatedProductMediaMixes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_media_mix_ids:
+                  type: array
+                  items: { type: integer }
+                  default: []
+      responses:
+        '200':
+          description: 成功
+        '404':
+          description: Not Found
+  /related-products/{id}/media-mixes/{mediaMixId}:
+    delete:
+      summary: メディアミックス紐づけを1件削除
+      operationId: detachRelatedProductMediaMix
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: mediaMixId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+  /related-products/{id}/shops:
+    get:
+      summary: ショップ一覧
+      operationId: listRelatedProductShops
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RelatedProductShop'
+        '404':
+          description: Not Found
+    post:
+      summary: ショップ追加
+      operationId: createRelatedProductShop
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RelatedProductShopRequest'
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/RelatedProductShop'
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+
+  /related-products/{id}/shops/{shopId}:
+    get:
+      summary: ショップ1件詳細
+      operationId: showRelatedProductShop
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: shopId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/RelatedProductShop'
+        '404':
+          description: Not Found
+    put:
+      summary: ショップ更新
+      operationId: updateRelatedProductShop
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: shopId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RelatedProductShopRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/RelatedProductShop'
+        '404':
+          description: Not Found
+        '422':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: common.yaml#/components/schemas/ErrorResponse
+    delete:
+      summary: ショップ削除
+      operationId: deleteRelatedProductShop
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: shopId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          description: Not Found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Bearer
+  schemas:
+    RelatedProduct:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        node_name: { type: string }
+        rating: { type: integer }
+        default_img_type: { type: integer }
+        description: { type: string, nullable: true }
+        sort_order: { type: integer, nullable: true }
+    RelatedProductRequest:
+      type: object
+      required:
+        - name
+        - node_name
+        - rating
+        - default_img_type
+      properties:
+        name: { type: string, maxLength: 200 }
+        node_name: { type: string, maxLength: 200 }
+        rating: { type: integer }
+        default_img_type: { type: integer }
+        description: { type: string, nullable: true }
+        description_source: { type: string, nullable: true }
+        sort_order: { type: integer, nullable: true }
+    RelatedProductShop:
+      type: object
+      properties:
+        id: { type: integer }
+        game_related_product_id: { type: integer }
+        shop_id: { type: integer }
+        subtitle: { type: string, nullable: true }
+        url: { type: string }
+        img_tag: { type: string, nullable: true }
+        param1: { type: string, nullable: true }
+        param2: { type: string, nullable: true }
+        param3: { type: string, nullable: true }
+        use_img_tag: { type: boolean, nullable: true }
+    RelatedProductShopRequest:
+      type: object
+      required:
+        - shop_id
+        - url
+      properties:
+        shop_id: { type: integer }
+        subtitle: { type: string, nullable: true }
+        url: { type: string }
+        img_tag: { type: string, nullable: true }
+        param1: { type: string, nullable: true }
+        param2: { type: string, nullable: true }
+        param3: { type: string, nullable: true }
+        use_img_tag: { type: boolean, nullable: true }
