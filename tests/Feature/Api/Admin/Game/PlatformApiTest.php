@@ -4,28 +4,15 @@ namespace Tests\Feature\Api\Admin\Game;
 
 use App\Models\GamePlatform;
 use App\Models\GameRelatedProduct;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\TestCase;
 
-class PlatformApiTest extends TestCase
+class PlatformApiTest extends GameMasterApiTestCase
 {
-    use DatabaseTransactions;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->withHeaders([
-            'X-GPTS-API-KEY' => 'test-gpts-api-key',
-        ]);
-    }
-
     /**
-     * @param array<string, mixed> $overrides
+     * @param  array<string, mixed>  $overrides
      */
     private function createPlatform(array $overrides = []): GamePlatform
     {
-        $key = $overrides['key'] ?? 'plat-' . uniqid('', true);
+        $key = $overrides['key'] ?? 'plat-'.uniqid('', true);
 
         return GamePlatform::query()->create(array_merge([
             'key' => $key,
@@ -78,7 +65,7 @@ class PlatformApiTest extends TestCase
         $platform->synonymsStr = "検索用シノニム\r\n別行";
         $platform->save();
 
-        $response = $this->getJson('/api/v1/admin/game/platforms?q=' . urlencode('検索用シノニム'));
+        $response = $this->getJson('/api/v1/admin/game/platforms?q='.urlencode('検索用シノニム'));
 
         $response->assertOk();
         $response->assertJsonFragment([
@@ -102,7 +89,7 @@ class PlatformApiTest extends TestCase
 
     public function test_store_creates_platform(): void
     {
-        $key = 'api-plat-' . uniqid('', true);
+        $key = 'api-plat-'.uniqid('', true);
         $payload = [
             'name' => '新規PF',
             'key' => $key,
@@ -134,11 +121,11 @@ class PlatformApiTest extends TestCase
     public function test_update_updates_platform(): void
     {
         $platform = $this->createPlatform([
-            'key' => 'before-plat-' . uniqid('', true),
+            'key' => 'before-plat-'.uniqid('', true),
             'name' => '変更前',
         ]);
 
-        $newKey = 'after-plat-' . uniqid('', true);
+        $newKey = 'after-plat-'.uniqid('', true);
         $payload = [
             'name' => '変更後',
             'key' => $newKey,

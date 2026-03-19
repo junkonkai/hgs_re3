@@ -7,26 +7,13 @@ use App\Models\GameFranchise;
 use App\Models\GamePlatform;
 use App\Models\GameRelatedProduct;
 use App\Models\GameTitle;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\TestCase;
 
-class RelatedProductApiTest extends TestCase
+class RelatedProductApiTest extends GameMasterApiTestCase
 {
-    use DatabaseTransactions;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->withHeaders([
-            'X-GPTS-API-KEY' => 'test-gpts-api-key',
-        ]);
-    }
-
     private function createFranchise(): GameFranchise
     {
         return GameFranchise::query()->create([
-            'key' => 'f-rp-' . uniqid('', true),
+            'key' => 'f-rp-'.uniqid('', true),
             'name' => 'F',
             'phonetic' => 'えふ',
             'node_name' => 'F',
@@ -40,7 +27,7 @@ class RelatedProductApiTest extends TestCase
         return GameTitle::query()->create([
             'game_franchise_id' => $f->id,
             'name' => 'T',
-            'key' => 'k-' . uniqid('', true),
+            'key' => 'k-'.uniqid('', true),
             'phonetic' => 'てぃ',
             'node_name' => 'T',
             'first_release_int' => 20200101,
@@ -56,7 +43,7 @@ class RelatedProductApiTest extends TestCase
     private function createPlatform(): GamePlatform
     {
         return GamePlatform::query()->create([
-            'key' => 'p-rp-' . uniqid('', true),
+            'key' => 'p-rp-'.uniqid('', true),
             'game_maker_id' => null,
             'name' => 'Plat',
             'acronym' => 'P',
@@ -92,7 +79,7 @@ class RelatedProductApiTest extends TestCase
         $mm = \App\Models\GameMediaMix::query()->create([
             'type' => 1,
             'name' => 'MM',
-            'key' => 'mm-' . uniqid('', true),
+            'key' => 'mm-'.uniqid('', true),
             'node_name' => 'MM',
             'game_franchise_id' => $f->id,
             'game_media_mix_group_id' => null,
@@ -107,7 +94,7 @@ class RelatedProductApiTest extends TestCase
         $store->assertCreated();
         $rid = $store->json('data.id');
 
-        $this->getJson('/api/v1/admin/game/related-products?q=' . urlencode('関連'))
+        $this->getJson('/api/v1/admin/game/related-products?q='.urlencode('関連'))
             ->assertOk()
             ->assertJsonFragment(['id' => $rid]);
 

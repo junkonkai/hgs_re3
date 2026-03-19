@@ -3,28 +3,14 @@
 namespace Tests\Feature\Api\Admin\Game;
 
 use App\Models\GameFranchise;
-use App\Models\GameSeries;
 use App\Models\GameTitle;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\TestCase;
 
-class SeriesApiTest extends TestCase
+class SeriesApiTest extends GameMasterApiTestCase
 {
-    use DatabaseTransactions;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->withHeaders([
-            'X-GPTS-API-KEY' => 'test-gpts-api-key',
-        ]);
-    }
-
     private function createFranchise(): GameFranchise
     {
         return GameFranchise::query()->create([
-            'key' => 'sf-' . uniqid('', true),
+            'key' => 'sf-'.uniqid('', true),
             'name' => 'F',
             'phonetic' => 'えふ',
             'node_name' => 'F',
@@ -36,7 +22,7 @@ class SeriesApiTest extends TestCase
     private function createOrphanTitle(): GameTitle
     {
         return GameTitle::query()->create([
-            'key' => 'st-' . uniqid('', true),
+            'key' => 'st-'.uniqid('', true),
             'game_franchise_id' => null,
             'game_series_id' => null,
             'name' => '孤児タイトル',

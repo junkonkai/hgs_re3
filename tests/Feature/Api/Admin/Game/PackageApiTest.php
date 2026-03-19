@@ -6,26 +6,13 @@ use App\Enums\Shop;
 use App\Models\GameMaker;
 use App\Models\GamePackageGroup;
 use App\Models\GamePlatform;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\TestCase;
 
-class PackageApiTest extends TestCase
+class PackageApiTest extends GameMasterApiTestCase
 {
-    use DatabaseTransactions;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->withHeaders([
-            'X-GPTS-API-KEY' => 'test-gpts-api-key',
-        ]);
-    }
-
     private function createPlatform(): GamePlatform
     {
         return GamePlatform::query()->create([
-            'key' => 'p-pkg-' . uniqid('', true),
+            'key' => 'p-pkg-'.uniqid('', true),
             'game_maker_id' => null,
             'name' => 'PlatX',
             'acronym' => 'PX',
@@ -66,7 +53,7 @@ class PackageApiTest extends TestCase
         $pid = $store->json('data.id');
         $store->assertJsonPath('data.makers.0.id', $maker->id);
 
-        $this->getJson('/api/v1/admin/game/packages?q=' . urlencode('パッケージ'))
+        $this->getJson('/api/v1/admin/game/packages?q='.urlencode('パッケージ'))
             ->assertOk()
             ->assertJsonFragment(['id' => $pid]);
 
@@ -120,7 +107,7 @@ class PackageApiTest extends TestCase
     {
         $p1 = $this->createPlatform();
         $p2 = GamePlatform::query()->create([
-            'key' => 'p2-' . uniqid('', true),
+            'key' => 'p2-'.uniqid('', true),
             'game_maker_id' => null,
             'name' => 'P2',
             'acronym' => 'P2',
@@ -136,7 +123,7 @@ class PackageApiTest extends TestCase
         $r2->assertCreated();
         $id2 = $r2->json('data.id');
 
-        $this->getJson('/api/v1/admin/game/packages?platform_ids[]=' . $p2->id)
+        $this->getJson('/api/v1/admin/game/packages?platform_ids[]='.$p2->id)
             ->assertOk()
             ->assertJsonFragment(['id' => $id2]);
     }

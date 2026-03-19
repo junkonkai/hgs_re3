@@ -5,22 +5,9 @@ namespace Tests\Feature\Api\Admin\Game;
 use App\Models\GameMaker;
 use App\Models\GamePackage;
 use App\Models\GamePlatform;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\TestCase;
 
-class MakerApiTest extends TestCase
+class MakerApiTest extends GameMasterApiTestCase
 {
-    use DatabaseTransactions;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->withHeaders([
-            'X-GPTS-API-KEY' => 'test-gpts-api-key',
-        ]);
-    }
-
     public function test_index_returns_paginated_list(): void
     {
         GameMaker::factory()->count(3)->create();
@@ -69,7 +56,7 @@ class MakerApiTest extends TestCase
         $maker->synonymsStr = "てすと\r\n別名テスト";
         $maker->save();
 
-        $response = $this->getJson('/api/v1/admin/game/makers?q=' . urlencode('別名テスト'));
+        $response = $this->getJson('/api/v1/admin/game/makers?q='.urlencode('別名テスト'));
 
         $response->assertOk();
         $response->assertJsonFragment([
@@ -224,4 +211,3 @@ class MakerApiTest extends TestCase
         $afterDetach->assertJsonMissing(['id' => $p1->id, 'name' => 'Package 1']);
     }
 }
-

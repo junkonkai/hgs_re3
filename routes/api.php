@@ -1,23 +1,22 @@
 <?php
 
-use App\Http\Controllers\Api\GameMakerController;
-use App\Http\Controllers\Api\Admin\Game\MakerController as AdminGameMakerController;
 use App\Http\Controllers\Api\Admin\Game\FranchiseController as AdminGameFranchiseController;
-use App\Http\Controllers\Api\Admin\Game\SeriesController as AdminGameSeriesController;
-use App\Http\Controllers\Api\Admin\Game\TitleController as AdminGameTitleController;
-use App\Http\Controllers\Api\Admin\Game\PlatformController as AdminGamePlatformController;
-use App\Http\Controllers\Api\Admin\Game\PackageGroupController as AdminGamePackageGroupController;
-use App\Http\Controllers\Api\Admin\Game\PackageController as AdminGamePackageController;
-use App\Http\Controllers\Api\Admin\Game\RelatedProductController as AdminGameRelatedProductController;
+use App\Http\Controllers\Api\Admin\Game\MakerController as AdminGameMakerController;
 use App\Http\Controllers\Api\Admin\Game\MediaMixController as AdminGameMediaMixController;
 use App\Http\Controllers\Api\Admin\Game\MediaMixGroupController as AdminGameMediaMixGroupController;
+use App\Http\Controllers\Api\Admin\Game\PackageController as AdminGamePackageController;
+use App\Http\Controllers\Api\Admin\Game\PackageGroupController as AdminGamePackageGroupController;
+use App\Http\Controllers\Api\Admin\Game\PlatformController as AdminGamePlatformController;
+use App\Http\Controllers\Api\Admin\Game\RelatedProductController as AdminGameRelatedProductController;
+use App\Http\Controllers\Api\Admin\Game\SeriesController as AdminGameSeriesController;
+use App\Http\Controllers\Api\Admin\Game\TitleController as AdminGameTitleController;
+use App\Http\Controllers\Api\GameMakerController;
 use App\Http\Controllers\Api\Test\AccountController;
 use App\Http\Controllers\Api\Test\FearMeterController;
 use App\Http\Controllers\Api\UserFavoriteController;
 use Illuminate\Support\Facades\Route;
 
-
-if (!app()->environment('production')) {
+if (! app()->environment('production')) {
     Route::get('test/registration-url', [AccountController::class, 'getRegistrationUrlForTest'])->name('api.test.registration-url');
     Route::get('test/password-reset-url', [AccountController::class, 'getPasswordResetUrlForTest'])->name('api.test.password-reset-url');
     Route::get('test/email-change-url', [AccountController::class, 'getEmailChangeUrlForTest'])->name('api.test.email-change-url');
@@ -31,9 +30,8 @@ if (!app()->environment('production')) {
 // ゲーム関連API
 Route::get('game/maker/suggest', [GameMakerController::class, 'suggest'])->name('api.game.maker.suggest');
 
-// ゲームマスター管理API（v1）
-Route::prefix('v1/admin/game')->group(function ()
-{
+// ゲームマスター管理API（v1）: Bearer（Sanctum PAT）+ game_master.api ability
+Route::prefix('v1/admin/game')->middleware(['auth:sanctum', 'game_master.api'])->group(function () {
     Route::get('makers', [AdminGameMakerController::class, 'index'])->name('api.v1.admin.game.makers.index');
     Route::post('makers', [AdminGameMakerController::class, 'store'])->name('api.v1.admin.game.makers.store');
     Route::get('makers/{id}', [AdminGameMakerController::class, 'show'])->name('api.v1.admin.game.makers.show');
@@ -185,5 +183,3 @@ Route::prefix('v1/admin/game')->group(function ()
 Route::middleware(['web', 'auth:web'])->group(function () {
     Route::post('user/favorite/toggle', [UserFavoriteController::class, 'toggle'])->name('api.user.favorite.toggle');
 });
-
-

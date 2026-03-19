@@ -6,27 +6,13 @@ use App\Models\GameFranchise;
 use App\Models\GameMediaMix;
 use App\Models\GamePackageGroup;
 use App\Models\GameRelatedProduct;
-use App\Models\GameTitle;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\TestCase;
 
-class TitleApiTest extends TestCase
+class TitleApiTest extends GameMasterApiTestCase
 {
-    use DatabaseTransactions;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->withHeaders([
-            'X-GPTS-API-KEY' => 'test-gpts-api-key',
-        ]);
-    }
-
     private function createFranchise(): GameFranchise
     {
         return GameFranchise::query()->create([
-            'key' => 'tf-' . uniqid('', true),
+            'key' => 'tf-'.uniqid('', true),
             'name' => 'FF',
             'phonetic' => 'えふえふ',
             'node_name' => 'FF',
@@ -43,7 +29,7 @@ class TitleApiTest extends TestCase
         return [
             'game_franchise_id' => $f->id,
             'name' => 'APIタイトル',
-            'key' => 'tk-' . uniqid('', true),
+            'key' => 'tk-'.uniqid('', true),
             'phonetic' => 'えーぴーあいたいとる',
             'node_name' => 'AT',
             'first_release_int' => 20200101,
@@ -66,7 +52,7 @@ class TitleApiTest extends TestCase
         $id = $store->json('data.id');
 
         $this->getJson('/api/v1/admin/game/titles?per_page=5')->assertOk();
-        $this->getJson('/api/v1/admin/game/titles?q=' . urlencode('検索用別名'))->assertOk()
+        $this->getJson('/api/v1/admin/game/titles?q='.urlencode('検索用別名'))->assertOk()
             ->assertJsonFragment(['id' => $id]);
 
         $this->getJson("/api/v1/admin/game/titles/{$id}")->assertOk();
@@ -137,7 +123,7 @@ class TitleApiTest extends TestCase
         $this->deleteJson("/api/v1/admin/game/titles/{$tid}/related-products/{$rp->id}")->assertNoContent();
 
         $mm = GameMediaMix::query()->create([
-            'key' => 'mm-' . uniqid('', true),
+            'key' => 'mm-'.uniqid('', true),
             'type' => 1,
             'name' => 'MM',
             'node_name' => 'MM',

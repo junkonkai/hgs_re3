@@ -1,10 +1,10 @@
 <?php
 
+use App\Http\Middleware\CrossOriginHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
-use App\Http\Middleware\CrossOriginHeaders;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -40,9 +40,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'gpts.api_key' => \App\Http\Middleware\GptsApiKeyMiddleware::class,
+            'game_master.api' => \App\Http\Middleware\EnsureGameMasterApiTokenAbility::class,
         ]);
 
-        //$middleware->append(CrossOriginHeaders::class);
+        // $middleware->append(CrossOriginHeaders::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (Throwable $e, Request $request) {

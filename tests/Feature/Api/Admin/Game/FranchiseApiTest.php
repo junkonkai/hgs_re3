@@ -5,29 +5,16 @@ namespace Tests\Feature\Api\Admin\Game;
 use App\Models\GameFranchise;
 use App\Models\GameSeries;
 use App\Models\GameTitle;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\TestCase;
 
-class FranchiseApiTest extends TestCase
+class FranchiseApiTest extends GameMasterApiTestCase
 {
-    use DatabaseTransactions;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->withHeaders([
-            'X-GPTS-API-KEY' => 'test-gpts-api-key',
-        ]);
-    }
-
     /**
-     * @param array<string, mixed> $overrides
+     * @param  array<string, mixed>  $overrides
      */
     private function createFranchise(array $overrides = []): GameFranchise
     {
         return GameFranchise::query()->create(array_merge([
-            'key' => 'f-' . uniqid('', true),
+            'key' => 'f-'.uniqid('', true),
             'name' => 'テストフランチャイズ',
             'phonetic' => 'てすとふらんちゃいず',
             'node_name' => 'TF',
@@ -68,7 +55,7 @@ class FranchiseApiTest extends TestCase
             'phonetic' => 'ゆにーくよみがなびーびーびー',
         ]);
 
-        $response = $this->getJson('/api/v1/admin/game/franchises?q=' . urlencode('よみがなびーびー'));
+        $response = $this->getJson('/api/v1/admin/game/franchises?q='.urlencode('よみがなびーびー'));
 
         $response->assertOk();
         $response->assertJsonFragment([
@@ -90,7 +77,7 @@ class FranchiseApiTest extends TestCase
 
     public function test_store_and_update(): void
     {
-        $key = 'nf-' . uniqid('', true);
+        $key = 'nf-'.uniqid('', true);
         $store = $this->postJson('/api/v1/admin/game/franchises', [
             'name' => '新規F',
             'key' => $key,
@@ -103,7 +90,7 @@ class FranchiseApiTest extends TestCase
         $store->assertJsonPath('data.name', '新規F');
 
         $id = $store->json('data.id');
-        $newKey = 'uf-' . uniqid('', true);
+        $newKey = 'uf-'.uniqid('', true);
         $put = $this->putJson("/api/v1/admin/game/franchises/{$id}", [
             'name' => '更新F',
             'key' => $newKey,
@@ -171,7 +158,7 @@ class FranchiseApiTest extends TestCase
     {
         $f = $this->createFranchise();
         $t1 = GameTitle::query()->create([
-            'key' => 'ft1-' . uniqid('', true),
+            'key' => 'ft1-'.uniqid('', true),
             'game_franchise_id' => null,
             'game_series_id' => null,
             'name' => '直下タ1',
@@ -181,7 +168,7 @@ class FranchiseApiTest extends TestCase
             'rating' => 0,
         ]);
         $t2 = GameTitle::query()->create([
-            'key' => 'ft2-' . uniqid('', true),
+            'key' => 'ft2-'.uniqid('', true),
             'game_franchise_id' => null,
             'game_series_id' => null,
             'name' => '直下タ2',
@@ -225,7 +212,7 @@ class FranchiseApiTest extends TestCase
         ]);
         // GameTitle::save は franchise_id と series_id 両方あると series_id を落とすため、シリーズ配下は franchise_id null
         $tSeries = GameTitle::query()->create([
-            'key' => 'fts-' . uniqid('', true),
+            'key' => 'fts-'.uniqid('', true),
             'game_franchise_id' => null,
             'game_series_id' => $series->id,
             'name' => 'シリーズ配下',

@@ -4,29 +4,15 @@ namespace Tests\Feature\Api\Admin\Game;
 
 use App\Models\GameFranchise;
 use App\Models\GamePackage;
-use App\Models\GamePackageGroup;
 use App\Models\GamePlatform;
 use App\Models\GameTitle;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\TestCase;
 
-class PackageGroupApiTest extends TestCase
+class PackageGroupApiTest extends GameMasterApiTestCase
 {
-    use DatabaseTransactions;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->withHeaders([
-            'X-GPTS-API-KEY' => 'test-gpts-api-key',
-        ]);
-    }
-
     private function createFranchise(): GameFranchise
     {
         return GameFranchise::query()->create([
-            'key' => 'f-pg-' . uniqid('', true),
+            'key' => 'f-pg-'.uniqid('', true),
             'name' => 'F',
             'phonetic' => 'えふ',
             'node_name' => 'F',
@@ -40,7 +26,7 @@ class PackageGroupApiTest extends TestCase
         return GameTitle::query()->create([
             'game_franchise_id' => $f->id,
             'name' => 'T',
-            'key' => 'k-' . uniqid('', true),
+            'key' => 'k-'.uniqid('', true),
             'phonetic' => 'てぃ',
             'node_name' => 'T',
             'first_release_int' => 20200101,
@@ -56,7 +42,7 @@ class PackageGroupApiTest extends TestCase
     private function createPlatform(): GamePlatform
     {
         return GamePlatform::query()->create([
-            'key' => 'p-pg-' . uniqid('', true),
+            'key' => 'p-pg-'.uniqid('', true),
             'game_maker_id' => null,
             'name' => 'Plat',
             'acronym' => 'P',
@@ -95,7 +81,7 @@ class PackageGroupApiTest extends TestCase
         $store->assertCreated();
         $gid = $store->json('data.id');
 
-        $this->getJson('/api/v1/admin/game/package-groups?q=' . urlencode('グループ'))
+        $this->getJson('/api/v1/admin/game/package-groups?q='.urlencode('グループ'))
             ->assertOk()
             ->assertJsonFragment(['id' => $gid]);
 
@@ -131,6 +117,6 @@ class PackageGroupApiTest extends TestCase
         $this->deleteJson("/api/v1/admin/game/package-groups/{$gid}/packages/{$pkg->id}")
             ->assertNoContent();
 
-        $this->deleteJson("/api/v1/admin/game/package-groups/999999")->assertNotFound();
+        $this->deleteJson('/api/v1/admin/game/package-groups/999999')->assertNotFound();
     }
 }

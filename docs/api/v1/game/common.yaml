@@ -20,7 +20,10 @@ components:
       type: http
       scheme: bearer
       bearerFormat: Bearer
-      description: Sanctum Personal Access Token
+      description: |
+        Sanctum Personal Access Token（Authorization: Bearer）。
+        管理者ユーザーに `php artisan game-master:issue-token {email}` で発行。
+        トークンには ability（既定: game-master:access、環境変数 GAME_MASTER_API_TOKEN_ABILITY）が付与されること。
 
   parameters:
     page:

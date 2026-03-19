@@ -20,7 +20,10 @@
 
 ## 認証
 
-書き込み・読み取りとも Bearer トークン（Sanctum Personal Access Token）を想定しています。
+読み取り・書き込みとも **`Authorization: Bearer {token}`**（Laravel Sanctum Personal Access Token）が必須です。
+
+- トークンは **role が管理者（ADMIN）のユーザー** にのみ `php artisan game-master:issue-token {メールアドレス}` で発行できます。
+- 設定: [`config/game_master_api.php`](../../../../config/game_master_api.php)（環境変数 `GAME_MASTER_API_TOKEN_ABILITY` / `GAME_MASTER_API_TOKEN_NAME`）。GPTS 用の `X-GPTS-API-KEY` とは別です。
 
 ## 検索
 

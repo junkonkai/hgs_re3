@@ -6,26 +6,13 @@ use App\Models\GameFranchise;
 use App\Models\GameMediaMix;
 use App\Models\GameRelatedProduct;
 use App\Models\GameTitle;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\TestCase;
 
-class MediaMixApiTest extends TestCase
+class MediaMixApiTest extends GameMasterApiTestCase
 {
-    use DatabaseTransactions;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->withHeaders([
-            'X-GPTS-API-KEY' => 'test-gpts-api-key',
-        ]);
-    }
-
     private function createFranchise(): GameFranchise
     {
         return GameFranchise::query()->create([
-            'key' => 'f-mm-' . uniqid('', true),
+            'key' => 'f-mm-'.uniqid('', true),
             'name' => 'F',
             'phonetic' => 'えふ',
             'node_name' => 'F',
@@ -39,7 +26,7 @@ class MediaMixApiTest extends TestCase
         return GameTitle::query()->create([
             'game_franchise_id' => $f->id,
             'name' => 'T',
-            'key' => 'k-' . uniqid('', true),
+            'key' => 'k-'.uniqid('', true),
             'phonetic' => 'てぃ',
             'node_name' => 'T',
             'first_release_int' => 20200101,
@@ -60,7 +47,7 @@ class MediaMixApiTest extends TestCase
         return array_merge([
             'type' => 1,
             'name' => 'ミックスA',
-            'key' => 'mx-' . uniqid('', true),
+            'key' => 'mx-'.uniqid('', true),
             'node_name' => 'MA',
             'game_franchise_id' => $f->id,
             'game_media_mix_group_id' => null,
@@ -90,7 +77,7 @@ class MediaMixApiTest extends TestCase
         $store->assertCreated();
         $mid = $store->json('data.id');
 
-        $this->getJson('/api/v1/admin/game/media-mixes?q=' . urlencode('ミックス'))
+        $this->getJson('/api/v1/admin/game/media-mixes?q='.urlencode('ミックス'))
             ->assertOk()
             ->assertJsonFragment(['id' => $mid]);
 

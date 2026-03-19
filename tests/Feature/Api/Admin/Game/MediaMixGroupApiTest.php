@@ -5,26 +5,13 @@ namespace Tests\Feature\Api\Admin\Game;
 use App\Models\GameFranchise;
 use App\Models\GameMediaMix;
 use App\Models\GameMediaMixGroup;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\TestCase;
 
-class MediaMixGroupApiTest extends TestCase
+class MediaMixGroupApiTest extends GameMasterApiTestCase
 {
-    use DatabaseTransactions;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->withHeaders([
-            'X-GPTS-API-KEY' => 'test-gpts-api-key',
-        ]);
-    }
-
     private function createFranchise(): GameFranchise
     {
         return GameFranchise::query()->create([
-            'key' => 'f-mmg-' . uniqid('', true),
+            'key' => 'f-mmg-'.uniqid('', true),
             'name' => 'F',
             'phonetic' => 'えふ',
             'node_name' => 'F',
@@ -38,7 +25,7 @@ class MediaMixGroupApiTest extends TestCase
         return GameMediaMix::query()->create([
             'type' => 1,
             'name' => 'MM',
-            'key' => 'k-' . uniqid('', true),
+            'key' => 'k-'.uniqid('', true),
             'node_name' => 'MM',
             'game_franchise_id' => $f->id,
             'game_media_mix_group_id' => null,

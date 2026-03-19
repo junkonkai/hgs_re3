@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -61,8 +62,6 @@ class User extends Authenticatable
 
     /**
      * お気に入りゲームタイトルを取得
-     *
-     * @return BelongsToMany
      */
     public function favoriteGameTitles(): BelongsToMany
     {
@@ -71,8 +70,6 @@ class User extends Authenticatable
 
     /**
      * 怖さメーター評価を取得
-     *
-     * @return HasMany
      */
     public function fearMeters(): HasMany
     {
@@ -81,8 +78,6 @@ class User extends Authenticatable
 
     /**
      * ソーシャルアカウント連携を取得
-     *
-     * @return HasMany
      */
     public function socialAccounts(): HasMany
     {
@@ -91,8 +86,6 @@ class User extends Authenticatable
 
     /**
      * OAuthのみで登録し、まだパスワードを設定していないか
-     *
-     * @return bool
      */
     public function needsPasswordSet(): bool
     {
