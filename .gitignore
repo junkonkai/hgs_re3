@@ -22,7 +22,6 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
-composer.lock
 /test-results/
 /playwright-report/
 /blob-report/
