@@ -66,8 +66,16 @@ div.pkg-info {
         padding-top: 10px;
 
         > .pkg-info-shop {
-            width: 100px;
+            min-width: 100px;
+            width: max-content;
+            max-width: 100%;
             text-align: center;
+
+            > a {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
 
             .shop-subtitle {
                 font-size: 11px;
@@ -76,6 +84,8 @@ div.pkg-info {
 
             .pkg-info-shop-img {
                 margin-bottom: 10px;
+                display: flex;
+                justify-content: center;
 
                 img {
                     max-width: 100%;
@@ -87,6 +97,7 @@ div.pkg-info {
 
             .shop-name {
                 font-size: 11px;
+                text-align: center;
             }
         }
     }
