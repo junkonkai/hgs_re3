@@ -14,6 +14,9 @@ use App\Models\GameSeries;
 use App\Models\GameTitle;
 use App\Models\GameTitleFearMeterStatistic;
 use App\Models\UserFavoriteGameTitle;
+use App\Models\UserGameTitleFearMeterCommentLike;
+use App\Models\UserGameTitleFearMeterCommentReport;
+use App\Models\UserGameTitleFearMeterLog;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -517,12 +520,101 @@ class GameController extends Controller
 
         // 怖さメーター統計データを取得（集計されていなかったらnull）
         $fearMeter = GameTitleFearMeterStatistic::find($title->id);
+        $commentLogPickup = UserGameTitleFearMeterLog::query()
+            ->visibleComments()
+            ->where('game_title_id', $title->id)
+            ->with('user')
+            ->withCount(['likes', 'reports'])
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get();
+        $likedLogIds = [];
+        $reportedLogIds = [];
+        if (Auth::check() && $commentLogPickup->isNotEmpty()) {
+            $logIds = $commentLogPickup->pluck('id')->toArray();
+            $likedLogIds = UserGameTitleFearMeterCommentLike::query()
+                ->where('user_id', Auth::id())
+                ->whereIn('fear_meter_log_id', $logIds)
+                ->pluck('fear_meter_log_id')
+                ->map(fn ($id) => (int) $id)
+                ->toArray();
+            $reportedLogIds = UserGameTitleFearMeterCommentReport::query()
+                ->where('reporter_user_id', Auth::id())
+                ->whereIn('fear_meter_log_id', $logIds)
+                ->pluck('fear_meter_log_id')
+                ->map(fn ($id) => (int) $id)
+                ->toArray();
+        }
 
         return $this->tree(
-            view('game.title_detail', compact('title', 'ratingCheck', 'franchise', 'isFavorite', 'fearMeter')),
+            view('game.title_detail', compact(
+                'title',
+                'ratingCheck',
+                'franchise',
+                'isFavorite',
+                'fearMeter',
+                'commentLogPickup',
+                'likedLogIds',
+                'reportedLogIds'
+            )),
             options: [
                 'ratingCheck' => $ratingCheck,
-                'components' => ['TitleDetailFavorite' => []]
+                'components' => [
+                    'TitleDetailFavorite' => [],
+                    'FearMeterCommentReaction' => [],
+                ],
+                'url' => route('Game.TitleDetail', ['titleKey' => $title->key]),
+            ],
+        );
+    }
+
+    /**
+     * タイトルの怖さメーターコメントログ
+     *
+     * @param Request $request
+     * @param string $titleKey
+     * @return JsonResponse|Application|Factory|View
+     */
+    public function titleFearMeterComments(Request $request, string $titleKey): JsonResponse|Application|Factory|View
+    {
+        $title = GameTitle::findByKey($titleKey);
+        if (!$title) {
+            abort(404);
+        }
+        $franchise = $title->getFranchise();
+
+        $commentLogs = UserGameTitleFearMeterLog::query()
+            ->visibleComments()
+            ->where('game_title_id', $title->id)
+            ->with('user')
+            ->withCount(['likes', 'reports'])
+            ->orderBy('created_at')
+            ->paginate(30);
+        $likedLogIds = [];
+        $reportedLogIds = [];
+        if (Auth::check() && $commentLogs->isNotEmpty()) {
+            $logIds = $commentLogs->getCollection()->pluck('id')->toArray();
+            $likedLogIds = UserGameTitleFearMeterCommentLike::query()
+                ->where('user_id', Auth::id())
+                ->whereIn('fear_meter_log_id', $logIds)
+                ->pluck('fear_meter_log_id')
+                ->map(fn ($id) => (int) $id)
+                ->toArray();
+            $reportedLogIds = UserGameTitleFearMeterCommentReport::query()
+                ->where('reporter_user_id', Auth::id())
+                ->whereIn('fear_meter_log_id', $logIds)
+                ->pluck('fear_meter_log_id')
+                ->map(fn ($id) => (int) $id)
+                ->toArray();
+        }
+
+        return $this->tree(
+            view('game.title_fear_meter_comments', compact('title', 'franchise', 'commentLogs', 'likedLogIds', 'reportedLogIds')),
+            options: [
+                'ratingCheck' => $title->rating == Rating::R18A,
+                'components' => [
+                    'FearMeterCommentReaction' => [],
+                ],
             ],
         );
     }

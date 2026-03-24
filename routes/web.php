@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\GameFearMeterCommentController;
 use App\Http\Controllers\HgnController;
 use App\Http\Controllers\User;
 use Illuminate\Support\Facades\App;
@@ -62,6 +63,7 @@ Route::group(['prefix' => 'user'], function () {
     Route::get('fear-meter', [User\FearMeterController::class, 'index'])->name('User.FearMeter.Index');
     Route::get('fear-meter/{titleKey}/form', [User\FearMeterController::class, 'form'])->name('User.FearMeter.Form');
     Route::post('fear-meter', [User\FearMeterController::class, 'store'])->name('User.FearMeter.Form.Store');
+    Route::delete('fear-meter', [User\FearMeterController::class, 'destroy'])->name('User.FearMeter.Form.Delete');
 });
 
 use App\Http\Controllers\Admin;
@@ -101,7 +103,15 @@ Route::group(['prefix' => 'admin'], function () {
             Route::get('user/{user}', [Admin\Manage\UserController::class, 'show'])->name('Admin.Manage.User.Show');
             Route::get('user/{user}/password', [Admin\Manage\UserController::class, 'editPassword'])->name('Admin.Manage.User.Password');
             Route::post('user/{user}/password', [Admin\Manage\UserController::class, 'updatePassword'])->name('Admin.Manage.User.Password.Update');
+            Route::post('user/{user}/fear-meter-restrictions', [Admin\Manage\UserController::class, 'storeFearMeterRestriction'])->name('Admin.Manage.User.FearMeterRestriction.Store');
+            Route::post('user/{user}/fear-meter-restrictions/release', [Admin\Manage\UserController::class, 'releaseFearMeterRestriction'])->name('Admin.Manage.User.FearMeterRestriction.Release');
             Route::delete('user/{user}', [Admin\Manage\UserController::class, 'destroy'])->name('Admin.Manage.User.Destroy');
+
+            // 怖さメーター通報
+            Route::get('fear-meter-report', [Admin\Manage\FearMeterReportController::class, 'index'])->name('Admin.Manage.FearMeterReport');
+            Route::get('fear-meter-report/{report}', [Admin\Manage\FearMeterReportController::class, 'show'])->name('Admin.Manage.FearMeterReport.Show');
+            Route::post('fear-meter-report/{report}/status', [Admin\Manage\FearMeterReportController::class, 'updateStatus'])->name('Admin.Manage.FearMeterReport.Status');
+            Route::post('fear-meter-report/{report}/restrict-user', [Admin\Manage\FearMeterReportController::class, 'restrictUser'])->name('Admin.Manage.FearMeterReport.RestrictUser');
         });
 
         // マスター
@@ -206,6 +216,7 @@ Route::group(['prefix' => 'admin'], function () {
                 Route::get('{' . $prefix . '}/link_media_mix', [$class, 'linkMediaMix'])->name("{$basename}.LinkMediaMix");
                 Route::post('{' . $prefix . '}/link_media_mix', [$class, 'syncMediaMix'])->name("{$basename}.SyncMediaMix");
                 Route::get('{' . $prefix . '}', [$class, 'detail'])->name("{$basename}.Detail");
+                Route::delete('{' . $prefix . '}/fear-meter/{user}', [$class, 'deleteFearMeter'])->name("{$basename}.DeleteFearMeter");
                 Route::delete('{' . $prefix . '}', [$class, 'delete'])->name("{$basename}.Delete");
             });
 
@@ -361,6 +372,14 @@ Route::group(['prefix' => 'game'], function () {
     Route::get('/lineup', [$class, 'lineup'])->name('Game.Lineup');
     // タイトル詳細
     Route::get('/title/{titleKey}', [$class, 'titleDetail'])->name('Game.TitleDetail');
+    // タイトル詳細（怖さメーターコメントログ）
+    Route::get('/title/{titleKey}/fear-meter-comments', [$class, 'titleFearMeterComments'])->name('Game.TitleFearMeterComments');
+    Route::middleware('auth')->group(function () {
+        Route::post('/title/{titleKey}/fear-meter-comments/{logId}/like', [GameFearMeterCommentController::class, 'like'])->name('Game.TitleFearMeterComments.Like');
+        Route::delete('/title/{titleKey}/fear-meter-comments/{logId}/like', [GameFearMeterCommentController::class, 'unlike'])->name('Game.TitleFearMeterComments.Unlike');
+        Route::post('/title/{titleKey}/fear-meter-comments/{logId}/unlike', [GameFearMeterCommentController::class, 'unlike'])->name('Game.TitleFearMeterComments.UnlikePost');
+        Route::post('/title/{titleKey}/fear-meter-comments/{logId}/report', [GameFearMeterCommentController::class, 'report'])->name('Game.TitleFearMeterComments.Report');
+    });
 
     // メーカー詳細
     Route::get('/maker/{makerKey}', [$class, 'makerDetail'])->name('Game.MakerDetail');
