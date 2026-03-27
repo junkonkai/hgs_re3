@@ -24,7 +24,7 @@
         </div>
         <div class="node-content basic">
             @if ($commentLogs->isEmpty())
-                <p>コメントはまだありません。</p>
+                <p>コメントの投稿はまだないようだ。</p>
             @else
                 <div>
                     @foreach ($commentLogs as $commentLog)

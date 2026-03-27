@@ -136,10 +136,10 @@
                                 </div>
                             </div>
                         @endforeach
+                        <div style="margin-top: 12px;">
+                            <a href="{{ route('Game.TitleFearMeterComments', ['titleKey' => $title->key]) }}" data-hgn-scope="full">コメントをもっと見る</a>
+                        </div>
                     @endif
-                    <div style="margin-top: 12px;">
-                        <a href="{{ route('Game.TitleFearMeterComments', ['titleKey' => $title->key]) }}" data-hgn-scope="full">コメントをもっと見る</a>
-                    </div>
                 </div>
             </section>
             
