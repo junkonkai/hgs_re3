@@ -56,17 +56,26 @@
         <div class="node-content basic pl-4">
             <div class="title-fear-meter">
                 @if ($fearMeter)    
-                <div>
-                    @for ($i = 0; $i < $fearMeter->fear_meter->value; $i++)
-                    ■
-                    @endfor
-                    @for ($i = 0; $i < 4 - $fearMeter->fear_meter->value; $i++)
-                    □
-                    @endfor
-                    {{ $fearMeter->average_rating }} ({{ $fearMeter->fear_meter->text() }})
+                @php
+                    $fearMeterMax = 4;
+                    $fearMeterAverage = (float) $fearMeter->average_rating;
+                    $fearMeterAverage = max(0, min($fearMeterMax, $fearMeterAverage));
+                    $fearMeterPercent = ($fearMeterAverage / $fearMeterMax) * 100;
+                @endphp
+                <div class="space-y-2">
+                    <div class="h-3 w-full max-w-xs overflow-hidden rounded-full bg-slate-700/60">
+                        <div
+                            class="h-full bg-gradient-to-r from-slate-800 via-sky-600 to-indigo-500"
+                            style="width: {{ $fearMeterPercent }}%;"
+                        ></div>
+                    </div>
+                    <div class="text-sm text-slate-200">
+                        <span class="font-semibold">{{ number_format($fearMeterAverage, 2) }} / {{ $fearMeterMax }}</span>
+                        <span class="text-slate-400">（{{ $fearMeter->fear_meter->text() }}）</span>
+                    </div>
                 </div>
                 @else
-                <div>怖さメーターを入力したユーザーはいないようだ</div>
+                <div>怖さメーターは入力されていないようだ</div>
                 @endif
             </div>
             @if (Auth::check())
@@ -85,7 +94,7 @@
                 
                 <div class="node-content basic">
                     @if ($commentLogPickup->isEmpty())
-                        <p>(コメントの投稿はまだないようだ)</p>
+                        <p>コメントの投稿はまだないようだ</p>
                     @else
                         @foreach ($commentLogPickup as $commentLog)
                             <div class="py-3 border-b border-white/10 last:border-b-0">
