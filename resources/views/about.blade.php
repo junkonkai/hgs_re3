@@ -188,8 +188,7 @@
                 <dd>
                     当サイトのプログラムの一部はCursor・ChatGPT・Claudeによるコード生成です。<br>
                     生成AIが生成した部分を示すものは残していません。<br>
-                    （生成AIによるコードは全体の50%くらいかなと思います）<br>
-                    また、アルゴリズムの検討や変数・メソッドの命名検討でAIに意見を聞きながら実装しています。
+                    当初、生成AIによるコードは全体の50%くらいでしたが、2026年以降の実装はほぼバイブコーディングとなっており、AI実装割合は日に日に増えています。
                 </dd>
             </dl>
 
@@ -221,22 +220,6 @@
             <ul>
                 <li><a href="https://icon-pit.com/" target="_blank">icon-pit</a></li>
             </ul>
-        </div>
-    </section>
-
-    <section class="node">
-        <div class="node-head">
-            <h2 class="node-head-text">オープンソース</h2>
-            <span class="node-pt">●</span>
-        </div>
-        <div class="node-content basic">
-            <p>
-                当サイトは<a href="https://github.com/hucklefriend/hgs_re3" target="_blank" rel="external">GitHub</a>にてオープンソースとして公開しています。<br>
-                ライセンスは<a href="https://github.com/hucklefriend/hgs_re3/blob/develop/LICENSE" target="_blank" rel="external">AGPL-3.0-or-later</a>です。<br>
-                <br>
-                基本的にプルリクエスト等は受け付けておりません。<br>
-                不具合の報告は<a href="{{ route('Contact') }}" data-hgn-scope="full">問い合わせ</a>からお願いします。<br>
-            </p>
         </div>
     </section>
 

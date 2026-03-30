@@ -25,6 +25,15 @@ body {
         color: #334433;
         margin: 50px 0;
         font-size: 11px;
+
+        > a {
+            color: #6B7E6B;
+
+            &:hover {
+                color: #CCEECC;
+                text-shadow: 0 0 3px var(--node-pt-dark-shadow), 0 0 8px var(--node-pt-dark-shadow) !important;
+            }
+        }
     }
 
     /*
