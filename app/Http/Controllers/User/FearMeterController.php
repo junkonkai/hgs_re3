@@ -105,6 +105,9 @@ class FearMeterController extends Controller
             view('user.fear_meter.form', compact('user', 'title', 'fearMeter', 'fearMeterComment', 'shortcutRoute', 'myNodeShortcutRoute', 'from')),
             options: [
                 'csrfToken' => csrf_token(),
+                'components' => [
+                    'FearMeterFormInput' => [],
+                ],
                 'url' => route('User.FearMeter.Form', ['titleKey' => $title->key]),
             ]
         );

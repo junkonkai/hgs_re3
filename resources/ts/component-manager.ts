@@ -1,5 +1,6 @@
 import { Component } from "./component";
 import { FearMeterCommentReaction } from "./components/fear_meter_comment_reaction";
+import { FearMeterFormInput } from "./components/fear_meter_form_input";
 import { LineupSearch } from "./components/lineup_search";
 import { TitleDetailFavorite } from "./components/title_detail_favorite";
 
@@ -14,6 +15,7 @@ export class ComponentManager
         'LineupSearch': LineupSearch,
         'TitleDetailFavorite': TitleDetailFavorite,
         'FearMeterCommentReaction': FearMeterCommentReaction,
+        'FearMeterFormInput': FearMeterFormInput,
     };
 
     /**
