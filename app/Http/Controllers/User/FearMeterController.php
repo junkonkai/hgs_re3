@@ -59,6 +59,12 @@ class FearMeterController extends Controller
         $fearMeter = UserGameTitleFearMeter::where('user_id', $user->id)
             ->where('game_title_id', $title->id)
             ->first();
+        $fearMeterComment = UserGameTitleFearMeterLog::query()
+            ->where('user_id', $user->id)
+            ->where('game_title_id', $title->id)
+            ->where('is_deleted', false)
+            ->latest('id')
+            ->value('comment');
 
         $franchise = $title->getFranchise();
         $shortcutRoute = [
@@ -96,7 +102,7 @@ class FearMeterController extends Controller
         $from = request()->query('from');
 
         return $this->tree(
-            view('user.fear_meter.form', compact('user', 'title', 'fearMeter', 'shortcutRoute', 'myNodeShortcutRoute', 'from')),
+            view('user.fear_meter.form', compact('user', 'title', 'fearMeter', 'fearMeterComment', 'shortcutRoute', 'myNodeShortcutRoute', 'from')),
             options: [
                 'csrfToken' => csrf_token(),
                 'url' => route('User.FearMeter.Form', ['titleKey' => $title->key]),
