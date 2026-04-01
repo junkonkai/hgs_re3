@@ -150,7 +150,9 @@
 
     @if ($loop->last)
     @isset($pager)
+    <div class="node-content basic">
         @include('common.pager', ['pager' => $pager])
+    </div>
     @endisset
     @endif
 </section>

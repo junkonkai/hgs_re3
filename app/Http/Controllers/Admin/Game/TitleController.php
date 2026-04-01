@@ -10,13 +10,19 @@ use App\Http\Requests\Admin\Game\LinkMultiRelatedProductRequest;
 use App\Http\Requests\Admin\Game\TitleMultiUpdateRequest;
 use App\Http\Requests\Admin\Game\TitleRequest;
 use App\Models\Extensions\GameTree;
+use App\Models\FearMeterStatisticsDirtyTitle;
 use App\Models\GameMediaMix;
 use App\Models\GameTitle;
+use App\Models\User;
+use App\Models\UserGameTitleFearMeter;
+use App\Models\UserGameTitleFearMeterLog;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class TitleController extends AbstractAdminController
@@ -88,9 +94,16 @@ class TitleController extends AbstractAdminController
      */
     public function detail(GameTitle $title): Application|Factory|View
     {
+        $fearMeters = UserGameTitleFearMeter::query()
+            ->where('game_title_id', $title->id)
+            ->with('user')
+            ->orderByDesc('updated_at')
+            ->paginate(30, ['*'], 'fear_meter_page');
+
         return view('admin.game.title.detail', [
             'model' => $title,
             'tree'  => GameTree::getTree($title),
+            'fearMeters' => $fearMeters,
         ]);
     }
 
@@ -370,5 +383,50 @@ class TitleController extends AbstractAdminController
     {
         $title->mediaMixes()->sync($request->validated('game_media_mix_ids'));
         return redirect()->route('Admin.Game.Title.Detail', $title);
+    }
+
+    /**
+     * 怖さメーター入力を管理者削除
+     *
+     * @param GameTitle $title
+     * @param User $user
+     * @return RedirectResponse
+     */
+    public function deleteFearMeter(GameTitle $title, User $user): RedirectResponse
+    {
+        $fearMeter = UserGameTitleFearMeter::query()
+            ->where('game_title_id', $title->id)
+            ->where('user_id', $user->id)
+            ->first();
+        if ($fearMeter === null) {
+            return redirect()->back()->with('warning', '削除対象の怖さメーターが見つかりません。');
+        }
+
+        DB::transaction(function () use ($fearMeter, $title, $user) {
+            UserGameTitleFearMeter::query()
+                ->where('game_title_id', $title->id)
+                ->where('user_id', $user->id)
+                ->delete();
+
+            $latestLog = UserGameTitleFearMeterLog::query()
+                ->where('game_title_id', $title->id)
+                ->where('user_id', $user->id)
+                ->orderByDesc('id')
+                ->first();
+            if ($latestLog !== null) {
+                $latestLog->is_deleted = true;
+                $latestLog->deleted_at = now();
+                $latestLog->deleted_by_user_id = null;
+                $latestLog->deleted_by_admin_id = Auth::guard('admin')->id();
+                $latestLog->save();
+            }
+
+            FearMeterStatisticsDirtyTitle::updateOrCreate([
+                'game_title_id' => $title->id,
+            ], []);
+        });
+
+        return redirect()->route('Admin.Game.Title.Detail', $title)
+            ->with('success', '怖さメーター入力を削除しました。');
     }
 }

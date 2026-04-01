@@ -77,6 +77,14 @@ class User extends Authenticatable
     }
 
     /**
+     * 怖さメーター入力制限
+     */
+    public function fearMeterRestrictions(): HasMany
+    {
+        return $this->hasMany(UserFearMeterRestriction::class, 'user_id');
+    }
+
+    /**
      * ソーシャルアカウント連携を取得
      */
     public function socialAccounts(): HasMany

@@ -2,10 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\FearMeter;
-use Illuminate\Validation\Rule;
-
-class FearMeterStoreRequest extends BaseWebRequest
+class FearMeterDestroyRequest extends BaseWebRequest
 {
     /**
      * ユーザーがこのリクエストの権限を持っているか
@@ -30,15 +27,10 @@ class FearMeterStoreRequest extends BaseWebRequest
                 'string',
                 'exists:game_titles,key',
             ],
-            'fear_meter' => [
-                'required',
-                'integer',
-                Rule::enum(FearMeter::class),
-            ],
-            'comment' => [
+            'from' => [
                 'nullable',
                 'string',
-                'max:100',
+                'in:title-detail',
             ],
         ];
     }
@@ -52,8 +44,7 @@ class FearMeterStoreRequest extends BaseWebRequest
     {
         return [
             'title_key' => 'タイトル',
-            'fear_meter' => '怖さメーター',
-            'comment' => '一言コメント',
+            'from' => '遷移元',
         ];
     }
 }

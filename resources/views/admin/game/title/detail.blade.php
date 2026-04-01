@@ -1,6 +1,18 @@
 @extends('admin.layout')
 
 @section('content')
+    @if (session('success'))
+        <div class="alert alert-success alert-dismissible fade show">
+            <strong>成功!</strong> {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+    @if (session('warning'))
+        <div class="alert alert-warning alert-dismissible fade show">
+            <strong>注意!</strong> {{ session('warning') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
     <div class="panel panel-inverse">
         <div class="panel-heading">
             <h4 class="panel-title">{{ $model->name }}</h4>
@@ -164,6 +176,51 @@
                         @foreach ($tree as $node)
                             <x-admin.tree :node="$node" />
                         @endforeach
+                    </td>
+                </tr>
+                <tr>
+                    <th>怖さメーター入力</th>
+                    <td>
+                        <div class="mb-2">
+                            <a href="{{ route('Game.TitleFearMeterComments', ['titleKey' => $model->key]) }}" target="_blank" class="btn btn-default btn-sm">コメントログページを開く</a>
+                        </div>
+                        @if ($fearMeters->isEmpty())
+                            <div class="alert alert-warning">怖さメーター入力はありません。</div>
+                        @else
+                            <table class="table table-bordered">
+                                <thead>
+                                <tr>
+                                    <th>ユーザー</th>
+                                    <th>評価値</th>
+                                    <th>更新日時</th>
+                                    <th></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @foreach ($fearMeters as $fearMeter)
+                                    <tr>
+                                        <td>
+                                            @if ($fearMeter->user)
+                                                <a href="{{ route('Admin.Manage.User.Show', $fearMeter->user) }}">{{ $fearMeter->user->name }}</a>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td>{{ $fearMeter->fear_meter->text() }}</td>
+                                        <td>{{ $fearMeter->updated_at?->format('Y-m-d H:i:s') ?? '-' }}</td>
+                                        <td>
+                                            <form method="POST" action="{{ route('Admin.Game.Title.DeleteFearMeter', ['title' => $model, 'user' => $fearMeter->user_id]) }}" onsubmit="return confirm('この怖さメーター入力を削除します。よろしいですか？');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-danger btn-sm">削除</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                                </tbody>
+                            </table>
+                            <div>{{ $fearMeters->appends(request()->query())->links() }}</div>
+                        @endif
                     </td>
                 </tr>
             </table>

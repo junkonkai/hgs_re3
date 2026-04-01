@@ -61,7 +61,7 @@
     </main>
 
     <footer>
-        &copy; 2003-{{ date('Y') }} ホラーゲームネットワーク
+        &copy; 2003-{{ date('Y') }} <a href="https://junkonkai.com" target="_blank" rel="noopener noreferrer">電子創作房 純魂会</a>
     </footer>
 </body>
 </html>
