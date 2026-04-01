@@ -7,6 +7,12 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
+    @if (session('warning'))
+        <div class="alert alert-warning alert-dismissible fade show">
+            <strong>注意!</strong> {{ session('warning') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
 
     <div class="panel panel-inverse">
         <div class="panel-heading">
@@ -85,6 +91,34 @@
                 <tr>
                     <th>Updated At</th>
                     <td>{{ $model->updated_at?->format('Y-m-d H:i:s') ?? '-' }}</td>
+                </tr>
+                <tr>
+                    <th>Fear Meter Restriction</th>
+                    <td>
+                        @if ($activeFearMeterRestriction)
+                            <span class="badge bg-danger">制限中</span>
+                            <div class="mt-2">
+                                開始: {{ $activeFearMeterRestriction->started_at?->format('Y-m-d H:i:s') ?? '-' }}
+                            </div>
+                            <div class="mt-1">
+                                理由: {{ $activeFearMeterRestriction->reason ?? '-' }}
+                            </div>
+                            <form action="{{ route('Admin.Manage.User.FearMeterRestriction.Release', $model) }}" method="POST" class="mt-2">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-warning">入力制限を解除</button>
+                            </form>
+                        @else
+                            <span class="badge bg-secondary">制限なし</span>
+                            <form action="{{ route('Admin.Manage.User.FearMeterRestriction.Store', $model) }}" method="POST" class="mt-2">
+                                @csrf
+                                <div class="mb-2">
+                                    <input type="text" name="reason" class="form-control" placeholder="制限理由（任意）">
+                                </div>
+                                <input type="hidden" name="source" value="manual">
+                                <button type="submit" class="btn btn-sm btn-danger">入力制限する</button>
+                            </form>
+                        @endif
+                    </td>
                 </tr>
             </table>
         </div>

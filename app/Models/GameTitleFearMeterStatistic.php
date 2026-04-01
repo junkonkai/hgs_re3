@@ -74,6 +74,14 @@ class GameTitleFearMeterStatistic extends Model
         $fearMeterValue = (int) round($averageRating);
         $fearMeterValue = max(0, min(4, $fearMeterValue));
 
+        if ($totalCount === 0) {
+            if ($this->exists) {
+                $this->delete();
+            }
+
+            return $this;
+        }
+
         // インスタンスの属性を更新して保存
         $this->average_rating = $averageRating;
         $this->fear_meter = $fearMeterValue;

@@ -3,10 +3,12 @@
 namespace App\Console\Commands;
 
 use App\Models\FearMeterStatisticsRunLog;
+use App\Models\FearMeterStatisticsDirtyTitle;
 use App\Models\GameTitleFearMeterStatistic;
 use App\Models\UserGameTitleFearMeter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class RecalculateFearMeterStatisticsCommand extends Command
 {
@@ -41,7 +43,14 @@ class RecalculateFearMeterStatisticsCommand extends Command
         if ($lastCompletedAt !== null) {
             $query->where('updated_at', '>', $lastCompletedAt);
         }
-        $gameTitleIds = $query->pluck('game_title_id')->toArray();
+        $meterUpdatedGameTitleIds = $query->pluck('game_title_id')->toArray();
+        $dirtyGameTitleIds = [];
+        if (Schema::hasTable('fear_meter_statistics_dirty_titles')) {
+            $dirtyGameTitleIds = FearMeterStatisticsDirtyTitle::query()
+                ->pluck('game_title_id')
+                ->toArray();
+        }
+        $gameTitleIds = array_values(array_unique(array_merge($meterUpdatedGameTitleIds, $dirtyGameTitleIds)));
 
         if (empty($gameTitleIds)) {
             $message = '再集計する対象がありません。';
@@ -88,6 +97,10 @@ class RecalculateFearMeterStatisticsCommand extends Command
             if ($bar !== null) {
                 $bar->advance();
             }
+        }
+
+        if (!empty($gameTitleIds) && Schema::hasTable('fear_meter_statistics_dirty_titles')) {
+            FearMeterStatisticsDirtyTitle::whereIn('game_title_id', $gameTitleIds)->delete();
         }
 
         if ($bar !== null) {

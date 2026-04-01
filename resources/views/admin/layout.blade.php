@@ -122,6 +122,9 @@
                         <div class="menu-item  {{ menu_active("Admin.Manage.User") }}">
                             <a href="{{ route("Admin.Manage.User") }}" class="menu-link"><div class="menu-text">User</div></a>
                         </div>
+                        <div class="menu-item  {{ menu_active("Admin.Manage.FearMeterReport") }}">
+                            <a href="{{ route("Admin.Manage.FearMeterReport") }}" class="menu-link"><div class="menu-text">Fear Meter Report</div></a>
+                        </div>
                     </div>
                 </div>
                 <div class="menu-item has-sub {{ menu_active("Admin.Game") }}">

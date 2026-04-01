@@ -3,12 +3,14 @@
 namespace Tests\Feature\Console;
 
 use App\Enums\FearMeter;
+use App\Models\FearMeterStatisticsDirtyTitle;
 use App\Models\FearMeterStatisticsRunLog;
 use App\Models\GameTitle;
 use App\Models\GameTitleFearMeterStatistic;
 use App\Models\User;
 use App\Models\UserGameTitleFearMeter;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
@@ -36,7 +38,7 @@ class RecalculateFearMeterStatisticsCommandTest extends TestCase
 
         // 初回用: 2タイトルに評価を登録（値は固定で期待値を計算しやすくする）
         // タイトル1: 0, 1, 2 -> 平均 1.00, floor=1, total=3
-        // タイトル2: 2, 2, 4 -> 平均 2.67, floor=2, total=3
+        // タイトル2: 2, 2, 4 -> 平均 2.67, round=3, total=3
         $ratingsFirstTitle = [0, 1, 2];
         $ratingsSecondTitle = [2, 2, 4];
 
@@ -70,7 +72,7 @@ class RecalculateFearMeterStatisticsCommandTest extends TestCase
         $this->assertNotNull($stat2);
         $this->assertSame(3, $stat2->total_count);
         $this->assertSame('2.67', (string) $stat2->average_rating);
-        $this->assertSame(2, $stat2->fear_meter->value);
+        $this->assertSame(3, $stat2->fear_meter->value);
         $this->assertSame(0, $stat2->rating_0_count);
         $this->assertSame(0, $stat2->rating_1_count);
         $this->assertSame(2, $stat2->rating_2_count);
@@ -109,5 +111,39 @@ class RecalculateFearMeterStatisticsCommandTest extends TestCase
         $stat2->refresh();
         $this->assertSame($updatedAt1Before, $stat1->getRawOriginal('updated_at'));
         $this->assertSame($updatedAt2Before, $stat2->getRawOriginal('updated_at'));
+    }
+
+    /**
+     * 削除で dirty 登録されたタイトルが再集計対象となり、件数0なら統計が消えることを検証する
+     */
+    public function test_recalculate_statistics_handles_dirty_title_and_deletes_zero_count_statistic(): void
+    {
+        $gameTitleId = GameTitle::orderBy('id')->value('id');
+        if ($gameTitleId === null) {
+            $this->markTestSkipped('テストには少なくとも1件の既存 game_titles が必要です。');
+        }
+        if (!Schema::hasTable('fear_meter_statistics_dirty_titles')) {
+            $this->markTestSkipped('fear_meter_statistics_dirty_titles テーブルが存在しないためスキップします。');
+        }
+
+        $user = User::factory()->create();
+        UserGameTitleFearMeter::create([
+            'user_id' => $user->id,
+            'game_title_id' => $gameTitleId,
+            'fear_meter' => FearMeter::VeryScary->value,
+        ]);
+
+        $this->artisan('fear-meter:recalculate-statistics', ['--force-full' => true])->assertSuccessful();
+        $this->assertNotNull(GameTitleFearMeterStatistic::find($gameTitleId));
+
+        UserGameTitleFearMeter::where('user_id', $user->id)
+            ->where('game_title_id', $gameTitleId)
+            ->delete();
+        FearMeterStatisticsDirtyTitle::updateOrCreate(['game_title_id' => $gameTitleId], []);
+
+        $this->artisan('fear-meter:recalculate-statistics')->assertSuccessful();
+
+        $this->assertNull(GameTitleFearMeterStatistic::find($gameTitleId));
+        $this->assertFalse(FearMeterStatisticsDirtyTitle::where('game_title_id', $gameTitleId)->exists());
     }
 }

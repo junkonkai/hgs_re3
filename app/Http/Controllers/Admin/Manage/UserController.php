@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Admin\Manage;
 
 use App\Defines\AdminDefine;
 use App\Http\Controllers\Admin\AbstractAdminController;
+use App\Http\Requests\Admin\Manage\UserFearMeterRestrictionStoreRequest;
 use App\Http\Requests\Admin\Manage\UserPasswordUpdateRequest;
 use App\Models\User;
+use App\Models\UserFearMeterRestriction;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -78,8 +80,14 @@ class UserController extends AbstractAdminController
      */
     public function show(User $user): Application|Factory|View
     {
+        $activeFearMeterRestriction = UserFearMeterRestriction::query()
+            ->where('user_id', $user->id)
+            ->active()
+            ->first();
+
         return view('admin.manage.user.detail', [
             'model' => $user,
+            'activeFearMeterRestriction' => $activeFearMeterRestriction,
         ]);
     }
 
@@ -126,6 +134,64 @@ class UserController extends AbstractAdminController
 
         return redirect()->route('Admin.Manage.User')
             ->with('success', 'ユーザーを削除しました。');
+    }
+
+    /**
+     * ユーザーの怖さメーター入力制限
+     *
+     * @param UserFearMeterRestrictionStoreRequest $request
+     * @param User $user
+     * @return RedirectResponse
+     */
+    public function storeFearMeterRestriction(
+        UserFearMeterRestrictionStoreRequest $request,
+        User $user
+    ): RedirectResponse {
+        $activeExists = UserFearMeterRestriction::query()
+            ->where('user_id', $user->id)
+            ->active()
+            ->exists();
+        if ($activeExists) {
+            return redirect()->back()->with('warning', '既に怖さメーター入力制限中です。');
+        }
+
+        UserFearMeterRestriction::create([
+            'user_id' => $user->id,
+            'reason' => $request->validated('reason'),
+            'source' => $request->validated('source', 'manual'),
+            'is_active' => true,
+            'started_at' => now(),
+            'created_by_admin_id' => auth()->guard('admin')->id(),
+        ]);
+
+        return redirect()->route('Admin.Manage.User.Show', $user)
+            ->with('success', '怖さメーター入力制限を設定しました。');
+    }
+
+    /**
+     * ユーザーの怖さメーター入力制限解除
+     *
+     * @param User $user
+     * @return RedirectResponse
+     */
+    public function releaseFearMeterRestriction(User $user): RedirectResponse
+    {
+        $restriction = UserFearMeterRestriction::query()
+            ->where('user_id', $user->id)
+            ->active()
+            ->latest('id')
+            ->first();
+        if ($restriction === null) {
+            return redirect()->back()->with('warning', '有効な入力制限がありません。');
+        }
+
+        $restriction->is_active = false;
+        $restriction->ended_at = now();
+        $restriction->released_by_admin_id = auth()->guard('admin')->id();
+        $restriction->save();
+
+        return redirect()->route('Admin.Manage.User.Show', $user)
+            ->with('success', '怖さメーター入力制限を解除しました。');
     }
 }
 
