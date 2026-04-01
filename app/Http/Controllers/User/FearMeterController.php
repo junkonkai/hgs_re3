@@ -10,6 +10,7 @@ use App\Http\Requests\FearMeterDestroyRequest;
 use App\Http\Requests\FearMeterStoreRequest;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
+use App\Support\Pager;
 use App\Models\FearMeterStatisticsDirtyTitle;
 use App\Models\GameTitle;
 use App\Models\UserFearMeterRestriction;
@@ -32,10 +33,12 @@ class FearMeterController extends Controller
         $fearMeters = UserGameTitleFearMeter::where('user_id', $user->id)
             ->with('gameTitle')
             ->orderBy('updated_at', 'desc')
-            ->paginate(30);
+            ->paginate(10);
+
+        $pager = new Pager($fearMeters->currentPage(), $fearMeters->lastPage(), 'User.FearMeter.Index', [], 'children');
 
         return $this->tree(
-            view('user.fear_meter.index', compact('fearMeters')),
+            view('user.fear_meter.index', compact('fearMeters', 'pager')),
             options: [
                 'url' => route('User.FearMeter.Index'),
             ]

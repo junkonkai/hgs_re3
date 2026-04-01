@@ -11,9 +11,10 @@
     </div>
 @endif
 @if ($fearMeters->isEmpty())
-    <p>入力した怖さメーターはありません。</p>
-@else
-    <p>入力した怖さメーターの一覧です。</p>
+    <p>
+        怖さメーターを入力していないようだ。<br>
+        <a href="{{ route('Game.Lineup') }}" data-hgn-scope="full">ラインナップ</a>からタイトルを探して、怖さメーターを入力してみよう。
+    </p>
 @endif
 @endsection
 
@@ -29,14 +30,31 @@
                     @foreach ($fearMeters as $fearMeter)
                         <tr>
                             <td class="border border-gray-500 px-3 py-2">{{ $fearMeter->gameTitle->name }}</td>
-                            <td class="border border-gray-500 px-3 py-2">{{ $fearMeter->fear_meter->text() }}</td>
+                            <td class="border border-gray-500 px-3 py-2">
+                                @php
+                                    $fearMeterMax = 4;
+                                    $fearMeterPercent = ($fearMeter->fear_meter->value / $fearMeterMax) * 100;
+                                @endphp
+                                <div class="space-y-1">
+                                    <div class="h-3 w-48 overflow-hidden rounded-full bg-slate-700/60">
+                                        <div
+                                            class="h-full bg-gradient-to-r from-slate-800 via-sky-600 to-indigo-500"
+                                            style="width: {{ $fearMeterPercent }}%;"
+                                        ></div>
+                                    </div>
+                                    <div class="text-sm text-slate-200">
+                                        <span class="font-semibold">{{ $fearMeter->fear_meter->value }} / {{ $fearMeterMax }}</span>
+                                        <span class="text-slate-400">（{{ $fearMeter->fear_meter->text() }}）</span>
+                                    </div>
+                                </div>
+                            </td>
                             <td class="border border-gray-500 px-3 py-2">
                                 <a href="{{ route('User.FearMeter.Form', ['titleKey' => $fearMeter->gameTitle->key, 'from' => 'fear-meter-list']) }}" data-hgn-scope="full"><i class="bi bi-pencil"></i></a>
                             </td>
                         </tr>
                     @endforeach
                 </table>
-                <div class="mt-3">{{ $fearMeters->links('user.fear_meter.pagination') }}</div>
+                @include('common.pager', ['pager' => $pager])
             </div>
         </section>
     @endif

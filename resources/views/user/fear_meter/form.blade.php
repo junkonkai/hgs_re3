@@ -42,13 +42,13 @@
                     <div class="text-sm text-slate-200">
                         <span class="font-semibold">{{ number_format($fearMeterValue, 0) }}: {{ $fearMeter->fear_meter->text() }}</span>
                     </div>
+                </div>
                     @if (!empty($fearMeterComment))
-                    <div class="basis-full text-sm">
-                        <span class="text-slate-400">一言コメント: </span><br>
-                        <span class="text-slate-200">{!! nl2br(e($fearMeterComment)) !!}</span>
+                    <div class="flex gap-2 text-sm mt-2">
+                        <span class="block text-slate-400">一言コメント:</span>
+                        <span class="block text-slate-200">{!! nl2br(e($fearMeterComment)) !!}</span>
                     </div>
                     @endif
-                </div>
 
                 <form action="{{ route('User.FearMeter.Form.Delete') }}" method="POST" class="mt-10">
                     @csrf
@@ -123,7 +123,7 @@
                     </div>
 
                     <div class="form-group" style="margin-top: 20px;">
-                        <button type="submit" class="btn btn-success">入力</button>
+                        <button type="submit" class="btn btn-success">登録</button>
                     </div>
                 </form>
             @endif

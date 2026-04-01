@@ -608,8 +608,10 @@ class GameController extends Controller
                 ->toArray();
         }
 
+        $pager = new Pager($commentLogs->currentPage(), $commentLogs->lastPage(), 'Game.TitleFearMeterComments', ['titleKey' => $title->key]);
+
         return $this->tree(
-            view('game.title_fear_meter_comments', compact('title', 'franchise', 'commentLogs', 'likedLogIds', 'reportedLogIds')),
+            view('game.title_fear_meter_comments', compact('title', 'franchise', 'commentLogs', 'likedLogIds', 'reportedLogIds', 'pager')),
             options: [
                 'ratingCheck' => $title->rating == Rating::R18A,
                 'components' => [

@@ -1,5 +1,5 @@
 @if ($pager->hasMultiplePages())
-<nav class="node-content basic mt-10 pager" aria-label="ページネーション">
+<nav class="mt-10 pager" aria-label="ページネーション">
     <div class="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
         @if ($pager->showFirst())
             <a href="{{ $pager->firstPageUrl() }}" data-hgn-scope="{{ $pager->dataHgnScope() }}" class="pager-arrow" aria-label="1ページ目へ">&laquo;</a>

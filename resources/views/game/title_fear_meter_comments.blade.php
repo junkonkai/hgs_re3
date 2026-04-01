@@ -77,11 +77,9 @@
                         </div>
                     @endforeach
                 </div>
-                <div class="mt-3">
-                    {{ $commentLogs->appends(request()->query())->links('user.fear_meter.pagination') }}
-                </div>
             @endif
         </div>
+        @include('common.pager', ['pager' => $pager])
     </section>
 
     <section class="node tree-node" id="footer-tree-node">
