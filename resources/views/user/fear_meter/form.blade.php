@@ -90,13 +90,13 @@
                         data-fear-meter-texts='@json($fearMeterTexts)'
                     >
                         <label class="mb-2 block">怖さメーター</label>
-                        <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex flex-nowrap items-center gap-3">
                             <button
                                 type="button"
-                                class="btn btn-secondary btn-sm js-fear-meter-decrease"
+                                class="btn btn-secondary btn-sm js-fear-meter-decrease shrink-0"
                                 aria-label="怖さメーターを下げる"
-                            >-</button>
-                            <div class="w-full max-w-xs">
+                            ><span class="text-lg leading-none">-</span></button>
+                            <div class="flex-1 min-w-0 max-w-xs">
                                 <div class="h-3 overflow-hidden rounded-full bg-slate-700/60">
                                     <div
                                         class="h-full bg-gradient-to-r from-slate-800 via-sky-600 to-indigo-500 transition-all duration-200 js-fear-meter-bar-fill"
@@ -111,9 +111,9 @@
                             </div>
                             <button
                                 type="button"
-                                class="btn btn-secondary btn-sm js-fear-meter-increase"
+                                class="btn btn-secondary btn-sm js-fear-meter-increase shrink-0"
                                 aria-label="怖さメーターを上げる"
-                            >+</button>
+                            ><span class="text-lg leading-none">+</span></button>
                         </div>
                     </div>
 
