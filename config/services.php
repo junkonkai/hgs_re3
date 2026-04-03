@@ -42,4 +42,10 @@ return [
         'redirect' => env('GITHUB_REDIRECT_URI', rtrim(env('APP_URL', 'http://localhost'), '/').'/auth/github/callback'),
     ],
 
+    'twitter-oauth-2' => [
+        'client_id' => env('X_OAUTH_CLIENT_ID'),
+        'client_secret' => env('X_OAUTH_CLIENT_SECRET'),
+        'redirect' => env('X_REDIRECT_URI', rtrim(env('APP_URL', 'http://localhost'), '/').'/auth/x/callback'),
+    ],
+
 ];
