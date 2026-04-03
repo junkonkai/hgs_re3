@@ -52,6 +52,7 @@ return [
         'client_id' => null,
         'client_secret' => env('STEAM_WEB_API_KEY'),
         'redirect' => env('STEAM_REDIRECT_URI', rtrim(env('APP_URL', 'http://localhost'), '/').'/auth/steam/callback'),
+        'force_https' => env('STEAM_FORCE_HTTPS', false),
     ],
 
 ];
