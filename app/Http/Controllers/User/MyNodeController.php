@@ -270,16 +270,25 @@ class MyNodeController extends Controller
      */
     public function redirectToLinkProvider(Request $request, string $provider)
     {
-        if ($provider !== 'github') {
-            return redirect()->route('User.MyNode.SocialAccounts')->with('error', 'この連携は現在サポートされていません。');
-        }
-
         $request->session()->put('social_link_intent', true);
 
-        /** @var \Laravel\Socialite\Two\AbstractProvider $driver */
-        $driver = Socialite::driver('github');
+        if ($provider === 'github') {
+            /** @var \Laravel\Socialite\Two\AbstractProvider $driver */
+            $driver = Socialite::driver('github');
+            return $driver->scopes(['user', 'user:email'])->redirect();
+        }
 
-        return $driver->scopes(['user', 'user:email'])->redirect();
+        if ($provider === 'x') {
+            /** @var \Laravel\Socialite\Two\AbstractProvider $driver */
+            return Socialite::driver('twitter-oauth-2')->redirect();
+        }
+
+        if ($provider === 'steam') {
+            return Socialite::driver('steam')->redirect();
+        }
+
+        $request->session()->forget('social_link_intent');
+        return redirect()->route('User.MyNode.SocialAccounts')->with('error', 'この連携は現在サポートされていません。');
     }
 
     /**
@@ -316,7 +325,7 @@ class MyNodeController extends Controller
 
         $socialAccount->delete();
 
-        return redirect()->route('User.MyNode.SocialAccounts')->with('success', '連携を解除しました。GitHub側で設定を削除してください。');
+        return redirect()->route('User.MyNode.SocialAccounts')->with('success', '連携を解除しました。');
     }
 
     /**

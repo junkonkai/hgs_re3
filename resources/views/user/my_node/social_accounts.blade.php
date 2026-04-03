@@ -26,7 +26,8 @@
 
             @php
                 $linkedProviders = $user->socialAccounts->pluck('provider')->unique()->values();
-                $availableProviders = [\App\Enums\SocialAccountProvider::GitHub];
+                // X連携: フリープランでは /2/users/me が使えないため非表示。課金後に有効化する。
+                $availableProviders = [\App\Enums\SocialAccountProvider::GitHub, \App\Enums\SocialAccountProvider::Steam];
             @endphp
 
             <ul id="social_accounts">
@@ -52,7 +53,7 @@
                                     <button type="submit">連携解除</button>
                                 </form>
                             @else
-                                <a href="{{ route('User.MyNode.SocialAccounts.Link', ['provider' => strtolower($provider->name)]) }}">連携する</a>
+                                <a href="{{ route('User.MyNode.SocialAccounts.Link', ['provider' => strtolower($provider->name)]) }}" data-hgn-scope="external">連携する</a>
                             @endif
                         </div>
                     </li>

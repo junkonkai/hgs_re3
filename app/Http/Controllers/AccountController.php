@@ -64,7 +64,7 @@ class AccountController extends Controller
         $user = User::where('email', $credentials['email'])->first();
         if ($user && $user->password === null) {
             return back()->withInput()->withErrors([
-                'login' => 'このアカウントはGitHubでログインしてください。',
+                'login' => 'このアカウントは外部サービス（GitHub・Steamなど）でログインしてください。',
             ]);
         }
         if ($user && $user->withdrawn_at && Hash::check($credentials['password'], $user->password)) {
@@ -398,6 +398,249 @@ class AccountController extends Controller
                 SocialAccount::create([
                     'user_id' => $user->id,
                     'provider' => SocialAccountProvider::GitHub,
+                    'provider_user_id' => $providerUserId,
+                    'email' => $email,
+                    'access_token' => $accessToken,
+                ]);
+            }
+        }
+
+        if ($user->withdrawn_at) {
+            return redirect()->route('Account.Login')->with('error', '退会済みのアカウントです。');
+        }
+
+        Auth::guard('web')->login($user, true);
+        request()->session()->regenerate();
+
+        return redirect()->intended(route('User.MyNode.Top'));
+    }
+
+    /**
+     * Steam OAuth リダイレクト
+     *
+     * @return \Symfony\Component\HttpFoundation\RedirectResponse
+     */
+    public function redirectToSteam()
+    {
+        return Socialite::driver('steam')->redirect();
+    }
+
+    /**
+     * Steam OAuth コールバック
+     *
+     * @return RedirectResponse|Application|Factory|View
+     */
+    public function handleSteamCallback(): RedirectResponse|Application|Factory|View
+    {
+        try {
+            $steamUser = Socialite::driver('steam')->user();
+        } catch (\Throwable $e) {
+            report($e);
+            return redirect()->route('Account.Login')->with('error', 'Steam認証に失敗しました。再度お試しください。');
+        }
+
+        $providerUserId = (string) $steamUser->getId();
+        $name = $steamUser->getName() ?: $steamUser->getNickname() ?: '';
+        // Steam (OpenID) はメールを提供しない
+        $accessToken = $steamUser->token;
+
+        // アカウント連携モード（ログイン済みユーザーが連携追加）
+        if (Auth::check() && session('social_link_intent')) {
+            session()->forget('social_link_intent');
+
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+
+            $existingSocialAccount = SocialAccount::where('provider', SocialAccountProvider::Steam)
+                ->where('provider_user_id', $providerUserId)
+                ->first();
+
+            if ($existingSocialAccount) {
+                if ($existingSocialAccount->user_id === $user->id) {
+                    $existingSocialAccount->update([
+                        'access_token' => $accessToken,
+                    ]);
+
+                    return redirect()->route('User.MyNode.SocialAccounts')->with('success', 'Steam連携を更新しました。');
+                }
+
+                return redirect()->route('User.MyNode.SocialAccounts')->with('error', 'このSteamアカウントは別のユーザーに連携されています。');
+            }
+
+            SocialAccount::create([
+                'user_id' => $user->id,
+                'provider' => SocialAccountProvider::Steam,
+                'provider_user_id' => $providerUserId,
+                'email' => null,
+                'access_token' => $accessToken,
+            ]);
+
+            return redirect()->route('User.MyNode.SocialAccounts')->with('success', 'Steamと連携しました。');
+        }
+
+        // 既存の連携を検索
+        $socialAccount = SocialAccount::where('provider', SocialAccountProvider::Steam)
+            ->where('provider_user_id', $providerUserId)
+            ->first();
+
+        if ($socialAccount) {
+            $user = $socialAccount->user;
+            $socialAccount->update([
+                'access_token' => $accessToken,
+            ]);
+        } else {
+            // Steam はメール取得不可のため、メールによる自動紐付けは行わない
+            // 新規ユーザーを作成
+            do {
+                $showId = Str::random(8);
+            } while (User::where('show_id', $showId)->exists());
+
+            $privacyPolicyRevisionVer = Carbon::parse(HgnController::PRIVACY_POLICY_REVISION_DATE)->format('Ymd');
+
+            $user = User::create([
+                'show_id' => $showId,
+                'name' => $name,
+                'email' => null,
+                'password' => null,
+                'role' => UserRole::USER->value,
+                'hgs12_user' => 0,
+                'sign_up_at' => now(),
+                'privacy_policy_accepted_version' => $privacyPolicyRevisionVer,
+            ]);
+
+            SocialAccount::create([
+                'user_id' => $user->id,
+                'provider' => SocialAccountProvider::Steam,
+                'provider_user_id' => $providerUserId,
+                'email' => null,
+                'access_token' => $accessToken,
+            ]);
+        }
+
+        if ($user->withdrawn_at) {
+            return redirect()->route('Account.Login')->with('error', '退会済みのアカウントです。');
+        }
+
+        Auth::guard('web')->login($user, true);
+        request()->session()->regenerate();
+
+        return redirect()->intended(route('User.MyNode.Top'));
+    }
+
+    /**
+     * X (Twitter) OAuth リダイレクト
+     *
+     * @return \Symfony\Component\HttpFoundation\RedirectResponse
+     */
+    public function redirectToX()
+    {
+        /** @var \Laravel\Socialite\Two\AbstractProvider $driver */
+        return Socialite::driver('twitter-oauth-2')->redirect();
+    }
+
+    /**
+     * X (Twitter) OAuth コールバック
+     *
+     * @return RedirectResponse|Application|Factory|View
+     */
+    public function handleXCallback(): RedirectResponse|Application|Factory|View
+    {
+        try {
+            $xUser = Socialite::driver('twitter-oauth-2')->user();
+        } catch (\Throwable $e) {
+            report($e);
+            return redirect()->route('Account.Login')->with('error', 'X認証に失敗しました。再度お試しください。');
+        }
+
+        $providerUserId = (string) $xUser->getId();
+        $email = $xUser->getEmail() ?: null;
+        $name = $xUser->getName() ?: $xUser->getNickname() ?: '';
+        $accessToken = $xUser->token;
+
+        // アカウント連携モード（ログイン済みユーザーが連携追加）
+        if (Auth::check() && session('social_link_intent')) {
+            session()->forget('social_link_intent');
+
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+
+            $existingSocialAccount = SocialAccount::where('provider', SocialAccountProvider::X)
+                ->where('provider_user_id', $providerUserId)
+                ->first();
+
+            if ($existingSocialAccount) {
+                if ($existingSocialAccount->user_id === $user->id) {
+                    $existingSocialAccount->update([
+                        'access_token' => $accessToken,
+                        'email' => $email,
+                    ]);
+
+                    return redirect()->route('User.MyNode.SocialAccounts')->with('success', 'X連携を更新しました。');
+                }
+
+                return redirect()->route('User.MyNode.SocialAccounts')->with('error', 'このXアカウントは別のユーザーに連携されています。');
+            }
+
+            SocialAccount::create([
+                'user_id' => $user->id,
+                'provider' => SocialAccountProvider::X,
+                'provider_user_id' => $providerUserId,
+                'email' => $email,
+                'access_token' => $accessToken,
+            ]);
+
+            return redirect()->route('User.MyNode.SocialAccounts')->with('success', 'Xと連携しました。');
+        }
+
+        // 既存の連携を検索
+        $socialAccount = SocialAccount::where('provider', SocialAccountProvider::X)
+            ->where('provider_user_id', $providerUserId)
+            ->first();
+
+        if ($socialAccount) {
+            $user = $socialAccount->user;
+            $socialAccount->update([
+                'access_token' => $accessToken,
+                'email' => $email,
+            ]);
+        } else {
+            // メールがある場合は同一メールの既存ユーザーを検索（退会済みは除外）
+            $user = null;
+            if (!empty($email)) {
+                $user = User::where('email', $email)->whereNull('withdrawn_at')->first();
+            }
+
+            if ($user) {
+                // 既存ユーザーに連携を追加
+                SocialAccount::create([
+                    'user_id' => $user->id,
+                    'provider' => SocialAccountProvider::X,
+                    'provider_user_id' => $providerUserId,
+                    'email' => $email,
+                    'access_token' => $accessToken,
+                ]);
+            } else {
+                // 新規ユーザー作成
+                do {
+                    $showId = Str::random(8);
+                } while (User::where('show_id', $showId)->exists());
+
+                $privacyPolicyRevisionVer = Carbon::parse(HgnController::PRIVACY_POLICY_REVISION_DATE)->format('Ymd');
+
+                $user = User::create([
+                    'show_id' => $showId,
+                    'name' => $name,
+                    'email' => $email,
+                    'password' => null,
+                    'role' => UserRole::USER->value,
+                    'hgs12_user' => 0,
+                    'sign_up_at' => now(),
+                    'privacy_policy_accepted_version' => $privacyPolicyRevisionVer,
+                ]);
+
+                SocialAccount::create([
+                    'user_id' => $user->id,
+                    'provider' => SocialAccountProvider::X,
                     'provider_user_id' => $providerUserId,
                     'email' => $email,
                     'access_token' => $accessToken,
