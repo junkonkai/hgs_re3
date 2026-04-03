@@ -53,7 +53,7 @@
                                     <button type="submit">連携解除</button>
                                 </form>
                             @else
-                                <a href="{{ route('User.MyNode.SocialAccounts.Link', ['provider' => strtolower($provider->name)]) }}">連携する</a>
+                                <a href="{{ route('User.MyNode.SocialAccounts.Link', ['provider' => strtolower($provider->name)]) }}" data-hgn-scope="external">連携する</a>
                             @endif
                         </div>
                     </li>

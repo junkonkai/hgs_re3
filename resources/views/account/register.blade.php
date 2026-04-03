@@ -16,8 +16,8 @@
         </div>
         <div class="node-content basic">
             <div class="mb-3">
-                <a href="{{ route('Account.GitHub.Redirect') }}" class="btn btn-outline-secondary">GitHub</a>
-                <a href="{{ route('Account.Steam.Redirect') }}" class="btn btn-outline-secondary">Steam</a>
+                <a href="{{ route('Account.GitHub.Redirect') }}" class="btn btn-outline-secondary" data-hgn-scope="external">GitHub</a>
+                <a href="{{ route('Account.Steam.Redirect') }}" class="btn btn-outline-secondary" data-hgn-scope="external">Steam</a>
                 {{-- X連携: フリープランでは /2/users/me が使えないため非表示。課金後に有効化する。 --}}
                 {{-- <a href="{{ route('Account.X.Redirect') }}" class="btn btn-outline-secondary">X</a> --}}
             </div>
