@@ -48,4 +48,10 @@ return [
         'redirect' => env('X_REDIRECT_URI', rtrim(env('APP_URL', 'http://localhost'), '/').'/auth/x/callback'),
     ],
 
+    'steam' => [
+        'client_id' => null,
+        'client_secret' => env('STEAM_WEB_API_KEY'),
+        'redirect' => env('STEAM_REDIRECT_URI', rtrim(env('APP_URL', 'http://localhost'), '/').'/auth/steam/callback'),
+    ],
+
 ];
