@@ -283,6 +283,10 @@ class MyNodeController extends Controller
             return Socialite::driver('twitter-oauth-2')->redirect();
         }
 
+        if ($provider === 'steam') {
+            return Socialite::driver('steam')->redirect();
+        }
+
         $request->session()->forget('social_link_intent');
         return redirect()->route('User.MyNode.SocialAccounts')->with('error', 'この連携は現在サポートされていません。');
     }
