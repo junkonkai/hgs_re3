@@ -26,6 +26,7 @@
 
             @php
                 $linkedProviders = $user->socialAccounts->pluck('provider')->unique()->values();
+                {{-- X連携: フリープランでは /2/users/me が使えないため非表示。課金後に有効化する。 --}}
                 $availableProviders = [\App\Enums\SocialAccountProvider::GitHub];
             @endphp
 
