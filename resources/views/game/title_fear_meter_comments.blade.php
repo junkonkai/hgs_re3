@@ -100,16 +100,26 @@
                             <span class="node-pt">●</span>
                         </div>
                         <div class="node-content tree">
-                            <section class="node basic" id="root-link-node">
+                            <section class="node tree-node" id="franchise-link-node">
                                 <div class="node-head">
-                                    <a href="{{ route('Root') }}" class="node-head-text">ルート</a>
+                                    <a href="{{ route('Game.Lineup') }}" class="node-head-text">ラインナップ</a>
                                     <span class="node-pt">●</span>
+                                </div>
+                                <div class="node-content tree">
+                                    <section class="node basic" id="root-link-node">
+                                        <div class="node-head">
+                                            <a href="{{ route('Root') }}" class="node-head-text">ルート</a>
+                                            <span class="node-pt">●</span>
+                                        </div>
+                                    </section>
                                 </div>
                             </section>
                         </div>
                     </section>
                 </div>
             </section>
+
+            @include('common.shortcut_mynode')
         </div>
     </section>
 @endsection

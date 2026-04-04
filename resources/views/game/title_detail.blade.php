@@ -48,12 +48,12 @@
 @endsection
 
 @section('nodes')
-    <section class="node tree-node" id="title-review-node">
+    <section class="node @if ($fearMeter) tree-node @endif" id="title-review-node">
         <div class="node-head">
             <h2 class="node-head-text">怖さメーター</h2>
             <span class="node-pt">●</span>
         </div>
-        <div class="node-content basic pl-4">
+        <div class="node-content basic @if ($fearMeter) pl-4 @endif mb-5">
             <div class="title-fear-meter">
                 @if ($fearMeter)    
                 @php
@@ -75,20 +75,21 @@
                     </div>
                 </div>
                 @else
-                <div>怖さメーターは入力されていないようだ</div>
+                <p>怖さメーターは入力されていないようだ</p>
+                    @if (Auth::check())
+                    <div class="mt-5">
+                        <a href="{{ route('User.FearMeter.Form', ['titleKey' => $title->key, 'from' => 'title-detail']) }}" data-hgn-scope="full">怖さメーターを入力しますか？</a>
+                    </div>
+                    @endif
                 @endif
             </div>
-            @if (Auth::check())
-            <div class="mt-5 mb-10">
-                <a href="{{ route('User.FearMeter.Form', ['titleKey' => $title->key, 'from' => 'title-detail']) }}" data-hgn-scope="full">怖さメーターを入力しますか？</a>
-            </div>
-            @endif
         </div>
 
+        @if ($fearMeter)    
         <div class="node-content tree">
             <section class="node" id="title-fear-meter-comment-pickup-node">
                 <div class="node-head">
-                    <h2 class="node-head-text">コメントピックアップ</h2>
+                    <h3 class="node-head-text">コメントピックアップ</h3>
                     <span class="node-pt">●</span>
                 </div>
                 
@@ -97,7 +98,7 @@
                         <p>コメントの投稿はまだないようだ</p>
                     @else
                         @foreach ($commentLogPickup as $commentLog)
-                            <div class="py-3 border-b border-white/10 last:border-b-0">
+                            <div class="pb-4 border-b border-white/10 last:border-b-0">
                                 <div class="mb-1 text-xs text-slate-400">
                                     {{ $commentLog->created_at }} / {{ $commentLog->user?->name ?? '(不明)' }}
                                 </div>
@@ -153,6 +154,7 @@
             </section>
             
         </div>
+        @endif
     </section>
 
     @if ($title->packageGroups()->exists())
@@ -164,7 +166,7 @@
             <div class="node-content tree">
                 @foreach ($title->packageGroups->sortByDesc('sort_order') as $pkgGroup)
                     <section class="node" id="pkgg-{{ $pkgGroup->id }}-tree-node">
-                        <div class="node-head node-head-small-margin">
+                        <div class="node-head">
                             <h3 class="node-head-text">{{ $pkgGroup->name }}</h3>
                             <span class="node-pt">●</span>
                         </div>
@@ -188,7 +190,7 @@
                                 <div class="pkg-info-shops">
                                     @foreach($pkg->shops as $shop)
                                     <div class="pkg-info-shop">
-                                        <a href="{{ $shop->url }}" target="_blank" rel="noopener noreferrer">
+                                        <a href="{{ $shop->url }}" target="_blank" rel="noopener">
                                             <div class="pkg-info-shop-img">
                                             @if ($shop->ogp !== null && $shop->ogp->image !== null)
                                                 <img src="{{ $shop->ogp->image }}" width="{{ $shop->ogp->image_width }}" height="{{ $shop->ogp->image_height }}" class="pkg-img">
@@ -249,9 +251,9 @@
                     <span class="node-pt">●</span>
                 </div>
                 <div class="node-content tree">
-                    <section class="node tree-node" id="back-to-franchises-node">
+                    <section class="node tree-node" id="back-to-lineup-node">
                         <div class="node-head">
-                            <a href="{{ route('Game.Franchises') }}" class="node-head-text">フランチャイズ</a>
+                            <a href="{{ route('Game.Lineup') }}" class="node-head-text">ラインナップ</a>
                             <span class="node-pt">●</span>
                         </div>
                         <div class="node-content tree">

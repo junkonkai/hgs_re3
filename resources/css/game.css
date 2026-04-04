@@ -105,6 +105,8 @@ div.pkg-info {
 
 p.pkg-group-description {
     margin-bottom: 25px !important;
+    color: #AAA;
+    font-size: 14px;
 }
 
 p.rating-warning {

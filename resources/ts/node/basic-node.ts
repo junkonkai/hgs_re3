@@ -408,6 +408,13 @@ export class BasicNode extends NodeBase
 
         const nav = HgnTree.getInstance().navigationController;
         if (nav) {
+            // external scope（target="_blank" / data-hgn-scope="external" / rel="external"）はブラウザに任せる
+            const isExternal = anchor.target === '_blank'
+                || anchor.dataset.hgnScope === 'external'
+                || (anchor.getAttribute('rel') ?? '').split(/\s+/).includes('external');
+            if (isExternal) {
+                return;
+            }
             e.preventDefault();
             nav.navigateFromAnchor(anchor, this);
             return;

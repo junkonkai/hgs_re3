@@ -63,6 +63,7 @@ php artisan tinker                 # Interactive REPL
 ## Frontend Implementation Rules
 - **Blade テンプレート内に JavaScript を直接書かない。** このプロジェクトは AJAX 通信 + JS による画面更新を行うため、Blade に直書きした JS はページ遷移後に発火しない。インタラクションは必ず `resources/ts/components/` 配下にコンポーネントを実装し、`HgnTree` シングルトン経由で登録・呼び出す。
 - **TypeScript または CSS を変更したら、最後に必ず `npm run build` を実行する。**
+- **`<a>` タグに `rel="noreferrer"` は付けない。**
 
 ## Link Conventions (Blade テンプレート)
 
@@ -114,6 +115,9 @@ return view('some.view', compact('items', 'pager'));
 ```blade
 @include('common.pager', ['pager' => $pager])
 ```
+
+## Interaction Rules
+- プロンプトに全角の「？」が含まれる場合は、実装を行わず回答のみ行う。半角の「?」はこの対象外。
 
 ## Key Conventions
 - PSR-4 autoloading under the `App\` namespace

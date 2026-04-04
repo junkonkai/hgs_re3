@@ -27,7 +27,7 @@
                     <div class="pkg-info-shops">
                         @foreach($rp->shops as $shop)
                         <div class="pkg-info-shop">
-                            <a href="{{ $shop->url }}">
+                            <a href="{{ $shop->url }}" target="_blank" ref="external noopener">
                                 @if (!empty($shop->subtitle))
                                     <div class="shop-subtitle">{{ $shop->subtitle }}</div>
                                 @endif
