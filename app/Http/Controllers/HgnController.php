@@ -11,6 +11,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class HgnController extends Controller
 {
@@ -27,6 +28,7 @@ class HgnController extends Controller
      */
     public function root(): JsonResponse|Application|Factory|View
     {
+        Log::error('テストエラー');
         $infoList = Information::select(['id', 'head'])
             ->where('open_at', '<', now())
             ->where('close_at', '>=', now())
