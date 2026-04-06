@@ -28,7 +28,6 @@ class HgnController extends Controller
      */
     public function root(): JsonResponse|Application|Factory|View
     {
-        Log::error('テストエラー');
         $infoList = Information::select(['id', 'head'])
             ->where('open_at', '<', now())
             ->where('close_at', '>=', now())
