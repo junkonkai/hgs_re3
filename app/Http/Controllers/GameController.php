@@ -370,6 +370,10 @@ class GameController extends Controller
     {
         $maker = GameMaker::findByKey($makerKey);
 
+        if (!$maker) {
+            abort(404);
+        }
+
         $packages = $maker->packages();
         $packageGroups = GamePackageGroupPackageLink::whereIn('game_package_id', $packages->pluck('id'))->get();
         $titleIds = GameTitlePackageGroupLink::whereIn('game_package_group_id', $packageGroups->pluck('game_package_group_id')->unique())->pluck('game_title_id');
@@ -410,6 +414,10 @@ class GameController extends Controller
     public function platformDetail(Request $request, string $platformKey): JsonResponse|Application|Factory|View
     {
         $platform = GamePlatform::findByKey($platformKey);
+
+        if (!$platform) {
+            abort(404);
+        }
 
         $packages = GamePackage::select(['id'])->where('game_platform_id', $platform->id)->get();
         $packageGroups = GamePackageGroupPackageLink::whereIn('game_package_id', $packages->pluck('id'))->get();
@@ -472,6 +480,11 @@ class GameController extends Controller
     public function franchiseDetail(Request $request, string $franchiseKey): JsonResponse|Application|Factory|View
     {
         $franchise = GameFranchise::findByKey($franchiseKey);
+
+        if (!$franchise) {
+            abort(404);
+        }
+
         $ratingCheck = false;
         $titles = [];
         foreach ($franchise->series as $series) {
@@ -506,6 +519,10 @@ class GameController extends Controller
     public function titleDetail(Request $request, string $titleKey): JsonResponse|Application|Factory|View
     {
         $title = GameTitle::findByKey($titleKey);
+
+        if (!$title) {
+            abort(404);
+        }
 
         $ratingCheck = $title->rating == Rating::R18A;
         $franchise = $title->getFranchise();
@@ -632,6 +649,10 @@ class GameController extends Controller
     public function mediaMixDetail(Request $request, string $mediaMixKey): JsonResponse|Application|Factory|View
     {
         $mediaMix = GameMediaMix::findByKey($mediaMixKey);
+
+        if (!$mediaMix) {
+            abort(404);
+        }
 
         $relatedNetworks = [];
         if ($mediaMix->mediaMixGroup !== null) {
