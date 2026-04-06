@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Enums\ContactResponderType;
 use App\Enums\ContactStatus;
+use App\Enums\DiscordChannel;
 use App\Http\Requests\ContactResponseRequest;
 use App\Http\Requests\ContactSubmitRequest;
 use App\Models\Contact;
 use App\Models\ContactResponse;
+use App\Services\Discord\DiscordWebhookService;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -76,6 +78,15 @@ class ContactController extends Controller
             $tokenSource = $contact->id . '_' . $contact->created_at->timestamp;
             $token = hash('sha256', $tokenSource);
             $contact->update(['token' => $token]);
+
+            // Discordに通知
+            $adminUrl = route('Admin.Manage.Contact.Show', ['contact' => $contact->id]);
+            $category  = $contact->category?->label() ?? 'カテゴリなし';
+            $preview   = mb_strimwidth($contact->message, 0, 200, '…');
+            $hr = '─────────────────────';
+            app(DiscordWebhookService::class)
+                ->to(DiscordChannel::Contact)
+                ->send("新しいお問い合わせが届きました\n{$hr}\n名前: {$contact->name}\nカテゴリ: {$category}\n内容: {$preview}\n管理画面: {$adminUrl}\n{$hr}");
         }
 
         $url = route('Contact.Show', ['token' => $contact->token]);
@@ -142,6 +153,14 @@ class ContactController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
+        // Discordに通知
+        $adminUrl = route('Admin.Manage.Contact.Show', ['contact' => $contact->id]);
+        $preview  = mb_strimwidth($validated['message'], 0, 200, '…');
+        $hr = '─────────────────────';
+        app(DiscordWebhookService::class)
+            ->to(DiscordChannel::Contact)
+            ->send("お問い合わせに返信がありました\n{$hr}\n名前: {$validated['responder_name']}\n内容: {$preview}\n管理画面: {$adminUrl}\n{$hr}");
+
         return redirect()->route('Contact.Show', ['token' => $token])
             ->with('success', '返信を投稿しました。');
     }
@@ -170,6 +189,13 @@ class ContactController extends Controller
 
         // ステータスを取り消しに変更
         $contact->update(['status' => ContactStatus::CANCELLED]);
+
+        // Discordに通知
+        $adminUrl = route('Admin.Manage.Contact.Show', ['contact' => $contact->id]);
+        $hr = '─────────────────────';
+        app(DiscordWebhookService::class)
+            ->to(DiscordChannel::Contact)
+            ->send("お問い合わせが取り消されました\n{$hr}\n名前: {$contact->name}\n管理画面: {$adminUrl}\n{$hr}");
 
         return $this->tree(view('contact.form'), options: ['url' => route('Contact')]);
     }
