@@ -99,12 +99,17 @@ class OgpCache extends Model
 
         // Fetch the HTML content
         // 日本からのアクセスとしてリクエストを送信する
-        $response = Http::withHeaders([
-            'User-Agent' => $userAgent,
-            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language' => 'ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7',
-            'Referer' => $url,
-        ])->get($url);
+        try {
+            $response = Http::withHeaders([
+                'User-Agent' => $userAgent,
+                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language' => 'ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7',
+                'Referer' => $url,
+            ])->get($url);
+        } catch (\Exception $e) {
+            Log::warning("Ogp: request failed {$url}.(" . $e->getMessage() . ")");
+            return [];
+        }
 
         if ($response->failed()) {
             // Handle error, return empty array or throw an exception
