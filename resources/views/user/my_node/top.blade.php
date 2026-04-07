@@ -74,6 +74,12 @@
                             <span class="node-pt">●</span>
                         </div>
                     </section>
+                    <section class="node basic" id="user-account-login-settings-link-node">
+                        <div class="node-head">
+                            <a href="{{ route('User.MyNode.LoginSettings') }}" class="node-head-text">ログイン設定</a>
+                            <span class="node-pt">●</span>
+                        </div>
+                    </section>
                     <section class="node basic" id="user-account-social-accounts-link-node">
                         <div class="node-head">
                             <a href="{{ route('User.MyNode.SocialAccounts') }}" class="node-head-text">外部サービス連携</a>

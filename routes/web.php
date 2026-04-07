@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\GameFearMeterCommentController;
 use App\Http\Controllers\HgnController;
+use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\User;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,11 @@ Route::get('/auth/x', [AccountController::class, 'redirectToX'])->middleware('th
 Route::get('/auth/x/callback', [AccountController::class, 'handleXCallback'])->middleware('throttle:10,10')->name('Account.X.Callback');
 Route::get('/auth/steam', [AccountController::class, 'redirectToSteam'])->middleware('throttle:10,10')->name('Account.Steam.Redirect');
 Route::get('/auth/steam/callback', [AccountController::class, 'handleSteamCallback'])->middleware('throttle:10,10')->name('Account.Steam.Callback');
+// 2段階認証
+Route::get('/two-factor', [TwoFactorController::class, 'show'])->name('TwoFactor.Show');
+Route::post('/two-factor', [TwoFactorController::class, 'verify'])->name('TwoFactor.Verify');
+Route::post('/two-factor/resend', [TwoFactorController::class, 'resend'])->middleware('throttle:3,10')->name('TwoFactor.Resend');
+
 Route::get('/register', [AccountController::class, 'register'])->name('Account.Register');
 Route::post('/register', [AccountController::class, 'store'])->middleware('throttle:10,10')->name('Account.Register.Store');
 Route::get('/register/complete/{token}', [AccountController::class, 'showCompleteRegistration'])->name('Account.Register.Complete');
@@ -52,6 +58,11 @@ Route::group(['prefix' => 'user'], function () {
         Route::get('my-node/password', [User\MyNodeController::class, 'password'])->name('User.MyNode.Password');
         Route::post('my-node/password', [User\MyNodeController::class, 'passwordUpdate'])->name('User.MyNode.Password.Update');
         Route::post('my-node/password-set', [User\MyNodeController::class, 'passwordSetUpdate'])->name('User.MyNode.PasswordSet.Update');
+        Route::get('my-node/login-settings', [User\LoginSettingsController::class, 'show'])->name('User.MyNode.LoginSettings');
+        Route::post('my-node/login-settings/2fa', [User\LoginSettingsController::class, 'update2fa'])->name('User.MyNode.LoginSettings.2fa');
+        Route::get('my-node/login-settings/totp/setup', [User\LoginSettingsController::class, 'setupTotp'])->name('User.MyNode.LoginSettings.Totp.Setup');
+        Route::post('my-node/login-settings/totp/confirm', [User\LoginSettingsController::class, 'confirmTotp'])->name('User.MyNode.LoginSettings.Totp.Confirm');
+        Route::post('my-node/login-settings/totp/disable', [User\LoginSettingsController::class, 'disableTotp'])->name('User.MyNode.LoginSettings.Totp.Disable');
         Route::get('my-node/social-accounts', [User\MyNodeController::class, 'socialAccounts'])->name('User.MyNode.SocialAccounts');
         Route::get('my-node/social-accounts/link/{provider}', [User\MyNodeController::class, 'redirectToLinkProvider'])->name('User.MyNode.SocialAccounts.Link');
         Route::post('my-node/social-accounts/unlink', [User\MyNodeController::class, 'unlinkSocialAccount'])->name('User.MyNode.SocialAccounts.Unlink');
@@ -366,8 +377,6 @@ Route::post('/contact/{token}/cancel', [ContactController::class, 'cancel'])->na
 // ゲーム
 Route::group(['prefix' => 'game'], function () {
     $class = \App\Http\Controllers\GameController::class;
-    // ホラーゲーム検索
-    Route::get('/search', [$class, 'search'])->name('Game.Search');
     // フランチャイズ詳細
     Route::get('/franchise/{franchiseKey}', [$class, 'franchiseDetail'])->name('Game.FranchiseDetail');
     // フランチャイズ
