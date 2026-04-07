@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\TwoFactorAuthCode as TwoFactorAuthCodeMail;
 use App\Models\TwoFactorAuthCode;
 use App\Models\User;
+use App\Services\TwoFactorRecoveryCodeService;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -177,6 +178,56 @@ class TwoFactorController extends Controller
 
         Auth::guard('web')->login($user, $rememberMe);
         $request->session()->regenerate();
+    }
+
+    /**
+     * リカバリーコードでの認証
+     */
+    public function verifyRecovery(Request $request, TwoFactorRecoveryCodeService $recoveryService): RedirectResponse
+    {
+        if (!$request->session()->has('two_factor_pending_user_id')) {
+            return redirect()->route('Account.Login');
+        }
+
+        $userId = $request->session()->get('two_factor_pending_user_id');
+        $rememberMe = $request->session()->get('two_factor_remember_me', false);
+
+        // アカウントロック中
+        if (RateLimiter::tooManyAttempts($this->lockoutKey($userId), 1)) {
+            $seconds = RateLimiter::availableIn($this->lockoutKey($userId));
+            $minutes = ceil($seconds / 60);
+            $request->session()->forget(['two_factor_pending_user_id', 'two_factor_remember_me', 'two_factor_method']);
+            return redirect()->route('Account.Login')->with('error', "ログイン試行回数が上限に達しました。{$minutes}分後に再試行してください。");
+        }
+
+        $user = User::find($userId);
+        if (!$user) {
+            $request->session()->forget(['two_factor_pending_user_id', 'two_factor_remember_me', 'two_factor_method']);
+            return redirect()->route('Account.Login')->with('error', 'セッションが無効です。再度ログインしてください。');
+        }
+
+        $inputCode = $request->input('code', '');
+        $attemptKey = $this->lockoutKey($userId) . '_recovery_attempt';
+
+        if (!$recoveryService->verify($user, $inputCode)) {
+            RateLimiter::hit($attemptKey, self::LOCKOUT_MINUTES * 60);
+            $attempts = RateLimiter::attempts($attemptKey);
+
+            if ($attempts >= self::MAX_FAILED_ATTEMPTS) {
+                RateLimiter::hit($this->lockoutKey($userId), self::LOCKOUT_MINUTES * 60);
+                $request->session()->forget(['two_factor_pending_user_id', 'two_factor_remember_me', 'two_factor_method']);
+                return redirect()->route('Account.Login')->with('error', 'コード入力に5回失敗しました。' . self::LOCKOUT_MINUTES . '分間ログインできません。');
+            }
+
+            $remaining = self::MAX_FAILED_ATTEMPTS - $attempts;
+            return back()->withErrors(['code' => "リカバリーコードが正しくありません。あと{$remaining}回失敗するとロックされます。"]);
+        }
+
+        // 認証成功
+        RateLimiter::clear($attemptKey);
+        $this->loginUser($request, $user, $rememberMe, $userId);
+
+        return redirect()->intended(route('User.MyNode.Top'));
     }
 
     /**

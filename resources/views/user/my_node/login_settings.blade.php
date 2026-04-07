@@ -42,20 +42,26 @@
                     メールによる2段階認証が設定されている。<br>
                     Authenticatorによる2段階認証に切り替えるには無効にする必要があるようだ。
                 </p>
-                <form action="{{ route('User.MyNode.LoginSettings.2fa') }}" method="POST" data-no-push-state="1">
+                <form action="{{ route('User.MyNode.LoginSettings.2fa') }}" method="POST" data-no-push-state="1" class="mb-3">
                     @csrf
                     <input type="hidden" name="two_factor_method" value="">
                     <button type="submit" class="btn btn-danger btn-sm">メール2段階認証を無効にする</button>
                 </form>
+                <hr>
+                <p class="mb-2">リカバリーコードを紛失した場合は再発行できます。</p>
+                <a href="{{ route('User.MyNode.LoginSettings.RecoveryCodes.ConfirmRegenerate') }}" class="btn btn-outline-secondary btn-sm" data-hgn-scope="full">リカバリーコードを再発行する</a>
             @elseif($user->hasTwoFactorTotp())
                 <p class="mb-4">
                     Authenticatorによる2段階認証が設定されている。<br>
                     メールによる2段階認証に切り替えるには無効にする必要があるようだ。
                 </p>
-                <form action="{{ route('User.MyNode.LoginSettings.Totp.Disable') }}" method="POST" data-no-push-state="1">
+                <form action="{{ route('User.MyNode.LoginSettings.Totp.Disable') }}" method="POST" data-no-push-state="1" class="mb-3">
                     @csrf
                     <button type="submit" class="btn btn-danger btn-sm">Authenticator認証を無効にする</button>
                 </form>
+                <hr>
+                <p class="mb-2">リカバリーコードを紛失した場合は再発行できます。</p>
+                <a href="{{ route('User.MyNode.LoginSettings.RecoveryCodes.ConfirmRegenerate') }}" class="btn btn-outline-secondary btn-sm" data-hgn-scope="full">リカバリーコードを再発行する</a>
             @else
 
                 <p class="mb-4">
@@ -82,7 +88,7 @@
                         <input type="hidden" name="two_factor_method" value="email">
                         <button type="submit" class="btn btn-success btn-sm">メール2段階認証を有効にする</button>
                     </form>
-                    
+
                     <a href="{{ route('User.MyNode.LoginSettings.Totp.Setup') }}" class="btn btn-success btn-sm" data-hgn-scope="full">Authenticator認証を設定する</a>
                 </div>
                 @endif

@@ -63,6 +63,34 @@
                     <button type="submit" class="btn btn-outline-secondary btn-sm">認証コードを再送信</button>
                 </form>
             @endif
+
+            <hr>
+
+            <p>認証コードが使えない場合はリカバリーコードでログインできます。</p>
+
+            <form action="{{ route('TwoFactor.Recovery') }}" method="POST">
+                @csrf
+                <div class="form-group mb-3">
+                    <label class="form-label">リカバリーコード（6桁）</label>
+                    <div class="js-otp-input-wrapper d-flex gap-2">
+                        <input type="text" class="js-otp-digit form-control text-center fs-4 fw-bold p-0" inputmode="numeric" maxlength="1" autocomplete="off" style="width:3rem;height:3.25rem;color:#000;">
+                        <input type="text" class="js-otp-digit form-control text-center fs-4 fw-bold p-0" inputmode="numeric" maxlength="1" autocomplete="off" style="width:3rem;height:3.25rem;color:#000;">
+                        <input type="text" class="js-otp-digit form-control text-center fs-4 fw-bold p-0" inputmode="numeric" maxlength="1" autocomplete="off" style="width:3rem;height:3.25rem;color:#000;">
+                        <input type="text" class="js-otp-digit form-control text-center fs-4 fw-bold p-0" inputmode="numeric" maxlength="1" autocomplete="off" style="width:3rem;height:3.25rem;color:#000;">
+                        <input type="text" class="js-otp-digit form-control text-center fs-4 fw-bold p-0" inputmode="numeric" maxlength="1" autocomplete="off" style="width:3rem;height:3.25rem;color:#000;">
+                        <input type="text" class="js-otp-digit form-control text-center fs-4 fw-bold p-0" inputmode="numeric" maxlength="1" autocomplete="off" style="width:3rem;height:3.25rem;color:#000;">
+                        <input type="hidden" name="code" class="js-otp-hidden">
+                    </div>
+                    @error('code')
+                        <div class="alert alert-danger mt-3">
+                            {{ $message }}
+                        </div>
+                    @enderror
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">リカバリーコードでログイン</button>
+                </div>
+            </form>
         </div>
     </section>
 

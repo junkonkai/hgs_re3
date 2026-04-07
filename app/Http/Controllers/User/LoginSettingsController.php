@@ -5,6 +5,7 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ConfirmTotpRequest;
 use App\Models\TwoFactorAuthCode;
+use App\Services\TwoFactorRecoveryCodeService;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -36,7 +37,7 @@ class LoginSettingsController extends Controller
     /**
      * 2段階認証設定の更新（メール用）
      */
-    public function update2fa(Request $request): RedirectResponse
+    public function update2fa(Request $request, TwoFactorRecoveryCodeService $recoveryService): RedirectResponse
     {
         /** @var User $user */
         $user = Auth::user();
@@ -62,7 +63,11 @@ class LoginSettingsController extends Controller
         $user->save();
 
         if ($method === 'email') {
-            return back()->with('success', 'メール2段階認証を有効にしました。');
+            // リカバリーコードを生成してセッションに格納
+            $plainCodes = $recoveryService->generate($user);
+            session(['recovery_codes_to_show' => $plainCodes]);
+
+            return redirect()->route('User.MyNode.LoginSettings.RecoveryCodes');
         }
 
         return back()->with('success', '2段階認証を無効にしました。');
@@ -75,6 +80,10 @@ class LoginSettingsController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
+
+        if (empty($user->email)) {
+            return redirect()->route('User.MyNode.LoginSettings')->with('error', 'メールアドレスが設定されていないため、Authenticator認証を設定できません。');
+        }
 
         $google2fa = new Google2FA();
 
@@ -109,10 +118,14 @@ class LoginSettingsController extends Controller
     /**
      * TOTPコード確認・設定確定
      */
-    public function confirmTotp(ConfirmTotpRequest $request): RedirectResponse
+    public function confirmTotp(ConfirmTotpRequest $request, TwoFactorRecoveryCodeService $recoveryService): RedirectResponse
     {
         /** @var User $user */
         $user = Auth::user();
+
+        if (empty($user->email)) {
+            return redirect()->route('User.MyNode.LoginSettings')->with('error', 'メールアドレスが設定されていないため、Authenticator認証を設定できません。');
+        }
 
         $secret = session('totp_pending_secret');
 
@@ -137,7 +150,11 @@ class LoginSettingsController extends Controller
 
         session()->forget('totp_pending_secret');
 
-        return redirect()->route('User.MyNode.LoginSettings')->with('success', 'Authenticatorアプリによる2段階認証を有効にしました。');
+        // リカバリーコードを生成してセッションに格納
+        $plainCodes = $recoveryService->generate($user);
+        session(['recovery_codes_to_show' => $plainCodes]);
+
+        return redirect()->route('User.MyNode.LoginSettings.RecoveryCodes');
     }
 
     /**
@@ -157,5 +174,59 @@ class LoginSettingsController extends Controller
         $user->save();
 
         return back()->with('success', 'Authenticatorアプリによる2段階認証を無効にしました。');
+    }
+
+    /**
+     * リカバリーコード表示（セッションから一度だけ）
+     */
+    public function showRecoveryCodes(): JsonResponse|Application|Factory|View|RedirectResponse
+    {
+        $plainCodes = session('recovery_codes_to_show');
+
+        if (!$plainCodes) {
+            return redirect()->route('User.MyNode.LoginSettings')->with('error', 'リカバリーコードは既に表示済みです。再発行が必要な場合はログイン設定から行ってください。');
+        }
+
+        // 表示したらセッションから削除（一度だけ表示）
+        session()->forget('recovery_codes_to_show');
+
+        $colorState = $this->getColorState();
+
+        return $this->tree(view('user.my_node.recovery_codes', compact('plainCodes', 'colorState')));
+    }
+
+    /**
+     * リカバリーコード再発行確認画面
+     */
+    public function confirmRegenerate(): JsonResponse|Application|Factory|View|RedirectResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if (!$user->hasTwoFactorEmail() && !$user->hasTwoFactorTotp()) {
+            return redirect()->route('User.MyNode.LoginSettings')->with('error', '2段階認証が有効ではありません。');
+        }
+
+        $colorState = $this->getColorState();
+
+        return $this->tree(view('user.my_node.recovery_codes_confirm_regen', compact('colorState')));
+    }
+
+    /**
+     * リカバリーコード再発行処理
+     */
+    public function regenerateRecoveryCodes(TwoFactorRecoveryCodeService $recoveryService): RedirectResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if (!$user->hasTwoFactorEmail() && !$user->hasTwoFactorTotp()) {
+            return redirect()->route('User.MyNode.LoginSettings')->with('error', '2段階認証が有効ではありません。');
+        }
+
+        $plainCodes = $recoveryService->generate($user);
+        session(['recovery_codes_to_show' => $plainCodes]);
+
+        return redirect()->route('User.MyNode.LoginSettings.RecoveryCodes');
     }
 }

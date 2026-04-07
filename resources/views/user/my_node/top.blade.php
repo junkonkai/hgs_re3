@@ -13,6 +13,14 @@
     </p>
 </div>
 @endif
+@if ($recoveryCodeRemaining !== null && $recoveryCodeRemaining <= 3)
+<div class="alert alert-warning mt-3">
+    <p>
+        2段階認証のリカバリーコードの残りが<strong>{{ $recoveryCodeRemaining }}個</strong>になっています。<br>
+        <a href="{{ route('User.MyNode.LoginSettings.RecoveryCodes.ConfirmRegenerate') }}" data-hgn-scope="full">ログイン設定</a>からリカバリーコードを再発行してください。
+    </p>
+</div>
+@endif
 @if (session('success'))
 <div class="alert alert-success mt-3">
     {{ session('success') }}
@@ -67,6 +75,14 @@
                             <a href="{{ route('User.MyNode.Email') }}" class="node-head-text">メールアドレス変更</a>
                             <span class="node-pt">●</span>
                         </div>
+                        @empty($user->email)
+                        <div class="node-content basic">
+                            <p class="alert alert-warning">
+                                メールアドレスが設定されていないようだ。<br>
+                                SNSでログインできなくなった時のために設定しておいた方がいいだろう。
+                            </p>
+                        </div>
+                        @endempty
                     </section>
                     <section class="node basic" id="user-account-password-change-link-node">
                         <div class="node-head">
@@ -78,6 +94,12 @@
                         <div class="node-head">
                             <a href="{{ route('User.MyNode.LoginSettings') }}" class="node-head-text">ログイン設定</a>
                             <span class="node-pt">●</span>
+                        </div>
+                        <div class="node-content basic">
+                            <ul>
+                                <li>2段階認証の設定</li>
+                                <li>リカバリーコードの再発行</li>
+                            </ul>
                         </div>
                     </section>
                     <section class="node basic" id="user-account-social-accounts-link-node">

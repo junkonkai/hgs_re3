@@ -37,6 +37,7 @@ Route::get('/auth/steam/callback', [AccountController::class, 'handleSteamCallba
 Route::get('/two-factor', [TwoFactorController::class, 'show'])->name('TwoFactor.Show');
 Route::post('/two-factor', [TwoFactorController::class, 'verify'])->name('TwoFactor.Verify');
 Route::post('/two-factor/resend', [TwoFactorController::class, 'resend'])->middleware('throttle:3,10')->name('TwoFactor.Resend');
+Route::post('/two-factor/recovery', [TwoFactorController::class, 'verifyRecovery'])->name('TwoFactor.Recovery');
 
 Route::get('/register', [AccountController::class, 'register'])->name('Account.Register');
 Route::post('/register', [AccountController::class, 'store'])->middleware('throttle:10,10')->name('Account.Register.Store');
@@ -63,6 +64,9 @@ Route::group(['prefix' => 'user'], function () {
         Route::get('my-node/login-settings/totp/setup', [User\LoginSettingsController::class, 'setupTotp'])->name('User.MyNode.LoginSettings.Totp.Setup');
         Route::post('my-node/login-settings/totp/confirm', [User\LoginSettingsController::class, 'confirmTotp'])->name('User.MyNode.LoginSettings.Totp.Confirm');
         Route::post('my-node/login-settings/totp/disable', [User\LoginSettingsController::class, 'disableTotp'])->name('User.MyNode.LoginSettings.Totp.Disable');
+        Route::get('my-node/login-settings/recovery-codes', [User\LoginSettingsController::class, 'showRecoveryCodes'])->name('User.MyNode.LoginSettings.RecoveryCodes');
+        Route::get('my-node/login-settings/recovery-codes/confirm-regenerate', [User\LoginSettingsController::class, 'confirmRegenerate'])->name('User.MyNode.LoginSettings.RecoveryCodes.ConfirmRegenerate');
+        Route::post('my-node/login-settings/recovery-codes/regenerate', [User\LoginSettingsController::class, 'regenerateRecoveryCodes'])->name('User.MyNode.LoginSettings.RecoveryCodes.Regenerate');
         Route::get('my-node/social-accounts', [User\MyNodeController::class, 'socialAccounts'])->name('User.MyNode.SocialAccounts');
         Route::get('my-node/social-accounts/link/{provider}', [User\MyNodeController::class, 'redirectToLinkProvider'])->name('User.MyNode.SocialAccounts.Link');
         Route::post('my-node/social-accounts/unlink', [User\MyNodeController::class, 'unlinkSocialAccount'])->name('User.MyNode.SocialAccounts.Unlink');
