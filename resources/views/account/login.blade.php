@@ -63,7 +63,7 @@
                     <input type="password" name="password" class="form-control" id="password" placeholder="パスワード" required>
                 </div>
                 <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" name="remember_me" value="1" id="rememberMe">
+                    <input class="form-check-input" type="checkbox" name="remember_me" value="1" id="rememberMe" checked>
                     <label class="form-check-label" for="rememberMe">
                         ログイン状態を保持する
                     </label>

@@ -53,7 +53,7 @@
                             <label for="password" class="d-flex align-items-center">Password</label>
                         </div>
                         <div class="form-check mb-20px">
-                            <input class="form-check-input" type="checkbox" name="remember_me" value="1" id="rememberMe">
+                            <input class="form-check-input" type="checkbox" name="remember_me" value="1" id="rememberMe" checked>
                             <label class="form-check-label" for="rememberMe">
                                 ログイン状態を数日維持する
                             </label>
