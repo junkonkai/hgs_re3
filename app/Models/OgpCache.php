@@ -15,7 +15,6 @@ class OgpCache extends Model
     /**
      * 指定URLのOGP情報を取得する。
      *
-     *
      * @param  string  $url
      * @return self
      */

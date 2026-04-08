@@ -25,6 +25,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'two_factor_method',
+        'two_factor_secret',
         'role',
         'hgs12_user',
         'sign_up_at',
@@ -42,6 +44,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
     ];
 
     /**
@@ -57,6 +60,7 @@ class User extends Authenticatable
             'withdrawn_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
+            'two_factor_secret' => 'encrypted',
         ];
     }
 
@@ -98,5 +102,29 @@ class User extends Authenticatable
     public function needsPasswordSet(): bool
     {
         return $this->password === null && $this->socialAccounts()->exists();
+    }
+
+    /**
+     * メール2段階認証が有効か
+     */
+    public function hasTwoFactorEmail(): bool
+    {
+        return $this->two_factor_method === 'email';
+    }
+
+    /**
+     * TOTP（Authenticator）2段階認証が有効か
+     */
+    public function hasTwoFactorTotp(): bool
+    {
+        return $this->two_factor_method === 'totp';
+    }
+
+    /**
+     * 2段階認証が有効か（将来の認証方式追加に備えたラッパー）
+     */
+    public function hasTwoFactor(): bool
+    {
+        return $this->two_factor_method !== null;
     }
 }

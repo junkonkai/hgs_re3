@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\HgnController;
+use App\Services\TwoFactorRecoveryCodeService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
@@ -36,20 +37,27 @@ class MyNodeController extends Controller
      * @param Request $request
      * @return JsonResponse|Application|Factory|View
      */
-    public function top(Request $request): JsonResponse|Application|Factory|View
+    public function top(Request $request, TwoFactorRecoveryCodeService $recoveryService): JsonResponse|Application|Factory|View
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
-        
+
         $privacyPolicyRevisionDate = Carbon::parse(HgnController::PRIVACY_POLICY_REVISION_DATE);
         $privacyPolicyVersion = (int)$privacyPolicyRevisionDate->format('Ymd');
-        
+
         $acceptedVersion = $user->privacy_policy_accepted_version ?? 0;
         $needsAcceptance = $acceptedVersion < $privacyPolicyVersion;
-        
+
+        // 2FA有効時にリカバリーコード残数を確認（3枚以下でアラート対象）
+        $recoveryCodeRemaining = null;
+        if ($user->hasTwoFactorEmail() || $user->hasTwoFactorTotp()) {
+            $recoveryCodeRemaining = $recoveryService->remainingCount($user);
+        }
+
         $request->session()->regenerateToken();
 
         return $this->tree(
-            view('user.my_node.top', compact('user', 'needsAcceptance')), 
+            view('user.my_node.top', compact('user', 'needsAcceptance', 'recoveryCodeRemaining')),
             options: [
                 'url' => route('User.MyNode.Top'),
                 'csrfToken' => csrf_token(),

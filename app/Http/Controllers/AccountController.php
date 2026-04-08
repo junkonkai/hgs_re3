@@ -19,6 +19,8 @@ use App\Enums\UserRole;
 use App\Enums\SocialAccountProvider;
 use App\Mail\RegistrationInvitation;
 use App\Mail\PasswordReset as PasswordResetMail;
+use App\Models\TwoFactorAuthCode;
+use App\Http\Controllers\TwoFactorController;
 use App\Models\TemporaryRegistration;
 use App\Models\PasswordReset as PasswordResetModel;
 use Illuminate\Support\Facades\Hash;
@@ -75,6 +77,44 @@ class AccountController extends Controller
 
         if (Auth::guard('web')->attempt($credentials, $rememberMe == 1)) {
             // 認証に成功したときの処理
+            $authedUser = Auth::user();
+
+            // 2段階認証（メール）が有効な場合
+            if ($authedUser->hasTwoFactorEmail()) {
+                Auth::guard('web')->logout();
+
+                $plainCode = TwoFactorController::generateCode();
+                TwoFactorAuthCode::where('user_id', $authedUser->id)->delete();
+                TwoFactorAuthCode::create([
+                    'user_id'         => $authedUser->id,
+                    'code'            => hash('sha256', $plainCode),
+                    'expires_at'      => now()->addMinutes(15),
+                    'failed_attempts' => 0,
+                    'resend_count'    => 0,
+                ]);
+
+                $request->session()->regenerate();
+                $request->session()->put('two_factor_pending_user_id', $authedUser->id);
+                $request->session()->put('two_factor_remember_me', $rememberMe == 1);
+                $request->session()->put('two_factor_method', 'email');
+
+                TwoFactorController::dispatchTwoFactorMail($authedUser->email, $plainCode);
+
+                return redirect()->route('TwoFactor.Show');
+            }
+
+            // 2段階認証（TOTP）が有効な場合
+            if ($authedUser->hasTwoFactorTotp()) {
+                Auth::guard('web')->logout();
+
+                $request->session()->regenerate();
+                $request->session()->put('two_factor_pending_user_id', $authedUser->id);
+                $request->session()->put('two_factor_remember_me', $rememberMe == 1);
+                $request->session()->put('two_factor_method', 'totp');
+
+                return redirect()->route('TwoFactor.Show');
+            }
+
             $request->session()->regenerate();
             return redirect()->intended(route('User.MyNode.Top'));
         } else {
