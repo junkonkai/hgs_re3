@@ -58,6 +58,32 @@
         <th>説明文</th>
         <td>
             <x-admin.textarea name="description" :model="$model" />
+            <button type="button" onclick="convertYoutubeIframe()" class="btn btn-sm btn-outline-secondary mt-1">YouTube iframe をレスポンシブ化</button>
+            <script>
+            function convertYoutubeIframe() {
+                const textarea = document.getElementById('description');
+                textarea.value = textarea.value.replace(
+                    /<iframe([^>]*)><\/iframe>/gi,
+                    function(match, attrs) {
+                        const srcMatch    = attrs.match(/src="([^"]*)"/i);
+                        const titleMatch  = attrs.match(/title="([^"]*)"/i);
+                        const widthMatch  = attrs.match(/width="?(\d+)"?/i);
+                        const heightMatch = attrs.match(/height="?(\d+)"?/i);
+                        if (!srcMatch || !srcMatch[1].includes('youtube.com/embed')) return match;
+                        const src      = srcMatch[1];
+                        const title    = titleMatch ? titleMatch[1] : 'YouTube video player';
+                        const w        = widthMatch  ? parseInt(widthMatch[1])  : 560;
+                        const h        = heightMatch ? parseInt(heightMatch[1]) : 315;
+                        const ratio    = (h / w * 100).toFixed(4);
+                        return '<iframe src="' + src + '"'
+                            + ' style="width:100%;max-width:' + w + 'px;aspect-ratio:' + w + '/' + h + ';"'
+                            + ' title="' + title + '" frameborder="0"'
+                            + ' allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"'
+                            + ' referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>';
+                    }
+                );
+            }
+            </script>
         </td>
     </tr>
     <tr>
