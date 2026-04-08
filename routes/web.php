@@ -65,7 +65,6 @@ Route::group(['prefix' => 'user'], function () {
         Route::post('my-node/login-settings/totp/confirm', [User\LoginSettingsController::class, 'confirmTotp'])->name('User.MyNode.LoginSettings.Totp.Confirm');
         Route::post('my-node/login-settings/totp/disable', [User\LoginSettingsController::class, 'disableTotp'])->name('User.MyNode.LoginSettings.Totp.Disable');
         Route::get('my-node/login-settings/recovery-codes', [User\LoginSettingsController::class, 'showRecoveryCodes'])->name('User.MyNode.LoginSettings.RecoveryCodes');
-        Route::get('my-node/login-settings/recovery-codes/confirm-regenerate', [User\LoginSettingsController::class, 'confirmRegenerate'])->name('User.MyNode.LoginSettings.RecoveryCodes.ConfirmRegenerate');
         Route::post('my-node/login-settings/recovery-codes/regenerate', [User\LoginSettingsController::class, 'regenerateRecoveryCodes'])->name('User.MyNode.LoginSettings.RecoveryCodes.Regenerate');
         Route::get('my-node/social-accounts', [User\MyNodeController::class, 'socialAccounts'])->name('User.MyNode.SocialAccounts');
         Route::get('my-node/social-accounts/link/{provider}', [User\MyNodeController::class, 'redirectToLinkProvider'])->name('User.MyNode.SocialAccounts.Link');

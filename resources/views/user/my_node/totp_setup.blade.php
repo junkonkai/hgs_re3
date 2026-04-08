@@ -65,7 +65,7 @@
                 @csrf
                 <div class="form-group mb-3">
                     <div class="js-otp-input-wrapper d-flex gap-2">
-                        <input type="text" class="js-otp-digit form-control text-center fs-4 fw-bold p-0" inputmode="numeric" maxlength="1" autocomplete="off" style="width:3rem;height:3.25rem;color:#000;" autofocus>
+                        <input type="text" class="js-otp-digit form-control text-center fs-4 fw-bold p-0" inputmode="numeric" maxlength="1" autocomplete="off" style="width:3rem;height:3.25rem;color:#000;">
                         <input type="text" class="js-otp-digit form-control text-center fs-4 fw-bold p-0" inputmode="numeric" maxlength="1" autocomplete="off" style="width:3rem;height:3.25rem;color:#000;">
                         <input type="text" class="js-otp-digit form-control text-center fs-4 fw-bold p-0" inputmode="numeric" maxlength="1" autocomplete="off" style="width:3rem;height:3.25rem;color:#000;">
                         <input type="text" class="js-otp-digit form-control text-center fs-4 fw-bold p-0" inputmode="numeric" maxlength="1" autocomplete="off" style="width:3rem;height:3.25rem;color:#000;">
@@ -84,41 +84,41 @@
         </div>
     </section>
 
-<section class="node tree-node">
-    <div class="node-head">
-        <h2 class="node-head-text">近道</h2>
-        <span class="node-pt">●</span>
-    </div>
-    <div class="node-content tree">
-        <section class="node tree-node" id="back-to-lineup-node">
-            <div class="node-head">
-                <a href="{{ route('User.MyNode.LoginSettings') }}" class="node-head-text">ログイン設定</a>
-                <span class="node-pt">●</span>
-            </div>
-            <div class="node-content tree">
-                <section class="node basic" id="back-to-root-node">
-                    <div class="node-head">
-                        <a href="{{ route('User.MyNode.Top') }}" class="node-head-text">マイノード</a>
-                        <span class="node-pt">●</span>
-                    </div>
-                </section>
-            </div>
-        </section>
+    <section class="node tree-node">
+        <div class="node-head">
+            <h2 class="node-head-text">近道</h2>
+            <span class="node-pt">●</span>
+        </div>
+        <div class="node-content tree">
+            <section class="node tree-node" id="back-to-lineup-node">
+                <div class="node-head">
+                    <a href="{{ route('User.MyNode.LoginSettings') }}" class="node-head-text">ログイン設定</a>
+                    <span class="node-pt">●</span>
+                </div>
+                <div class="node-content tree">
+                    <section class="node basic" id="back-to-root-node">
+                        <div class="node-head">
+                            <a href="{{ route('User.MyNode.Top') }}" class="node-head-text">マイノード</a>
+                            <span class="node-pt">●</span>
+                        </div>
+                    </section>
+                </div>
+            </section>
 
-        <section class="node basic">
-            <div class="node-head">
-                <a href="{{ route('Root') }}" class="node-head-text">ルート</a>
-                <span class="node-pt">●</span>
-            </div>
-        </section>
-        <section class="node basic" id="logout-link-node">
-            <div class="node-head">
-                <a href="{{ route('Account.Logout') }}" class="node-head-text">ログアウト</a>
-                <span class="node-pt">●</span>
-            </div>
-        </section>
-    </div>
-</section>
+            <section class="node basic">
+                <div class="node-head">
+                    <a href="{{ route('Root') }}" class="node-head-text">ルート</a>
+                    <span class="node-pt">●</span>
+                </div>
+            </section>
+            <section class="node basic" id="logout-link-node">
+                <div class="node-head">
+                    <a href="{{ route('Account.Logout') }}" class="node-head-text">ログアウト</a>
+                    <span class="node-pt">●</span>
+                </div>
+            </section>
+        </div>
+    </section>
 
 
 @endsection

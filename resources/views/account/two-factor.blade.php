@@ -35,7 +35,7 @@
                 <div class="form-group mb-3">
                     <label class="form-label">認証コード（6桁）</label>
                     <div class="js-otp-input-wrapper d-flex gap-2">
-                        <input type="text" class="js-otp-digit form-control text-center fs-4 fw-bold p-0" inputmode="numeric" maxlength="1" autocomplete="off" style="width:3rem;height:3.25rem;color:#000;" autofocus>
+                        <input type="text" class="js-otp-digit form-control text-center fs-4 fw-bold p-0" inputmode="numeric" maxlength="1" autocomplete="off" style="width:3rem;height:3.25rem;color:#000;">
                         <input type="text" class="js-otp-digit form-control text-center fs-4 fw-bold p-0" inputmode="numeric" maxlength="1" autocomplete="off" style="width:3rem;height:3.25rem;color:#000;">
                         <input type="text" class="js-otp-digit form-control text-center fs-4 fw-bold p-0" inputmode="numeric" maxlength="1" autocomplete="off" style="width:3rem;height:3.25rem;color:#000;">
                         <input type="text" class="js-otp-digit form-control text-center fs-4 fw-bold p-0" inputmode="numeric" maxlength="1" autocomplete="off" style="width:3rem;height:3.25rem;color:#000;">

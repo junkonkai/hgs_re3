@@ -196,23 +196,6 @@ class LoginSettingsController extends Controller
     }
 
     /**
-     * リカバリーコード再発行確認画面
-     */
-    public function confirmRegenerate(): JsonResponse|Application|Factory|View|RedirectResponse
-    {
-        /** @var User $user */
-        $user = Auth::user();
-
-        if (!$user->hasTwoFactorEmail() && !$user->hasTwoFactorTotp()) {
-            return redirect()->route('User.MyNode.LoginSettings')->with('error', '2段階認証が有効ではありません。');
-        }
-
-        $colorState = $this->getColorState();
-
-        return $this->tree(view('user.my_node.recovery_codes_confirm_regen', compact('colorState')));
-    }
-
-    /**
      * リカバリーコード再発行処理
      */
     public function regenerateRecoveryCodes(TwoFactorRecoveryCodeService $recoveryService): RedirectResponse
