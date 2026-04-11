@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\Admin\Game\TitleController as AdminGameTitleControl
 use App\Http\Controllers\Api\GameMakerController;
 use App\Http\Controllers\Api\Test\AccountController;
 use App\Http\Controllers\Api\Test\FearMeterController;
+use App\Http\Controllers\Api\Test\ReviewController as TestReviewController;
 use App\Http\Controllers\Api\UserFavoriteController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,8 @@ if (! app()->environment('production')) {
     Route::post('test/create-test-account', [AccountController::class, 'createTestAccount'])->name('api.test.create-test-account');
     Route::post('test/fear-meter/recalculate', [FearMeterController::class, 'recalculate'])->name('api.test.fear-meter.recalculate');
     Route::get('test/fear-meter/statistics', [FearMeterController::class, 'statistics'])->name('api.test.fear-meter.statistics');
+    Route::post('test/review/recalculate', [TestReviewController::class, 'recalculate'])->name('api.test.review.recalculate');
+    Route::get('test/review/statistics', [TestReviewController::class, 'statistics'])->name('api.test.review.statistics');
 }
 
 // ゲーム関連API

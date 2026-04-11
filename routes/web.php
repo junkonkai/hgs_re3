@@ -408,6 +408,8 @@ Route::group(['prefix' => 'game'], function () {
     Route::get('/title/{titleKey}', [$class, 'titleDetail'])->name('Game.TitleDetail');
     // タイトル詳細（怖さメーターコメントログ）
     Route::get('/title/{titleKey}/fear-meter-comments', [$class, 'titleFearMeterComments'])->name('Game.TitleFearMeterComments');
+    // レビュー一覧（全タイトル）
+    Route::get('/reviews', [$class, 'reviews'])->name('Game.Reviews');
     // タイトルのレビュー全件
     Route::get('/title/{titleKey}/reviews', [$class, 'titleReviews'])->name('Game.TitleReviews');
     // タイトルのレビュー個別

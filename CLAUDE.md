@@ -55,6 +55,11 @@ php artisan tinker                 # Interactive REPL
 - Components live in `resources/ts/components/`, animations in `resources/ts/animation/`
 - CSS: TailwindCSS in `resources/css/`, compiled via Vite
 
+### Rust Tools (`/src/hgn_rust_tools`)
+- 別リポジトリ（`/src/hgn_rust_tools`）に Rust 製のマイクロツール群がある
+- **ogp-generator**: OGP画像をサーバーサイドで生成するバイナリ。Laravel の Queue Job から呼び出す
+- 詳細は `docs/claude/ogp-generator.md` を参照
+
 ### Branches & Deployment
 - `main` → production (auto-deploys via GitHub Actions SSH)
 - `develop` → staging (auto-deploys via GitHub Actions SSH)
@@ -66,6 +71,7 @@ php artisan tinker                 # Interactive REPL
 
 @docs/claude/frontend-conventions.md
 @docs/claude/discord-webhook.md
+@docs/claude/ogp-generator.md
 
 ## Interaction Rules
 - プロンプトに全角の「？」が含まれる場合は、実装を行わず回答のみ行う。半角の「?」はこの対象外。

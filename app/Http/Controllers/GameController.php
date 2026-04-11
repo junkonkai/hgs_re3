@@ -615,6 +615,24 @@ class GameController extends Controller
     }
 
     /**
+     * レビュー一覧（全タイトル）
+     */
+    public function reviews(Request $request): JsonResponse|Application|Factory|View
+    {
+        $reviews = UserGameTitleReview::where('is_deleted', false)
+            ->where('is_hidden', false)
+            ->orderByDesc('updated_at')
+            ->with(['user', 'gameTitle', 'horrorTypeTags'])
+            ->paginate(20);
+
+        $pager = new Pager($reviews->currentPage(), $reviews->lastPage(), 'Game.Reviews');
+
+        return $this->tree(
+            view('game.reviews', compact('reviews', 'pager')),
+        );
+    }
+
+    /**
      * タイトルのレビュー全件
      *
      * @param Request $request

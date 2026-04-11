@@ -298,6 +298,10 @@ form {
     color: #888888;
 }
 
+select.form-control {
+    color: #000;
+}
+
 
 .form-row {
     display: flex;

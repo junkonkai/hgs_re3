@@ -629,3 +629,34 @@ app(DiscordWebhookService::class)
 - ゲームタイトル名
 - 通報者のユーザーID（名前は出さない）
 - 管理画面の通報詳細への URL
+
+---
+
+## 今後の対応予定
+
+### ユーザー名変更時のOGP画像一括再生成
+
+**概要：**
+ユーザーが `users.name`（表示名）を変更したとき、そのユーザーが投稿したレビューのOGP画像（`ogp_image_path` が設定済みのもの）を再生成する。
+
+**方針：**
+- 一度に全件処理するのではなく、`GenerateReviewOgpImage` ジョブをキューに積んで順次処理する。
+- ユーザー名変更処理（コントローラ or サービス）の完了後にジョブをディスパッチする。
+
+**実装イメージ：**
+
+```php
+// ユーザー名変更後
+$user->update(['name' => $newName]);
+
+// OGP画像が生成済みのレビューのみキューに積む
+UserGameTitleReview::where('user_id', $user->id)
+    ->whereNotNull('ogp_image_path')
+    ->where('is_deleted', false)
+    ->pluck('id')
+    ->each(fn($id) => GenerateReviewOgpImage::dispatch($id));
+```
+
+**注意：**
+- ジョブ数が多い場合でもキューで吸収されるため、レスポンスには影響しない。
+- OGP画像の実ファイルは上書きされる（ファイル名は `review_id` ベースのため同名で上書き）。

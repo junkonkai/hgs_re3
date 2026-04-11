@@ -48,6 +48,13 @@
 @endsection
 
 @section('nodes')
+    <section class="node tree-node" id="title-reputation-node">
+        <div class="node-head">
+            <h2 class="node-head-text">評判</h2>
+            <span class="node-pt">●</span>
+        </div>
+        <div class="node-content tree">
+
     <section class="node @if ($fearMeter) tree-node @endif" id="title-review-node">
         <div class="node-head">
             <h2 class="node-head-text">怖さメーター</h2>
@@ -259,6 +266,9 @@
         </div>
         @endif
     </section>
+
+        </div>
+    </section>{{-- /評判 --}}
 
     @if ($title->packageGroups()->exists())
         <section class="node tree-node" id="pkg-lineup-tree-node">

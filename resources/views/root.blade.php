@@ -46,6 +46,13 @@
                 </div>
             </section>
 
+            <section class="node basic" id="reviews-link-node">
+                <div class="node-head">
+                    <a href="{{ route('Game.Reviews') }}" class="node-head-text">レビュー</a>
+                    <span class="node-pt">●</span>
+                </div>
+            </section>
+
             {{--
             <section class="node basic" id="maker-link-node">
                 <div class="node-head">

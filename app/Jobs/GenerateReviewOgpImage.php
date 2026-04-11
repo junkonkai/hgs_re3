@@ -30,9 +30,10 @@ class GenerateReviewOgpImage implements ShouldQueue
             ->first();
 
         $payload = [
+            'type'             => 'review',
             'review_id'        => $review->id,
             'game_title_name'  => $review->gameTitle->name,
-            'show_id'          => $review->user->show_id,
+            'user_name'        => $review->user->name,
             'total_score'      => $review->total_score,
             'fear_meter'       => $fearMeterRecord?->fear_meter?->value,
             'score_story'      => $review->score_story,
@@ -41,14 +42,22 @@ class GenerateReviewOgpImage implements ShouldQueue
             'has_spoiler'      => (bool) $review->has_spoiler,
         ];
 
-        $result = Process::run(
-            [config('services.ogp.binary'), json_encode($payload)],
-            env: [
-                'OUTPUT_DIR'        => config('services.ogp.output_dir'),
-                'FONT_PATH'         => config('services.ogp.font_path'),
-                'SVG_TEMPLATE_PATH' => config('services.ogp.template_path'),
-            ]
-        );
+        $env = [
+            'OUTPUT_DIR'        => config('services.ogp.output_dir'),
+            'FONT_PATH'         => config('services.ogp.font_path'),
+            'SVG_TEMPLATE_PATH' => config('services.ogp.template_path'),
+        ];
+        $binary  = config('services.ogp.binary');
+        $jsonArg = json_encode($payload);
+
+        $envStr = implode(' ', array_map(
+            fn($k, $v) => $k . '=' . escapeshellarg((string) $v),
+            array_keys($env), $env
+        ));
+        $debugCommand = $envStr . ' ' . escapeshellarg($binary) . ' ' . escapeshellarg($jsonArg);
+        Log::debug("GenerateReviewOgpImage: run_command [review_id={$this->reviewId}]: {$debugCommand}");
+
+        $result = Process::env($env)->run([$binary, $jsonArg]);
 
         if (!$result->successful()) {
             Log::error("GenerateReviewOgpImage: process failed", [
