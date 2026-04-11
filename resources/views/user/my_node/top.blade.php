@@ -54,6 +54,12 @@
                             <span class="node-pt">●</span>
                         </div>
                     </section>
+                    <section class="node basic" id="user-review-likes-link-node">
+                        <div class="node-head">
+                            <a href="{{ route('User.MyNode.ReviewLikes') }}" class="node-head-text">いいねしたレビュー</a>
+                            <span class="node-pt">●</span>
+                        </div>
+                    </section>
                 </div>
             </section>
 

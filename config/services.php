@@ -55,4 +55,11 @@ return [
         'force_https' => env('STEAM_FORCE_HTTPS', false),
     ],
 
+    'ogp' => [
+        'binary'        => env('OGP_BINARY_PATH',  '/usr/local/bin/ogp-generator'),
+        'output_dir'    => env('OUTPUT_DIR',         ''),
+        'font_path'     => env('FONT_PATH',          ''),
+        'template_path' => env('SVG_TEMPLATE_PATH',  ''),
+    ],
+
 ];

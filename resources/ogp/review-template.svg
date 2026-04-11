@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- 背景 -->
+  <rect width="1200" height="630" fill="#0f172a"/>
+
+  <!-- 上部アクセントライン -->
+  <rect x="0" y="0" width="1200" height="6" fill="#dc2626"/>
+
+  <!-- ネタバレバッジ（has_spoiler=true のときSVG要素に置換、falseは空文字列） -->
+  {{SPOILER_BADGE}}
+
+  <!-- ゲームタイトル -->
+  <text
+    x="60"
+    y="220"
+    font-size="{{TITLE_FONT_SIZE}}"
+    fill="#f1f5f9"
+    font-family="NotoSansJP"
+    font-weight="bold"
+  >{{GAME_TITLE}}</text>
+
+  <!-- show_id のレビュー -->
+  <text
+    x="60"
+    y="278"
+    font-size="32"
+    fill="#94a3b8"
+    font-family="NotoSansJP"
+  >{{SHOW_ID}} のレビュー</text>
+
+  <!-- 区切り線 -->
+  <line x1="60" y1="310" x2="1140" y2="310" stroke="#1e293b" stroke-width="2"/>
+
+  <!-- 総合スコアラベル -->
+  <text
+    x="60"
+    y="370"
+    font-size="28"
+    fill="#64748b"
+    font-family="NotoSansJP"
+  >総合スコア</text>
+
+  <!-- 総合スコア値 -->
+  <text
+    x="60"
+    y="470"
+    font-size="112"
+    fill="#e2e8f0"
+    font-family="NotoSansJP"
+    font-weight="bold"
+  >{{TOTAL_SCORE}}</text>
+
+  <!-- 各軸スコア -->
+  <text
+    x="60"
+    y="548"
+    font-size="30"
+    fill="#94a3b8"
+    font-family="NotoSansJP"
+  >{{AXIS_SCORES}}</text>
+
+  <!-- サイト名 -->
+  <text
+    x="1140"
+    y="610"
+    font-size="26"
+    fill="#475569"
+    text-anchor="end"
+    font-family="NotoSansJP"
+  >HorrorGame.net</text>
+</svg>

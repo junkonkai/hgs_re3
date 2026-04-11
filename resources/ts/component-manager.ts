@@ -2,6 +2,8 @@ import { Component } from "./component";
 import { FearMeterCommentReaction } from "./components/fear_meter_comment_reaction";
 import { FearMeterFormInput } from "./components/fear_meter_form_input";
 import { LineupSearch } from "./components/lineup_search";
+import { ReviewFormInput } from "./components/review_form_input";
+import { ReviewReaction } from "./components/review_reaction";
 import { TitleDetailFavorite } from "./components/title_detail_favorite";
 import { OtpInput } from "./components/otp_input";
 
@@ -17,6 +19,8 @@ export class ComponentManager
         'TitleDetailFavorite': TitleDetailFavorite,
         'FearMeterCommentReaction': FearMeterCommentReaction,
         'FearMeterFormInput': FearMeterFormInput,
+        'ReviewFormInput': ReviewFormInput,
+        'ReviewReaction': ReviewReaction,
         'OtpInput': OtpInput,
     };
 

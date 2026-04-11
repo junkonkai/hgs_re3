@@ -157,6 +157,109 @@
         @endif
     </section>
 
+    <section class="node @if ($reviewStatistic) tree-node @endif" id="title-reviews-node">
+        <div class="node-head">
+            <h2 class="node-head-text">レビュー</h2>
+            <span class="node-pt">●</span>
+        </div>
+        <div class="node-content basic @if ($reviewStatistic) pl-4 @endif mb-5">
+            @if ($reviewStatistic)
+                <div class="space-y-2">
+                    <div class="text-sm text-slate-200">
+                        <span class="font-semibold text-lg">{{ $reviewStatistic->avg_total_score !== null ? number_format((float)$reviewStatistic->avg_total_score, 1) : '-' }}</span>
+                        <span class="text-slate-400 text-xs"> / 100</span>
+                        <span class="ml-2 text-slate-400">（{{ $reviewStatistic->review_count }}件）</span>
+                    </div>
+                    <div class="text-xs text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
+                        @if ($reviewStatistic->avg_story !== null)
+                            <span>ストーリー: {{ number_format((float)$reviewStatistic->avg_story, 1) }}/4</span>
+                        @endif
+                        @if ($reviewStatistic->avg_atmosphere !== null)
+                            <span>雰囲気・演出: {{ number_format((float)$reviewStatistic->avg_atmosphere, 1) }}/4</span>
+                        @endif
+                        @if ($reviewStatistic->avg_gameplay !== null)
+                            <span>ゲーム性: {{ number_format((float)$reviewStatistic->avg_gameplay, 1) }}/4</span>
+                        @endif
+                    </div>
+                </div>
+            @else
+                <p>レビューはまだないようだ</p>
+                @if (Auth::check())
+                    <div class="mt-5">
+                        <a href="{{ route('User.Review.Form', ['titleKey' => $title->key]) }}" data-hgn-scope="full">レビューを書く</a>
+                    </div>
+                @endif
+            @endif
+        </div>
+
+        @if ($reviewStatistic)
+        <div class="node-content tree">
+            <section class="node" id="title-review-pickup-node">
+                <div class="node-head">
+                    <h3 class="node-head-text">新着レビュー</h3>
+                    <span class="node-pt">●</span>
+                </div>
+                <div class="node-content basic">
+                    @if ($recentReviews->isEmpty())
+                        <p>レビューはまだないようだ</p>
+                    @else
+                        @foreach ($recentReviews as $recentReview)
+                            <div class="py-3 border-b border-white/10 last:border-b-0">
+                                <div class="mb-1 text-xs text-slate-400 flex flex-wrap gap-x-3">
+                                    <span>{{ $recentReview->user?->show_id ?? '(不明)' }}</span>
+                                    <span>{{ $recentReview->play_status?->text() }}</span>
+                                    @if ($recentReview->play_time)
+                                        <span>{{ $recentReview->play_time->text() }}</span>
+                                    @endif
+                                    @if ($recentReview->total_score !== null)
+                                        <span class="font-semibold text-slate-200">{{ $recentReview->total_score }}<span class="font-normal text-slate-400">/100</span></span>
+                                    @endif
+                                    @if ($recentReview->has_spoiler)
+                                        <span class="text-amber-400">【ネタバレあり】</span>
+                                    @endif
+                                    @if ($recentReview->play_status === \App\Enums\PlayStatus::Watched)
+                                        <span class="text-sky-400">配信・動画での視聴に基づくレビュー</span>
+                                    @endif
+                                </div>
+                                @if ($recentReview->horrorTypeTags->isNotEmpty())
+                                    <div class="mb-1 flex flex-wrap gap-1">
+                                        @foreach ($recentReview->horrorTypeTags as $tag)
+                                            <span class="text-xs px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">{{ $tag->tag->text() }}</span>
+                                        @endforeach
+                                    </div>
+                                @endif
+                                @if ($recentReview->has_spoiler)
+                                    <details class="text-sm">
+                                        <summary class="cursor-pointer text-slate-400 hover:text-slate-200">本文を表示（ネタバレあり）</summary>
+                                        <div class="mt-2 leading-relaxed text-slate-100">{!! nl2br(e($recentReview->body)) !!}</div>
+                                    </details>
+                                @else
+                                    <div class="text-sm leading-relaxed text-slate-100">{!! nl2br(e(mb_strimwidth($recentReview->body, 0, 200, '…'))) !!}</div>
+                                @endif
+                                <div class="mt-1 text-xs">
+                                    <a href="{{ route('Game.TitleReview', ['titleKey' => $title->key, 'showId' => $recentReview->user?->show_id]) }}" data-hgn-scope="full">全文を読む</a>
+                                </div>
+                            </div>
+                        @endforeach
+                        <div class="mt-3">
+                            <a href="{{ route('Game.TitleReviews', ['titleKey' => $title->key]) }}" data-hgn-scope="full">レビューを全件見る</a>
+                        </div>
+                        @if (Auth::check() && !$userReview)
+                            <div class="mt-2">
+                                <a href="{{ route('User.Review.Form', ['titleKey' => $title->key]) }}" data-hgn-scope="full">レビューを書く</a>
+                            </div>
+                        @elseif (Auth::check() && $userReview)
+                            <div class="mt-2">
+                                <a href="{{ route('User.Review.Form', ['titleKey' => $title->key]) }}" data-hgn-scope="full">レビューを編集する</a>
+                            </div>
+                        @endif
+                    @endif
+                </div>
+            </section>
+        </div>
+        @endif
+    </section>
+
     @if ($title->packageGroups()->exists())
         <section class="node tree-node" id="pkg-lineup-tree-node">
             <div class="node-head">

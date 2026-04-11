@@ -13,10 +13,14 @@ use App\Models\GamePlatform;
 use App\Models\GameSeries;
 use App\Models\GameTitle;
 use App\Models\GameTitleFearMeterStatistic;
+use App\Models\GameTitleReviewStatistic;
 use App\Models\UserFavoriteGameTitle;
 use App\Models\UserGameTitleFearMeterCommentLike;
 use App\Models\UserGameTitleFearMeterCommentReport;
 use App\Models\UserGameTitleFearMeterLog;
+use App\Models\UserGameTitleReview;
+use App\Models\UserGameTitleReviewLike;
+use App\Models\UserGameTitleReviewReport;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -563,6 +567,28 @@ class GameController extends Controller
                 ->toArray();
         }
 
+        // レビュー統計
+        $reviewStatistic = GameTitleReviewStatistic::find($title->id);
+
+        // 新着レビュー（ネタバレなし優先、最大3件）
+        $recentReviews = UserGameTitleReview::where('game_title_id', $title->id)
+            ->where('is_deleted', false)
+            ->where('is_hidden', false)
+            ->orderByRaw('has_spoiler ASC')
+            ->orderByDesc('updated_at')
+            ->limit(3)
+            ->with(['user', 'horrorTypeTags'])
+            ->get();
+
+        // ログインユーザーがレビューに書けるかどうか
+        $userReview = null;
+        if (Auth::check()) {
+            $userReview = UserGameTitleReview::where('user_id', Auth::id())
+                ->where('game_title_id', $title->id)
+                ->where('is_deleted', false)
+                ->first();
+        }
+
         return $this->tree(
             view('game.title_detail', compact(
                 'title',
@@ -572,7 +598,10 @@ class GameController extends Controller
                 'fearMeter',
                 'commentLogPickup',
                 'likedLogIds',
-                'reportedLogIds'
+                'reportedLogIds',
+                'reviewStatistic',
+                'recentReviews',
+                'userReview',
             )),
             options: [
                 'ratingCheck' => $ratingCheck,
@@ -581,6 +610,90 @@ class GameController extends Controller
                     'FearMeterCommentReaction' => [],
                 ],
                 'url' => route('Game.TitleDetail', ['titleKey' => $title->key]),
+            ],
+        );
+    }
+
+    /**
+     * タイトルのレビュー全件
+     *
+     * @param Request $request
+     * @param string $titleKey
+     * @return JsonResponse|Application|Factory|View
+     */
+    public function titleReviews(Request $request, string $titleKey): JsonResponse|Application|Factory|View
+    {
+        $title = GameTitle::findByKey($titleKey);
+        if (!$title) {
+            abort(404);
+        }
+        $franchise = $title->getFranchise();
+
+        $reviews = UserGameTitleReview::where('game_title_id', $title->id)
+            ->where('is_deleted', false)
+            ->where('is_hidden', false)
+            ->orderByDesc('updated_at')
+            ->with(['user', 'horrorTypeTags'])
+            ->paginate(10);
+
+        $pager = new Pager($reviews->currentPage(), $reviews->lastPage(), 'Game.TitleReviews', ['titleKey' => $title->key]);
+
+        return $this->tree(
+            view('game.title_reviews', compact('title', 'franchise', 'reviews', 'pager')),
+            options: ['ratingCheck' => $title->rating == \App\Enums\Rating::R18A],
+        );
+    }
+
+    /**
+     * タイトルのレビュー個別ページ
+     *
+     * @param Request $request
+     * @param string $titleKey
+     * @param string $showId
+     * @return JsonResponse|Application|Factory|View
+     */
+    public function titleReview(Request $request, string $titleKey, string $showId): JsonResponse|Application|Factory|View
+    {
+        $title = GameTitle::findByKey($titleKey);
+        if (!$title) {
+            abort(404);
+        }
+        $franchise = $title->getFranchise();
+
+        $reviewUser = \App\Models\User::where('show_id', $showId)->first();
+        if (!$reviewUser) {
+            abort(404);
+        }
+
+        $review = UserGameTitleReview::where('user_id', $reviewUser->id)
+            ->where('game_title_id', $title->id)
+            ->withCount('likes')
+            ->with(['user', 'horrorTypeTags', 'packages.gamePackage.platform'])
+            ->first();
+
+        if (!$review) {
+            abort(404);
+        }
+
+        $userLiked = false;
+        $userReported = false;
+        if (Auth::check() && !$review->is_deleted && !$review->is_hidden) {
+            $userLiked = UserGameTitleReviewLike::where('user_id', Auth::id())
+                ->where('review_id', $review->id)
+                ->exists();
+            $userReported = UserGameTitleReviewReport::where('user_id', Auth::id())
+                ->where('review_id', $review->id)
+                ->exists();
+        }
+
+        return $this->tree(
+            view('game.title_review', compact('title', 'franchise', 'review', 'reviewUser', 'userLiked', 'userReported')),
+            options: [
+                'ratingCheck' => $title->rating == \App\Enums\Rating::R18A,
+                'url' => route('Game.TitleReview', ['titleKey' => $title->key, 'showId' => $showId]),
+                'components' => [
+                    'ReviewReaction' => [],
+                ],
             ],
         );
     }

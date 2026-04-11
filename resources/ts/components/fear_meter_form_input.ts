@@ -100,6 +100,7 @@ export class FearMeterFormInput extends Component
         const percent = ((clamped - this._min) / range) * 100;
 
         this._hiddenInput.value = String(clamped);
+        this._hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
         this._barFill.style.width = `${percent}%`;
         this._valueLabel.textContent = String(clamped);
         this._textLabel.textContent = this._texts[String(clamped)] ?? '';
