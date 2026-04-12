@@ -1,7 +1,7 @@
 @extends('layout')
 
-@section('title', 'レビュー一覧')
-@section('current-node-title', 'レビュー一覧')
+@section('title', 'レビュー')
+@section('current-node-title', 'レビュー')
 
 @section('nodes')
     <section class="node" id="reviews-list-node">
@@ -10,46 +10,89 @@
             <span class="node-pt">●</span>
         </div>
         <div class="node-content basic">
-            @if ($reviews->isEmpty())
+            {{-- 並び順タブ --}}
+            @php
+                $sortOptions = [
+                    'newest'     => '新着順',
+                    'score'      => '総合スコア',
+                    'fear'       => '怖さ',
+                    'story'      => 'ストーリー',
+                    'atmosphere' => '雰囲気',
+                    'gameplay'   => 'ゲーム性',
+                ];
+            @endphp
+            <div class="mb-4 flex flex-wrap gap-1.5">
+                @foreach ($sortOptions as $key => $label)
+                    <a href="{{ route('Game.Reviews', $key !== 'newest' ? ['sort' => $key] : []) }}"
+                       data-hgn-scope="full"
+                       class="text-xs px-2.5 py-1 rounded border transition-colors
+                              {{ $sort === $key
+                                  ? 'bg-slate-200 text-slate-900 border-slate-200'
+                                  : 'border-white/20 text-slate-400 hover:text-white hover:border-white/40' }}">
+                        {{ $label }}
+                    </a>
+                @endforeach
+            </div>
+
+            @if ($titles->isEmpty())
                 <p>レビューはまだないようだ。</p>
             @else
-                @foreach ($reviews as $review)
+                @foreach ($titles as $title)
+                    @php
+                        $fearMeterEnum = $title->fear_meter !== null
+                            ? \App\Enums\FearMeter::tryFrom((int) $title->fear_meter)
+                            : null;
+                    @endphp
                     <div class="py-4 border-b border-white/10 last:border-b-0">
-                        <div class="mb-1 text-xs text-slate-400 flex flex-wrap gap-x-3 gap-y-1">
-                            <a href="{{ route('Game.TitleDetail', ['titleKey' => $review->gameTitle?->key]) }}" data-hgn-scope="full" class="font-medium text-slate-200 hover:text-white">{{ $review->gameTitle?->name ?? '(不明)' }}</a>
-                            <a href="{{ route('Game.TitleReview', ['titleKey' => $review->gameTitle?->key, 'showId' => $review->user?->show_id]) }}" data-hgn-scope="full" class="text-slate-300 hover:text-white">{{ $review->user?->name ?? '(不明)' }}</a>
-                            <span>{{ $review->play_status?->text() }}</span>
-                            @if ($review->play_time)
-                                <span>{{ $review->play_time->text() }}</span>
-                            @endif
-                            @if ($review->total_score !== null)
-                                <span class="font-semibold text-slate-200">{{ $review->total_score }}<span class="font-normal text-slate-400">/100</span></span>
-                            @endif
-                            @if ($review->has_spoiler)
-                                <span class="text-amber-400">【ネタバレあり】</span>
-                            @endif
-                            @if ($review->play_status === \App\Enums\PlayStatus::Watched)
-                                <span class="text-sky-400">配信・動画視聴</span>
-                            @endif
-                            <span class="text-slate-500">{{ $review->updated_at->format('Y-m-d') }}</span>
+                        <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-2">
+                            <a href="{{ route('Game.TitleReviews', ['titleKey' => $title->key]) }}"
+                               data-hgn-scope="full"
+                               class="font-semibold text-slate-100 hover:text-white">{{ $title->name }}</a>
+                            <span class="text-xs text-slate-500 shrink-0">
+                                {{ \Carbon\Carbon::parse($title->latest_review_at)->format('Y-m-d') }}
+                            </span>
                         </div>
-                        @if ($review->horrorTypeTags->isNotEmpty())
-                            <div class="mb-2 flex flex-wrap gap-1">
-                                @foreach ($review->horrorTypeTags as $tag)
-                                    <span class="text-xs px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">{{ $tag->tag->text() }}</span>
-                                @endforeach
+
+                        <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+                            {{-- 総合スコア --}}
+                            <div class="flex items-baseline gap-1">
+                                @if ($title->avg_total_score !== null)
+                                    <span class="text-2xl font-bold text-slate-100 leading-none">{{ number_format((float) $title->avg_total_score, 1) }}</span>
+                                    <span class="text-xs text-slate-500">/ 100</span>
+                                @else
+                                    <span class="text-slate-500">-</span>
+                                @endif
+                                <span class="text-xs text-slate-400 ml-1">{{ $title->review_count }}件</span>
+                            </div>
+
+                            {{-- 怖さメーター --}}
+                            @if ($fearMeterEnum !== null)
+                                <div class="text-xs text-slate-400">
+                                    怖さ:
+                                    <span class="text-slate-200">{{ number_format((float) $title->fear_meter_avg, 1) }}/4</span>
+                                    <span class="text-slate-500">（{{ $fearMeterEnum->text() }}）</span>
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- 各スコア --}}
+                        @if ($title->avg_story !== null || $title->avg_atmosphere !== null || $title->avg_gameplay !== null)
+                            <div class="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-400">
+                                @if ($title->avg_story !== null)
+                                    <span>ストーリー: <span class="text-slate-300">{{ number_format((float) $title->avg_story, 1) }}/4</span></span>
+                                @endif
+                                @if ($title->avg_atmosphere !== null)
+                                    <span>雰囲気: <span class="text-slate-300">{{ number_format((float) $title->avg_atmosphere, 1) }}/4</span></span>
+                                @endif
+                                @if ($title->avg_gameplay !== null)
+                                    <span>ゲーム性: <span class="text-slate-300">{{ number_format((float) $title->avg_gameplay, 1) }}/4</span></span>
+                                @endif
                             </div>
                         @endif
-                        @if ($review->has_spoiler)
-                            <details class="text-sm">
-                                <summary class="cursor-pointer text-slate-400 hover:text-slate-200">本文を表示（ネタバレあり）</summary>
-                                <div class="mt-2 leading-relaxed text-slate-100">{!! nl2br(e($review->body)) !!}</div>
-                            </details>
-                        @else
-                            <div class="text-sm leading-relaxed text-slate-100">{!! nl2br(e(mb_strimwidth($review->body, 0, 200, '…'))) !!}</div>
-                        @endif
-                        <div class="mt-1 text-xs">
-                            <a href="{{ route('Game.TitleReview', ['titleKey' => $review->gameTitle?->key, 'showId' => $review->user?->show_id]) }}" data-hgn-scope="full">全文を読む</a>
+
+                        <div class="mt-2 text-xs">
+                            <a href="{{ route('Game.TitleReviews', ['titleKey' => $title->key]) }}"
+                               data-hgn-scope="full">レビューを読む →</a>
                         </div>
                     </div>
                 @endforeach

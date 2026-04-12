@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\HorrorTypeTag;
 use App\Enums\PlayStatus;
 use App\Enums\PlayTime;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class UserGameTitleReview extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'user_id',
         'game_title_id',

@@ -72,11 +72,15 @@ php artisan tinker                 # Interactive REPL
 @docs/claude/frontend-conventions.md
 @docs/claude/discord-webhook.md
 @docs/claude/ogp-generator.md
+@docs/claude/artisan-commands.md
 
 ## Interaction Rules
 - プロンプトに全角の「？」が含まれる場合は、実装を行わず回答のみ行う。半角の「?」はこの対象外。
 
 ## Key Conventions
+- `app/Console/Commands/` にコマンドを追加・変更した場合、または `database/seeders/` にシーダーを追加・変更した場合は、`docs/claude/artisan-commands.md` も合わせて更新する。
+
+
 - PSR-4 autoloading under the `App\` namespace
 - Form validation via Laravel Form Requests (`app/Http/Requests/`)
 - Game Master API uses Sanctum token abilities configured via `GAME_MASTER_API_TOKEN_ABILITY` env var

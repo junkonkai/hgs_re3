@@ -619,16 +619,49 @@ class GameController extends Controller
      */
     public function reviews(Request $request): JsonResponse|Application|Factory|View
     {
-        $reviews = UserGameTitleReview::where('is_deleted', false)
-            ->where('is_hidden', false)
-            ->orderByDesc('updated_at')
-            ->with(['user', 'gameTitle', 'horrorTypeTags'])
-            ->paginate(20);
+        $sort = $request->input('sort', 'newest');
+        $allowedSorts = ['newest', 'score', 'fear', 'story', 'atmosphere', 'gameplay'];
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'newest';
+        }
 
-        $pager = new Pager($reviews->currentPage(), $reviews->lastPage(), 'Game.Reviews');
+        $query = GameTitle::query()
+            ->join('game_title_review_statistics as rs', 'game_titles.id', '=', 'rs.game_title_id')
+            ->leftJoin('game_title_fear_meter_statistics as fms', 'game_titles.id', '=', 'fms.game_title_id')
+            ->select([
+                'game_titles.id',
+                'game_titles.key',
+                'game_titles.name',
+                'rs.review_count',
+                'rs.avg_total_score',
+                'rs.avg_story',
+                'rs.avg_atmosphere',
+                'rs.avg_gameplay',
+                'rs.updated_at as latest_review_at',
+                'fms.fear_meter',
+                'fms.average_rating as fear_meter_avg',
+            ]);
+
+        match ($sort) {
+            'score'      => $query->orderByRaw('rs.avg_total_score IS NULL, rs.avg_total_score DESC'),
+            'fear'       => $query->orderByRaw('fms.average_rating IS NULL, fms.average_rating DESC'),
+            'story'      => $query->orderByRaw('rs.avg_story IS NULL, rs.avg_story DESC'),
+            'atmosphere' => $query->orderByRaw('rs.avg_atmosphere IS NULL, rs.avg_atmosphere DESC'),
+            'gameplay'   => $query->orderByRaw('rs.avg_gameplay IS NULL, rs.avg_gameplay DESC'),
+            default      => $query->orderByDesc('rs.updated_at'),
+        };
+
+        $titles = $query->paginate(20);
+
+        $pager = new Pager(
+            $titles->currentPage(),
+            $titles->lastPage(),
+            'Game.Reviews',
+            $sort !== 'newest' ? ['sort' => $sort] : [],
+        );
 
         return $this->tree(
-            view('game.reviews', compact('reviews', 'pager')),
+            view('game.reviews', compact('titles', 'pager', 'sort')),
         );
     }
 
