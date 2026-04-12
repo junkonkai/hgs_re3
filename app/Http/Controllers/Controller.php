@@ -234,25 +234,25 @@ abstract class Controller
         }
 
         // ログに記録（500系エラーのみ）
-        if ($statusCode >= 500) {
-            Log::error('Exception occurred', [
-                'status_code' => $statusCode,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-                'url' => $request->fullUrl(),
-                'user_agent' => $request->userAgent(),
-            ]);
-        } else if ($statusCode != 404) {
-            // 404を除き400系エラーは警告レベルで記録
-            Log::warning('Client error occurred', [
-                'status_code' => $statusCode,
-                'message' => $e->getMessage(),
-                'url' => $request->fullUrl(),
-                'user_agent' => $request->userAgent(),
-            ]);
-        }
+        // if ($statusCode >= 500) {
+        //     Log::error('Exception occurred', [
+        //         'status_code' => $statusCode,
+        //         'message' => $e->getMessage(),
+        //         'file' => $e->getFile(),
+        //         'line' => $e->getLine(),
+        //         'trace' => $e->getTraceAsString(),
+        //         'url' => $request->fullUrl(),
+        //         'user_agent' => $request->userAgent(),
+        //     ]);
+        // } else if ($statusCode != 404) {
+        //     // 404を除き400系エラーは警告レベルで記録
+        //     Log::warning('Client error occurred', [
+        //         'status_code' => $statusCode,
+        //         'message' => $e->getMessage(),
+        //         'url' => $request->fullUrl(),
+        //         'user_agent' => $request->userAgent(),
+        //     ]);
+        // }
 
         // デバッグモードの場合は詳細なエラー情報を表示
         if (config('app.debug')) {
