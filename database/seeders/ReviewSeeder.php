@@ -26,8 +26,18 @@ class ReviewSeeder extends Seeder
         }
 
         foreach ($users as $user) {
+            $existingIds = UserGameTitleReview::where('user_id', $user->id)
+                ->pluck('game_title_id')
+                ->toArray();
+
+            $availableIds = array_values(array_diff($gameTitleIds, $existingIds));
+
+            if (empty($availableIds)) {
+                continue;
+            }
+
             $count = fake()->numberBetween(3, 8);
-            $selectedIds = (array) array_rand(array_flip($gameTitleIds), min($count, count($gameTitleIds)));
+            $selectedIds = (array) array_rand(array_flip($availableIds), min($count, count($availableIds)));
 
             foreach ($selectedIds as $gameTitleId) {
                 UserGameTitleReview::factory()->create([
