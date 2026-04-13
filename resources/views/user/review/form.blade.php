@@ -70,9 +70,9 @@
                     $initialHasSpoiler = false;
                 }
 
-                $initialScoreStory      = old('score_story')      !== null ? old('score_story')      : ($draft?->score_story      ?? $review?->score_story);
-                $initialScoreAtmosphere = old('score_atmosphere')  !== null ? old('score_atmosphere')  : ($draft?->score_atmosphere ?? $review?->score_atmosphere);
-                $initialScoreGameplay   = old('score_gameplay')    !== null ? old('score_gameplay')    : ($draft?->score_gameplay   ?? $review?->score_gameplay);
+                $initialScoreStory      = old('score_story')      !== null ? old('score_story')      : ($draft?->score_story      ?? $review?->score_story      ?? 2);
+                $initialScoreAtmosphere = old('score_atmosphere')  !== null ? old('score_atmosphere')  : ($draft?->score_atmosphere ?? $review?->score_atmosphere ?? 2);
+                $initialScoreGameplay   = old('score_gameplay')    !== null ? old('score_gameplay')    : ($draft?->score_gameplay   ?? $review?->score_gameplay   ?? 2);
                 $initialAdjustment      = old('user_score_adjustment') !== null ? old('user_score_adjustment') : ($draft?->user_score_adjustment ?? $review?->user_score_adjustment ?? 0);
 
                 $oldPackages = old('packages');
@@ -97,7 +97,7 @@
                     $initialTags = [];
                 }
 
-                $scoreOptions = ['' => '評価なし', '0' => '0', '1' => '1', '2' => '2', '3' => '3', '4' => '4'];
+                $scoreOptions = ['0' => '0', '1' => '1', '2' => '2', '3' => '3', '4' => '4'];
             @endphp
 
             @if ($draft !== null)
@@ -205,7 +205,7 @@
 
                 {{-- スコア入力 --}}
                 <div class="form-group mb-4">
-                    <label class="mb-2 block font-semibold">評価（任意・各0〜4）</label>
+                    <label class="mb-2 block font-semibold">評価（各0〜4）</label>
                     <div class="space-y-3">
                         <div class="flex items-center gap-3">
                             <span class="w-28 text-sm text-slate-300 shrink-0">ストーリー</span>
@@ -256,11 +256,12 @@
                 </div>
 
                 {{-- 総合スコアプレビュー --}}
-                <div class="mb-5 p-3 bg-slate-800/60 rounded-lg inline-flex items-center gap-3">
-                    <span class="text-sm text-slate-300">総合スコア（目安）：</span>
+                <div class="mb-2 p-3 bg-slate-800/60 rounded-lg inline-flex items-center gap-3">
+                    <span class="text-sm text-slate-300">総合スコア：</span>
                     <span class="text-2xl font-bold text-sky-300 js-review-total-score">0</span>
                     <span class="text-sm text-slate-400">/ 100</span>
                 </div>
+                <p class="mb-5 text-xs text-slate-500">怖さメーター×10 ＋ ストーリー×5 ＋ 雰囲気・演出×5 ＋ ゲーム性×5 ＋ スコア調整（0〜100の範囲）</p>
 
                 {{-- ホラー種別タグ --}}
                 <div class="form-group mb-4">
@@ -282,7 +283,7 @@
 
                 {{-- 本文 --}}
                 <div class="form-group mb-4">
-                    <label for="body" class="mb-2 block font-semibold">レビュー本文 <span class="text-red-400 text-xs">必須・2000文字まで</span></label>
+                    <label for="body" class="mb-2 block font-semibold">レビュー本文 <span class="text-gray-400 text-xs">2000文字まで</span></label>
                     <textarea
                         id="body"
                         name="body"

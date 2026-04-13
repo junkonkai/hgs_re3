@@ -15,6 +15,13 @@ class ReviewPublishRequest extends BaseWebRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'body' => $this->input('body') ?? '',
+        ]);
+    }
+
     public function rules(): array
     {
         return [
@@ -34,9 +41,7 @@ class ReviewPublishRequest extends BaseWebRequest
                 Rule::enum(PlayTime::class),
             ],
             'body' => [
-                'required',
                 'string',
-                'min:1',
                 'max:2000',
             ],
             'has_spoiler' => [
@@ -44,19 +49,19 @@ class ReviewPublishRequest extends BaseWebRequest
                 'boolean',
             ],
             'score_story' => [
-                'nullable',
+                'required',
                 'integer',
                 'min:0',
                 'max:4',
             ],
             'score_atmosphere' => [
-                'nullable',
+                'required',
                 'integer',
                 'min:0',
                 'max:4',
             ],
             'score_gameplay' => [
-                'nullable',
+                'required',
                 'integer',
                 'min:0',
                 'max:4',

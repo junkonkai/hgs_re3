@@ -220,9 +220,9 @@ class ReviewController extends Controller
         }
 
         $fearMeterValue = (int) $request->validated('fear_meter');
-        $story      = $request->validated('score_story') !== null ? (int) $request->validated('score_story') : null;
-        $atmosphere = $request->validated('score_atmosphere') !== null ? (int) $request->validated('score_atmosphere') : null;
-        $gameplay   = $request->validated('score_gameplay') !== null ? (int) $request->validated('score_gameplay') : null;
+        $story      = (int) $request->validated('score_story');
+        $atmosphere = (int) $request->validated('score_atmosphere');
+        $gameplay   = (int) $request->validated('score_gameplay');
         $adjustment = $request->validated('user_score_adjustment') !== null ? (int) $request->validated('user_score_adjustment') : null;
 
         $baseScore  = UserGameTitleReview::calcBaseScore($fearMeterValue, $story, $atmosphere, $gameplay);

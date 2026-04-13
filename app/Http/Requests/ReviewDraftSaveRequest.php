@@ -15,6 +15,13 @@ class ReviewDraftSaveRequest extends BaseWebRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'body' => $this->input('body') ?? '',
+        ]);
+    }
+
     public function rules(): array
     {
         return [
@@ -34,7 +41,6 @@ class ReviewDraftSaveRequest extends BaseWebRequest
                 Rule::enum(PlayTime::class),
             ],
             'body' => [
-                'nullable',
                 'string',
                 'max:2000',
             ],
