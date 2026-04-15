@@ -23,20 +23,18 @@
             @else
                 @foreach ($reviews as $review)
                     <div class="py-4 border-b border-white/10 last:border-b-0">
+                        @if ($review->has_spoiler)
+                            <div class="mb-1 text-xs text-amber-400">【ネタバレあり】</div>
+                        @endif
                         <div class="mb-1 text-xs text-slate-400 flex flex-wrap gap-x-3 gap-y-1">
                             <a href="{{ route('Game.TitleReview', ['titleKey' => $title->key, 'showId' => $review->user?->show_id]) }}" data-hgn-scope="full" class="font-medium text-slate-300 hover:text-white">{{ $review->user?->show_id ?? '(不明)' }}</a>
-                            <span>{{ $review->play_status?->text() }}</span>
-                            @if ($review->play_time)
-                                <span>{{ $review->play_time->text() }}</span>
+                            @if ($review->play_status === \App\Enums\PlayStatus::Watched)
+                                <span class="text-sky-400">{{ $review->play_status->text() }}</span>
+                            @else
+                                <span>{{ $review->play_status?->text() }}</span>
                             @endif
                             @if ($review->total_score !== null)
                                 <span class="font-semibold text-slate-200">{{ $review->total_score }}<span class="font-normal text-slate-400">/100</span></span>
-                            @endif
-                            @if ($review->has_spoiler)
-                                <span class="text-amber-400">【ネタバレあり】</span>
-                            @endif
-                            @if ($review->play_status === \App\Enums\PlayStatus::Watched)
-                                <span class="text-sky-400">配信・動画視聴</span>
                             @endif
                             <span class="text-slate-500">{{ $review->updated_at->format('Y-m-d') }}</span>
                         </div>

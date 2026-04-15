@@ -22,11 +22,9 @@ class ReviewReportRequest extends BaseWebRequest
     public function rules(): array
     {
         return [
-            'reason' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
+            'reason_types'   => ['nullable', 'array'],
+            'reason_types.*' => ['string', 'max:50'],
+            'reason_note'    => ['nullable', 'string', 'max:255'],
         ];
     }
 }

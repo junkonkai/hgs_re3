@@ -20,8 +20,8 @@ enum PlayStatus: string
     {
         return match($this) {
             PlayStatus::Cleared => 'クリア済み',
-            PlayStatus::Playing => 'プレイ中（未クリア）',
-            PlayStatus::Watched => '配信・動画で視聴済み',
+            PlayStatus::Playing => '未クリア',
+            PlayStatus::Watched => '配信・動画で視聴',
         };
     }
 

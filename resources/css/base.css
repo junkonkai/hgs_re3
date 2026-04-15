@@ -298,8 +298,11 @@ form {
     color: #888888;
 }
 
-select.form-control {
+input.form-control,
+select.form-control,
+textarea.form-control {
     color: #000;
+    padding: 4px 8px;
 }
 
 
@@ -307,6 +310,14 @@ select.form-control {
     display: flex;
     gap: 10px;
     align-items: center;
+}
+
+dialog.js-review-report-modal::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+}
+
+dialog.js-review-report-modal {
+    color: #e2e8f0;
 }
 
 /* Input Styles */

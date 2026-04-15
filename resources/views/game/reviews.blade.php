@@ -57,7 +57,7 @@
                             {{-- 総合スコア --}}
                             <div class="flex items-baseline gap-1">
                                 @if ($title->avg_total_score !== null)
-                                    <span class="text-2xl font-bold text-slate-100 leading-none">{{ number_format((float) $title->avg_total_score, 1) }}</span>
+                                    <span class="text-2xl font-bold text-slate-100 leading-none">{{ round((float) $title->avg_total_score) }}</span>
                                     <span class="text-xs text-slate-500">/ 100</span>
                                 @else
                                     <span class="text-slate-500">-</span>
@@ -67,10 +67,11 @@
 
                             {{-- 怖さメーター --}}
                             @if ($fearMeterEnum !== null)
-                                <div class="text-xs text-slate-400">
-                                    怖さ:
-                                    <span class="text-slate-200">{{ number_format((float) $title->fear_meter_avg, 1) }}/4</span>
-                                    <span class="text-slate-500">（{{ $fearMeterEnum->text() }}）</span>
+                                <div class="text-xs text-slate-400 self-end">
+                                    怖さメーター:
+                                    <span class="text-slate-200">{{ $fearMeterEnum->text() }}
+                                        ({{ number_format((float) $title->fear_meter_avg, 1) }})
+                                    </span>
                                 </div>
                             @endif
                         </div>
@@ -78,14 +79,22 @@
                         {{-- 各スコア --}}
                         @if ($title->avg_story !== null || $title->avg_atmosphere !== null || $title->avg_gameplay !== null)
                             <div class="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-400">
+                                @if ($fearMeterEnum !== null)
+                                <div class="text-xs text-slate-400">
+                                    怖さ:<span class="text-slate-200">{{ number_format((float) $title->fear_meter_avg, 1) * 10 }}/40</span>
+                                </div>
+                                @endif
                                 @if ($title->avg_story !== null)
-                                    <span>ストーリー: <span class="text-slate-300">{{ number_format((float) $title->avg_story, 1) }}/4</span></span>
+                                    <span>ストーリー: <span class="text-slate-300">{{ round((float) $title->avg_story) }}/20</span></span>
                                 @endif
                                 @if ($title->avg_atmosphere !== null)
-                                    <span>雰囲気: <span class="text-slate-300">{{ number_format((float) $title->avg_atmosphere, 1) }}/4</span></span>
+                                    <span>雰囲気: <span class="text-slate-300">{{ round((float) $title->avg_atmosphere) }}/20</span></span>
                                 @endif
                                 @if ($title->avg_gameplay !== null)
-                                    <span>ゲーム性: <span class="text-slate-300">{{ number_format((float) $title->avg_gameplay, 1) }}/4</span></span>
+                                    <span>ゲーム性: <span class="text-slate-300">{{ round((float) $title->avg_gameplay) }}/20</span></span>
+                                @endif
+                                @if ($title->user_score_adjustment !== null)
+                                    <span>さじ加減: <span class="text-slate-300">{{ round((float) $title->user_score_adjustment) }}/20</span></span>
                                 @endif
                             </div>
                         @endif

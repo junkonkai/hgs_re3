@@ -5,7 +5,6 @@ namespace App\Http\Requests;
 use App\Enums\FearMeter;
 use App\Enums\HorrorTypeTag;
 use App\Enums\PlayStatus;
-use App\Enums\PlayTime;
 use Illuminate\Validation\Rule;
 
 class ReviewDraftSaveRequest extends BaseWebRequest
@@ -35,11 +34,6 @@ class ReviewDraftSaveRequest extends BaseWebRequest
                 'string',
                 Rule::enum(PlayStatus::class),
             ],
-            'play_time' => [
-                'nullable',
-                'string',
-                Rule::enum(PlayTime::class),
-            ],
             'body' => [
                 'string',
                 'max:2000',
@@ -51,20 +45,17 @@ class ReviewDraftSaveRequest extends BaseWebRequest
             'score_story' => [
                 'nullable',
                 'integer',
-                'min:0',
-                'max:4',
+                'in:0,5,10,15,20',
             ],
             'score_atmosphere' => [
                 'nullable',
                 'integer',
-                'min:0',
-                'max:4',
+                'in:0,5,10,15,20',
             ],
             'score_gameplay' => [
                 'nullable',
                 'integer',
-                'min:0',
-                'max:4',
+                'in:0,5,10,15,20',
             ],
             'user_score_adjustment' => [
                 'nullable',
@@ -101,7 +92,6 @@ class ReviewDraftSaveRequest extends BaseWebRequest
         return [
             'title_key'            => 'タイトル',
             'play_status'          => 'プレイ状況',
-            'play_time'            => 'プレイ時間',
             'body'                 => 'レビュー本文',
             'has_spoiler'          => 'ネタバレフラグ',
             'score_story'          => 'ストーリー評価',

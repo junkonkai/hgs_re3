@@ -26,7 +26,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('base_score')->nullable()->comment('ベーススコア（0〜100）');
             $table->unsignedTinyInteger('total_score')->nullable()->comment('総合スコア（0〜100）');
             $table->unsignedBigInteger('current_log_id')->nullable()->comment('現在の公開バージョンのログID');
-            $table->string('ogp_image_path')->nullable()->comment('OGP画像パス');
+            $table->string('ogp_image_filename')->nullable()->comment('OGP画像ファイル名');
             $table->boolean('is_deleted')->default(false)->comment('ユーザーによるソフトデリートフラグ');
             $table->timestamps();
 

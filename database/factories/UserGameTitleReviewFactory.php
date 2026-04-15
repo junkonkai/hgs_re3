@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Enums\PlayStatus;
-use App\Enums\PlayTime;
 use App\Models\UserGameTitleReview;
 use App\Models\UserGameTitleReviewLog;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -17,9 +16,10 @@ class UserGameTitleReviewFactory extends Factory
 
     public function definition(): array
     {
-        $scoreStory      = fake()->boolean(70) ? fake()->numberBetween(0, 4) : null;
-        $scoreAtmosphere = fake()->boolean(70) ? fake()->numberBetween(0, 4) : null;
-        $scoreGameplay   = fake()->boolean(70) ? fake()->numberBetween(0, 4) : null;
+        $validScores     = [0, 5, 10, 15, 20];
+        $scoreStory      = fake()->boolean(70) ? fake()->randomElement($validScores) : null;
+        $scoreAtmosphere = fake()->boolean(70) ? fake()->randomElement($validScores) : null;
+        $scoreGameplay   = fake()->boolean(70) ? fake()->randomElement($validScores) : null;
         $fearMeter       = fake()->boolean(70) ? fake()->numberBetween(0, 4) : null;
         $adjustment      = fake()->boolean(50) ? fake()->numberBetween(-20, 20) : null;
         $baseScore       = UserGameTitleReview::calcBaseScore($fearMeter, $scoreStory, $scoreAtmosphere, $scoreGameplay);
@@ -27,7 +27,6 @@ class UserGameTitleReviewFactory extends Factory
 
         return [
             'play_status'           => fake()->randomElement(PlayStatus::cases())->value,
-            'play_time'             => fake()->boolean(80) ? fake()->randomElement(PlayTime::cases())->value : null,
             'body'                  => fake()->paragraphs(fake()->numberBetween(2, 5), true),
             'has_spoiler'           => fake()->boolean(20),
             'score_story'           => $scoreStory,
@@ -50,7 +49,6 @@ class UserGameTitleReviewFactory extends Factory
                 'user_id'               => $review->user_id,
                 'version'               => 1,
                 'play_status'           => $review->play_status->value,
-                'play_time'             => $review->play_time?->value,
                 'body'                  => $review->body,
                 'has_spoiler'           => $review->has_spoiler,
                 'score_story'           => $review->score_story,

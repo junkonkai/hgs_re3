@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Enums\FearMeter;
 use App\Models\GameTitle;
 use App\Models\User;
+use App\Models\UserGameTitleFearMeter;
 use App\Models\UserGameTitleReview;
 use Illuminate\Database\Seeder;
 
@@ -44,6 +46,16 @@ class ReviewSeeder extends Seeder
                     'user_id'       => $user->id,
                     'game_title_id' => $gameTitleId,
                 ]);
+
+                UserGameTitleFearMeter::upsert(
+                    [[
+                        'user_id'       => $user->id,
+                        'game_title_id' => $gameTitleId,
+                        'fear_meter'    => fake()->randomElement(FearMeter::cases())->value,
+                    ]],
+                    ['user_id', 'game_title_id'],
+                    ['fear_meter']
+                );
             }
         }
 

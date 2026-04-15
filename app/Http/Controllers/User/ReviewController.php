@@ -92,43 +92,9 @@ class ReviewController extends Controller
         $title->loadMissing(['packageGroups.packages.platform']);
         $packages = $title->packageGroups->flatMap(fn ($pg) => $pg->packages)->unique('id')->values();
 
-        $franchise = $title->getFranchise();
-        $shortcutRoute = [
-            'title-detail-node' => [
-                'title' => $title->name,
-                'url' => route('Game.TitleDetail', ['titleKey' => $title->key]),
-                'children' => [
-                    'franchise-detail-node' => [
-                        'title' => $franchise->name . 'フランチャイズ',
-                        'url' => route('Game.FranchiseDetail', ['franchiseKey' => $franchise->key]),
-                        'children' => [
-                            'root-node' => [
-                                'title' => 'ルート',
-                                'url' => route('Root'),
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-        ];
-
-        $myNodeShortcutRoute = [
-            'review-list-node' => [
-                'title' => 'マイレビュー一覧',
-                'url' => route('User.Review.Index'),
-                'children' => [
-                    'mynode' => [
-                        'title' => 'マイノード',
-                        'url' => route('User.MyNode.Top'),
-                    ],
-                ],
-            ],
-        ];
-
         return $this->tree(
             view('user.review.form', compact(
                 'title', 'review', 'draft', 'fearMeter', 'packages',
-                'shortcutRoute', 'myNodeShortcutRoute'
             )),
             options: [
                 'csrfToken' => csrf_token(),
@@ -167,7 +133,6 @@ class ReviewController extends Controller
         $draftData = [
             'review_id'            => $existingReview?->id,
             'play_status'          => $request->validated('play_status'),
-            'play_time'            => $request->validated('play_time'),
             'body'                 => $request->validated('body'),
             'has_spoiler'          => (bool) $request->validated('has_spoiler', false),
             'score_story'          => $request->validated('score_story') !== null ? (int) $request->validated('score_story') : null,
@@ -270,7 +235,6 @@ class ReviewController extends Controller
             // 2. レビュー保存
             $reviewData = [
                 'play_status'          => $request->validated('play_status'),
-                'play_time'            => $request->validated('play_time'),
                 'body'                 => $request->validated('body'),
                 'has_spoiler'          => (bool) $request->validated('has_spoiler', false),
                 'score_story'          => $story,
@@ -309,7 +273,6 @@ class ReviewController extends Controller
                 'user_id'              => $user->id,
                 'version'              => $maxVersion + 1,
                 'play_status'          => $reviewData['play_status'],
-                'play_time'            => $reviewData['play_time'],
                 'game_package_ids'     => $packageIds,
                 'horror_type_tags'     => $tagValues,
                 'body'                 => $reviewData['body'],
@@ -424,7 +387,7 @@ class ReviewController extends Controller
         }
 
         $alsoDeleteFearMeter = (bool) $request->validated('also_delete_fear_meter', false);
-        $ogpImagePath = $review->ogp_image_path;
+        $ogpImagePath = $review->ogp_image_filename;
 
         DB::transaction(function () use ($user, $title, $review, $alsoDeleteFearMeter) {
             // 1. レビューをソフトデリート
@@ -469,7 +432,7 @@ class ReviewController extends Controller
 
         // OGP画像ファイルを削除
         if ($ogpImagePath) {
-            $fullPath = base_path($ogpImagePath);
+            $fullPath = public_path('img/review/' . $ogpImagePath);
             if (file_exists($fullPath)) {
                 @unlink($fullPath);
             }

@@ -722,6 +722,10 @@ class GameController extends Controller
             ->with(['user', 'horrorTypeTags', 'packages.gamePackage.platform'])
             ->first();
 
+        $fearMeter = \App\Models\UserGameTitleFearMeter::where('user_id', $reviewUser->id)
+            ->where('game_title_id', $title->id)
+            ->first();
+
         if (!$review) {
             abort(404);
         }
@@ -738,7 +742,7 @@ class GameController extends Controller
         }
 
         return $this->tree(
-            view('game.title_review', compact('title', 'franchise', 'review', 'reviewUser', 'userLiked', 'userReported')),
+            view('game.title_review', compact('title', 'franchise', 'review', 'reviewUser', 'userLiked', 'userReported', 'fearMeter')),
             options: [
                 'ratingCheck' => $title->rating == \App\Enums\Rating::R18A,
                 'url' => route('Game.TitleReview', ['titleKey' => $title->key, 'showId' => $showId]),

@@ -1,4 +1,63 @@
-・レビューのSNS共有が「XXXのレビューを書きました！」だが、他ユーザーから見たときにおかしい。
-　・本人の時だけそのように表示し、他ユーザーの場合は別の表現にする
-・レビューのSNS共有のボタンが「X X」とアイコンとテキストでXが2つ出ている。アイコン1つでいい。
-・
+・通報は、理由も任意で書いて送れるようにする。ポップアップ表示して、いくつかの項目のチェックボックス選択と、自由入力欄を表示
+・通報のボタンは右端に配置し、なるべく誤タップを防ぐ
+・通報があるとdiscordの問い合わせチャットに投稿
+
+  【検討メモ】
+  現状: 通報ボタンはクリックで即 POST（review-reaction-form コンポーネント）。reason フィールドは DB・
+  バリデーション済みだが UI から送れていない。Discord 通知も reason を含めていない。
+  ボタン位置は「いいね」と横並びで右端ではない。
+
+  対応方針:
+  - 通報ボタンをクリックするとモーダルポップアップを表示する TS コンポーネントを追加
+    （review-reaction-form.ts の通報部分を拡張するか、report-modal.ts として独立させる）
+  - ポップアップ内にチェックボックス（通報理由の選択肢）と自由入力欄を配置
+    選択肢は Blade テンプレート内に配列で定義してよい（例: スパム、ネタバレ未記載、不適切な内容 等）
+    複数選択した場合は改行区切り等で結合して reason に詰める
+  - 「通報する」ボタンで POST。キャンセルボタンも設ける
+  - ReviewReportRequest に通報理由チェックボックス（配列）の nullable バリデーションを追加
+  - Discord 通知の本文に reason を追加
+  - ボタン配置: いいね・通報を含む flex コンテナに justify-between を追加し
+    通報ボタン側を ml-auto で右寄せにする（title_review.blade.php L112）
+
+・ストーリー、雰囲気・演出、ゲーム性は0～4の5段階はいいのだが、レビュー一覧とか詳細では総合スコアに加算する点数を表示する
+　何なら、入力欄も5刻みで入力するようにしてもいいかもしれない。
+　何なら、DB上も5倍したスコアを保存してもいいかもしれない。
+
+  【検討メモ】
+  現状: title_review.blade.php の L86-93 で「ストーリー: 3/4」のように生の値を表示している。
+  total_score の計算式は fear_meter×10 + 各スコア×5 + adjustment。
+
+  対応方針（表示変更のみ・DB変更なし）:
+  - 各スコアの横に加算点数（× 5）を追記する
+    例: 「ストーリー: 3/4（+15）」
+  - 変更箇所: title_review.blade.php（L84-97）と title_reviews.blade.php
+  - 「5刻みで入力」「DB上も5倍保存」は現時点では対応しない
+    （DB 変更は既存データの移行が必要になるため）
+
+・ユーザー補正の入力は1単位で変えず、入力をrangeにしてもいいかもしれない。
+
+  【検討メモ】
+  現状: form.blade.php L317 で type="number"（幅100px）のまま。
+  スコア3項目は既に type="range" に変更済み。
+
+  対応方針:
+  - type="number" → type="range"（min="-20", max="20", step="1"）に変更
+  - 現在値を横に表示するラベル（js-review-score-value クラス相当）も追加
+  - review_form_input.ts の _adjustmentInput の処理は現状 input イベントで total_score を更新
+    するだけなので、ラベル更新ロジックも追加する
+
+・レビューのシーダーで怖さメーターが入力されない。一緒に入力してほしい。
+
+  【検討メモ】
+  現状: ReviewSeeder は UserGameTitleReview::factory()->create() のみで
+  UserGameTitleFearMeter は作成していない。FearMeterSeeder は全ユーザー対象に動くが
+  レビューとの紐付きは game_title_id + user_id で一致するだけ（直接の外部キーはない）。
+
+  対応方針:
+  - ReviewSeeder の factory()->create() の直後に
+    UserGameTitleFearMeter::updateOrCreate(
+        ['user_id' => $user->id, 'game_title_id' => $gameTitleId],
+        ['fear_meter' => fake()->randomElement(\App\Enums\FearMeter::cases())->value]
+    ) を追加するのが最もシンプル
+  - あるいは UserGameTitleReviewFactory の afterCreating フックで作成する方法もあるが、
+    怖さメーターは別エンティティのため Seeder 側で明示的に作る方が分かりやすい

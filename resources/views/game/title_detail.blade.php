@@ -84,9 +84,9 @@
                 @else
                 <p>怖さメーターは入力されていないようだ</p>
                     @if (Auth::check())
-                    <div class="mt-5">
+                    <p class="mt-5">
                         <a href="{{ route('User.FearMeter.Form', ['titleKey' => $title->key, 'from' => 'title-detail']) }}" data-hgn-scope="full">怖さメーターを入力しますか？</a>
-                    </div>
+                    </p>
                     @endif
                 @endif
             </div>
@@ -173,19 +173,22 @@
             @if ($reviewStatistic)
                 <div class="space-y-2">
                     <div class="text-sm text-slate-200">
-                        <span class="font-semibold text-lg">{{ $reviewStatistic->avg_total_score !== null ? number_format((float)$reviewStatistic->avg_total_score, 1) : '-' }}</span>
+                        <span class="font-semibold text-lg">{{ $reviewStatistic->avg_total_score !== null ? round((float)$reviewStatistic->avg_total_score) : '-' }}</span>
                         <span class="text-slate-400 text-xs"> / 100</span>
                         <span class="ml-2 text-slate-400">（{{ $reviewStatistic->review_count }}件）</span>
                     </div>
                     <div class="text-xs text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
                         @if ($reviewStatistic->avg_story !== null)
-                            <span>ストーリー: {{ number_format((float)$reviewStatistic->avg_story, 1) }}/4</span>
+                            <span>ストーリー: {{ round((float)$reviewStatistic->avg_story) }}/20</span>
                         @endif
                         @if ($reviewStatistic->avg_atmosphere !== null)
-                            <span>雰囲気・演出: {{ number_format((float)$reviewStatistic->avg_atmosphere, 1) }}/4</span>
+                            <span>雰囲気・演出: {{ round((float)$reviewStatistic->avg_atmosphere) }}/20</span>
                         @endif
                         @if ($reviewStatistic->avg_gameplay !== null)
-                            <span>ゲーム性: {{ number_format((float)$reviewStatistic->avg_gameplay, 1) }}/4</span>
+                            <span>ゲーム性: {{ round((float)$reviewStatistic->avg_gameplay) }}/20</span>
+                        @endif
+                        @if ($reviewStatistic->user_score_adjustment !== null)
+                            <span>さじ加減: {{ round((float)$reviewStatistic->user_score_adjustment) }}/20</span>
                         @endif
                     </div>
                 </div>
@@ -214,18 +217,16 @@
                             <div class="py-3 border-b border-white/10 last:border-b-0">
                                 <div class="mb-1 text-xs text-slate-400 flex flex-wrap gap-x-3">
                                     <span>{{ $recentReview->user?->show_id ?? '(不明)' }}</span>
-                                    <span>{{ $recentReview->play_status?->text() }}</span>
-                                    @if ($recentReview->play_time)
-                                        <span>{{ $recentReview->play_time->text() }}</span>
+                                    @if ($recentReview->play_status === \App\Enums\PlayStatus::Watched)
+                                        <span class="text-sky-400">{{ $recentReview->play_status->text() }}</span>
+                                    @else
+                                        <span>{{ $recentReview->play_status?->text() }}</span>
                                     @endif
                                     @if ($recentReview->total_score !== null)
                                         <span class="font-semibold text-slate-200">{{ $recentReview->total_score }}<span class="font-normal text-slate-400">/100</span></span>
                                     @endif
                                     @if ($recentReview->has_spoiler)
                                         <span class="text-amber-400">【ネタバレあり】</span>
-                                    @endif
-                                    @if ($recentReview->play_status === \App\Enums\PlayStatus::Watched)
-                                        <span class="text-sky-400">配信・動画での視聴に基づくレビュー</span>
                                     @endif
                                 </div>
                                 @if ($recentReview->horrorTypeTags->isNotEmpty())

@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Enums\HorrorTypeTag;
 use App\Enums\PlayStatus;
-use App\Enums\PlayTime;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,7 +20,6 @@ class UserGameTitleReview extends Model
         'hidden_by_admin_id',
         'hidden_at',
         'play_status',
-        'play_time',
         'body',
         'has_spoiler',
         'score_story',
@@ -31,7 +29,7 @@ class UserGameTitleReview extends Model
         'base_score',
         'total_score',
         'current_log_id',
-        'ogp_image_path',
+        'ogp_image_filename',
         'is_deleted',
     ];
 
@@ -39,7 +37,6 @@ class UserGameTitleReview extends Model
         'is_hidden'    => 'boolean',
         'hidden_at'    => 'datetime',
         'play_status'  => PlayStatus::class,
-        'play_time'    => PlayTime::class,
         'has_spoiler'  => 'boolean',
         'is_deleted'   => 'boolean',
     ];
@@ -126,7 +123,7 @@ class UserGameTitleReview extends Model
 
     /**
      * ベーススコアを計算する
-     * ベーススコア = 怖さ×10 + ストーリー×5 + 雰囲気×5 + ゲーム性×5
+     * ベーススコア = 怖さ×10 + ストーリー + 雰囲気 + ゲーム性
      *
      * @param int|null $fearMeter
      * @param int|null $story
@@ -141,9 +138,9 @@ class UserGameTitleReview extends Model
         }
 
         return ($fearMeter ?? 0) * 10
-            + ($story ?? 0) * 5
-            + ($atmosphere ?? 0) * 5
-            + ($gameplay ?? 0) * 5;
+            + ($story ?? 0)
+            + ($atmosphere ?? 0)
+            + ($gameplay ?? 0);
     }
 
     /**

@@ -7,9 +7,9 @@
     $_siteName   = 'ホラーゲームネットワーク(α)';
     $_ogpTitle   = $title->name . ' のレビュー — ' . $reviewUser->show_id;
     $_ogpUrl     = route('Game.TitleReview', ['titleKey' => $title->key, 'showId' => $reviewUser->show_id]);
-    $_hasOgpFile = !$review->is_deleted && !$review->is_hidden && $review->ogp_image_path;
+    $_hasOgpFile = !$review->is_deleted && !$review->is_hidden && $review->ogp_image_filename;
     $_ogpImage   = $_hasOgpFile
-        ? asset(substr($review->ogp_image_path, 7))  // 'public/' の 7 文字を除去
+        ? asset('img/review/' . $review->ogp_image_filename)
         : asset('img/ogp.png');
     if (!$review->is_deleted && !$review->is_hidden && !$review->has_spoiler && $review->body) {
         $_ogpDescription = mb_strimwidth($review->body, 0, 120, '…');
@@ -41,17 +41,17 @@
         </div>
     @else
         <div class="mt-3 space-y-3">
+            {{-- ネタバレ --}}
+            @if ($review->has_spoiler)
+                <div class="text-sm text-amber-400">【ネタバレあり】</div>
+            @endif
+
             {{-- メタ情報 --}}
             <div class="text-sm text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
-                <span>{{ $review->play_status?->text() }}</span>
-                @if ($review->play_time)
-                    <span>{{ $review->play_time->text() }}</span>
-                @endif
                 @if ($review->play_status === \App\Enums\PlayStatus::Watched)
-                    <span class="text-sky-400">配信・動画での視聴に基づくレビュー</span>
-                @endif
-                @if ($review->has_spoiler)
-                    <span class="text-amber-400">【ネタバレあり】</span>
+                    <span class="text-sky-400">{{ $review->play_status->text() }}</span>
+                @else
+                    <span>{{ $review->play_status?->text() }}</span>
                 @endif
                 <span>{{ $review->updated_at->format('Y-m-d') }}</span>
             </div>
@@ -82,17 +82,20 @@
                         {{ $review->total_score }}<span class="text-sm font-normal text-slate-400"> / 100</span>
                     </div>
                     <div class="text-xs text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
+                        @if ($fearMeter !== null)
+                            <span>怖さ: {{ $fearMeter->fear_meter->value * 10 }}</span>
+                        @endif
                         @if ($review->score_story !== null)
-                            <span>ストーリー: {{ $review->score_story }}/4</span>
+                            <span>ストーリー: {{ $review->score_story }}</span>
                         @endif
                         @if ($review->score_atmosphere !== null)
-                            <span>雰囲気・演出: {{ $review->score_atmosphere }}/4</span>
+                            <span>雰囲気・演出: {{ $review->score_atmosphere }}</span>
                         @endif
                         @if ($review->score_gameplay !== null)
-                            <span>ゲーム性: {{ $review->score_gameplay }}/4</span>
+                            <span>ゲーム性: {{ $review->score_gameplay }}</span>
                         @endif
                         @if ($review->user_score_adjustment !== null && $review->user_score_adjustment !== 0)
-                            <span>ユーザー調整: {{ $review->user_score_adjustment > 0 ? '+' : '' }}{{ $review->user_score_adjustment }}</span>
+                            <span>さじ加減: {{ $review->user_score_adjustment }}</span>
                         @endif
                     </div>
                 </div>
@@ -109,7 +112,7 @@
             @endif
 
             {{-- いいね・通報 --}}
-            <div class="mt-4 flex items-center gap-6 text-sm">
+            <div class="mt-4 flex items-center text-sm">
                 @auth
                     <form method="POST"
                           action="{{ route('Game.TitleReview.Like', ['titleKey' => $title->key, 'reviewId' => $review->id]) }}"
@@ -132,35 +135,74 @@
 
                 @auth
                     @if ($userReported)
-                        <span class="inline-flex h-6 items-center gap-1 leading-none text-slate-500">
+                        <span class="ml-auto inline-flex h-6 items-center gap-1 leading-none text-slate-500">
                             <i class="bi bi-flag-fill"></i> 通報済み
                         </span>
                     @else
-                        <form method="POST"
-                              action="{{ route('Game.TitleReview.Report', ['titleKey' => $title->key, 'reviewId' => $review->id]) }}"
-                              class="review-reaction-form inline-flex items-center mb-0"
-                              data-component-use="1"
-                              data-reaction-kind="report"
-                              data-done="0">
-                            @csrf
-                            <button type="submit" class="inline-flex h-6 items-center gap-1 leading-none text-slate-400 transition-colors hover:text-rose-400" title="通報">
-                                <i class="bi bi-flag"></i> 通報
-                            </button>
-                        </form>
+                        <button type="button"
+                                class="js-review-report-open ml-auto inline-flex h-6 items-center gap-1 leading-none text-slate-400 transition-colors hover:text-rose-400"
+                                data-modal-id="review-report-modal-{{ $review->id }}"
+                                title="通報">
+                            <i class="bi bi-flag"></i> 通報
+                        </button>
                     @endif
                 @endauth
             </div>
 
+            {{-- 通報モーダル --}}
+            @auth
+                @if (!$userReported)
+                    @php
+                        $_reportReasons = ['スパム・宣伝', '荒らし・嫌がらせ', 'ネタバレが記載されていない', '不適切な内容', 'その他'];
+                    @endphp
+                    <dialog id="review-report-modal-{{ $review->id }}" class="js-review-report-modal rounded-lg bg-slate-800 text-white p-0 w-full max-w-md border border-slate-600">
+                        <div class="p-6">
+                            <h2 class="text-base font-bold mb-4">通報</h2>
+                            <form method="POST"
+                                  action="{{ route('Game.TitleReview.Report', ['titleKey' => $title->key, 'reviewId' => $review->id]) }}"
+                                  class="review-reaction-form mb-0"
+                                  data-component-use="1"
+                                  data-reaction-kind="report"
+                                  data-done="0"
+                                  data-modal-id="review-report-modal-{{ $review->id }}">
+                                @csrf
+                                <div class="mb-4">
+                                    <p class="text-sm font-semibold mb-2">通報理由（任意・複数選択可）</p>
+                                    <div class="space-y-2">
+                                        @foreach ($_reportReasons as $reason)
+                                            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                                <input type="checkbox" name="reason_types[]" value="{{ $reason }}" class="accent-rose-400">
+                                                {{ $reason }}
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                <div class="mb-5">
+                                    <label class="block text-sm font-semibold mb-2" for="report-note-{{ $review->id }}">詳細（任意）</label>
+                                    <textarea id="report-note-{{ $review->id }}" name="reason_note" class="form-control w-full" rows="3" maxlength="255" placeholder="詳細を入力..."></textarea>
+                                </div>
+                                <div class="flex gap-3 justify-end">
+                                    <button type="button" class="js-report-modal-cancel btn btn-sm btn-default">キャンセル</button>
+                                    <button type="submit" class="btn btn-sm btn-danger">通報する</button>
+                                </div>
+                            </form>
+                        </div>
+                    </dialog>
+                @endif
+            @endauth
+
             {{-- SNS 共有 --}}
             @php
-                $_shareText = $title->name . ' のレビューを書きました！';
+                $_shareText = Auth::id() === $reviewUser->id
+                    ? $title->name . ' のレビューを書きました！'
+                    : $title->name . ' のレビュー（' . $reviewUser->show_id . '）';
             @endphp
             <div class="mt-3 flex items-center gap-4 text-sm">
                 <span class="text-slate-500">シェア：</span>
                 <a href="https://twitter.com/intent/tweet?text={{ urlencode($_shareText) }}&url={{ urlencode($_ogpUrl) }}"
                    target="_blank"
                    class="inline-flex items-center gap-1 text-slate-400 transition-colors hover:text-sky-400">
-                    <i class="bi bi-twitter-x"></i> X
+                    <i class="bi bi-twitter-x"></i>
                 </a>
                 <a href="https://social-plugins.line.me/lineit/share?url={{ urlencode($_ogpUrl) }}"
                    target="_blank"

@@ -97,6 +97,13 @@ class GameReviewController extends Controller
             ->where('is_hidden', false)
             ->firstOrFail();
 
+        $reasonParts = $request->validated('reason_types', []) ?? [];
+        $note = $request->validated('reason_note');
+        if ($note !== null && $note !== '') {
+            $reasonParts[] = '詳細: ' . $note;
+        }
+        $reason = !empty($reasonParts) ? implode('、', $reasonParts) : null;
+
         [$report, $created] = UserGameTitleReviewReport::firstOrCreate(
             [
                 'user_id'   => $user->id,
@@ -104,13 +111,14 @@ class GameReviewController extends Controller
             ],
             [
                 'review_log_id' => $review->current_log_id,
-                'reason'        => $request->validated('reason'),
+                'reason'        => $reason,
                 'is_resolved'   => false,
             ]
         );
 
         if ($created) {
             try {
+                $reasonText = $reason ? "\n通報理由: {$reason}" : '';
                 app(DiscordWebhookService::class)
                     ->to(DiscordChannel::Contact)
                     ->username('HGN 通報Bot')
@@ -118,7 +126,8 @@ class GameReviewController extends Controller
                         "レビューへの通報がありました。\n" .
                         "タイトル: {$title->name}\n" .
                         "レビューID: {$review->id}\n" .
-                        "通報者ID: {$user->id}"
+                        "通報者ID: {$user->id}" .
+                        $reasonText
                     );
             } catch (\Throwable) {
                 // 通知失敗は無視

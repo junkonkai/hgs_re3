@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\PlayStatus;
-use App\Enums\PlayTime;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -16,7 +15,6 @@ class UserGameTitleReviewLog extends Model
         'user_id',
         'version',
         'play_status',
-        'play_time',
         'game_package_ids',
         'body',
         'has_spoiler',
@@ -31,7 +29,6 @@ class UserGameTitleReviewLog extends Model
 
     protected $casts = [
         'play_status'       => PlayStatus::class,
-        'play_time'         => PlayTime::class,
         'game_package_ids'  => 'array',
         'has_spoiler'       => 'boolean',
         'horror_type_tags'  => 'array',

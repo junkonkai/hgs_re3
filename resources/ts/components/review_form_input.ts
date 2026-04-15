@@ -9,8 +9,9 @@ export class ReviewFormInput extends Component
     private _draftSaveButton: HTMLButtonElement | null = null;
     private _totalScoreDisplay: HTMLElement | null = null;
     private _fearMeterInput: HTMLInputElement | null = null;
-    private _scoreSelects: NodeListOf<HTMLSelectElement> | null = null;
+    private _scoreInputs: NodeListOf<HTMLInputElement> | null = null;
     private _adjustmentInput: HTMLInputElement | null = null;
+    private _adjustmentValueLabel: HTMLElement | null = null;
     private _listeners: Array<{ el: EventTarget; type: string; fn: EventListener }> = [];
 
     constructor(params: any | null = null)
@@ -21,8 +22,9 @@ export class ReviewFormInput extends Component
         this._draftSaveButton = document.querySelector('.js-review-draft-save') as HTMLButtonElement | null;
         this._totalScoreDisplay = document.querySelector('.js-review-total-score') as HTMLElement | null;
         this._fearMeterInput = document.querySelector('.js-fear-meter-value') as HTMLInputElement | null;
-        this._scoreSelects = document.querySelectorAll('.js-review-score-select') as NodeListOf<HTMLSelectElement>;
+        this._scoreInputs = document.querySelectorAll('.js-review-score-select') as NodeListOf<HTMLInputElement>;
         this._adjustmentInput = document.querySelector('.js-review-adjustment') as HTMLInputElement | null;
+        this._adjustmentValueLabel = document.querySelector('.js-review-adjustment-value') as HTMLElement | null;
 
         this.updateTotalScore();
 
@@ -33,14 +35,28 @@ export class ReviewFormInput extends Component
             this._listeners.push({ el: this._fearMeterInput, type: 'input', fn: updateFn });
         }
 
-        this._scoreSelects?.forEach(select => {
-            select.addEventListener('change', updateFn);
-            this._listeners.push({ el: select, type: 'change', fn: updateFn });
+        this._scoreInputs?.forEach((input, i) => {
+            const valueLabel = this.getScoreValueLabel(input);
+            const updateWithLabel: EventListener = () => {
+                if (valueLabel) {
+                    valueLabel.textContent = input.value;
+                }
+                this.updateTotalScore();
+            };
+            input.addEventListener('input', updateWithLabel);
+            this._listeners.push({ el: input, type: 'input', fn: updateWithLabel });
         });
 
         if (this._adjustmentInput) {
-            this._adjustmentInput.addEventListener('input', updateFn);
-            this._listeners.push({ el: this._adjustmentInput, type: 'input', fn: updateFn });
+            const adjustmentFn: EventListener = () => {
+                if (this._adjustmentValueLabel && this._adjustmentInput) {
+                    const val = Number(this._adjustmentInput.value);
+                    this._adjustmentValueLabel.textContent = (val >= 0 ? '+' : '') + val;
+                }
+                this.updateTotalScore();
+            };
+            this._adjustmentInput.addEventListener('input', adjustmentFn);
+            this._listeners.push({ el: this._adjustmentInput, type: 'input', fn: adjustmentFn });
         }
 
         if (this._draftSaveButton && this._form) {
@@ -54,6 +70,18 @@ export class ReviewFormInput extends Component
             this._draftSaveButton.addEventListener('click', draftFn);
             this._listeners.push({ el: this._draftSaveButton, type: 'click', fn: draftFn });
         }
+    }
+
+    private getScoreValueLabel(input: HTMLInputElement): HTMLElement | null
+    {
+        let sibling = input.nextElementSibling as HTMLElement | null;
+        while (sibling) {
+            if (sibling.classList.contains('js-review-score-value')) {
+                return sibling;
+            }
+            sibling = sibling.nextElementSibling as HTMLElement | null;
+        }
+        return null;
     }
 
     public dispose(): void
@@ -71,11 +99,11 @@ export class ReviewFormInput extends Component
         const fearMeter = this._fearMeterInput ? Number(this._fearMeterInput.value) : 0;
         let base = (Number.isFinite(fearMeter) ? fearMeter : 0) * 10;
 
-        this._scoreSelects?.forEach(select => {
-            if (select.value !== '') {
-                const val = Number(select.value);
+        this._scoreInputs?.forEach(input => {
+            if (input.value !== '') {
+                const val = Number(input.value);
                 if (Number.isFinite(val)) {
-                    base += val * 5;
+                    base += val;
                 }
             }
         });

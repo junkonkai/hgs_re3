@@ -80,7 +80,7 @@ class GenerateReviewOgpImage implements ShouldQueue
         }
 
         $review->update([
-            'ogp_image_path' => 'public/img/review/' . $json['filename'],
+            'ogp_image_filename' => $json['filename'],
         ]);
     }
 }
