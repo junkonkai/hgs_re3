@@ -15,6 +15,7 @@ use App\Models\GameTitle;
 use App\Models\GameTitleFearMeterStatistic;
 use App\Models\GameTitleReviewStatistic;
 use App\Models\UserFavoriteGameTitle;
+use App\Models\UserGameTitleFearMeter;
 use App\Models\UserGameTitleFearMeterCommentLike;
 use App\Models\UserGameTitleFearMeterCommentReport;
 use App\Models\UserGameTitleFearMeterLog;
@@ -658,6 +659,7 @@ class GameController extends Controller
             $titles->lastPage(),
             'Game.Reviews',
             $sort !== 'newest' ? ['sort' => $sort] : [],
+            'children',
         );
 
         return $this->tree(
@@ -680,6 +682,8 @@ class GameController extends Controller
         }
         $franchise = $title->getFranchise();
 
+        $title->loadMissing(['reviewStatistic', 'fearMeterStatistic']);
+
         $reviews = UserGameTitleReview::where('game_title_id', $title->id)
             ->where('is_deleted', false)
             ->where('is_hidden', false)
@@ -687,10 +691,15 @@ class GameController extends Controller
             ->with(['user', 'horrorTypeTags'])
             ->paginate(10);
 
-        $pager = new Pager($reviews->currentPage(), $reviews->lastPage(), 'Game.TitleReviews', ['titleKey' => $title->key]);
+        $fearMeters = UserGameTitleFearMeter::where('game_title_id', $title->id)
+            ->whereIn('user_id', $reviews->pluck('user_id')->filter())
+            ->get()
+            ->keyBy('user_id');
+
+        $pager = new Pager($reviews->currentPage(), $reviews->lastPage(), 'Game.TitleReviews', ['titleKey' => $title->key], 'children');
 
         return $this->tree(
-            view('game.title_reviews', compact('title', 'franchise', 'reviews', 'pager')),
+            view('game.title_reviews', compact('title', 'franchise', 'reviews', 'fearMeters', 'pager')),
             options: ['ratingCheck' => $title->rating == \App\Enums\Rating::R18A],
         );
     }

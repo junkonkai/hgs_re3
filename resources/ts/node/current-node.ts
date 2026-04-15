@@ -67,6 +67,7 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
         this._currentNodeContentElement = document.getElementById('current-node-content');
         this._nodeContentTree = new NodeContentTree(this._treeContentElement as HTMLElement, this);
         this.setupFormEvents();
+        this.setupAnchorEvents();
     }
 
     public start(): void
@@ -328,6 +329,39 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
     }
 
     /**
+     * current-node-content 内のアンカーにナビゲーションリスナーを登録する
+     */
+    private setupAnchorEvents(): void
+    {
+        if (!this._currentNodeContentElement) {
+            return;
+        }
+        const anchors = Array.from(
+            this._currentNodeContentElement.querySelectorAll('a[href]')
+        ) as HTMLAnchorElement[];
+        anchors.forEach(anchor => {
+            anchor.addEventListener('click', (e) => {
+                if (this.hasActiveAnimation()) {
+                    e.preventDefault();
+                    return;
+                }
+                const isExternal = anchor.target === '_blank'
+                    || anchor.dataset.hgnScope === 'external'
+                    || (anchor.getAttribute('rel') ?? '').split(/\s+/).includes('external');
+                if (isExternal) {
+                    return;
+                }
+                const nav = HgnTree.getInstance().navigationController;
+                if (!nav) {
+                    return;
+                }
+                e.preventDefault();
+                nav.navigateFromAnchor(anchor, this);
+            });
+        });
+    }
+
+    /**
      * フォームのイベントを設定する
      */
     private setupFormEvents(): void
@@ -556,6 +590,7 @@ export class CurrentNode extends NodeBase implements TreeNodeInterface
             if (this._currentNodeContentElement && typeof result.currentNodeContent === 'string') {
                 this._currentNodeContentElement.innerHTML = result.currentNodeContent;
                 this.setupFormEvents();
+                this.setupAnchorEvents();
             }
         }
         if (this._treeContentElement && typeof result.nodes === 'string') {
