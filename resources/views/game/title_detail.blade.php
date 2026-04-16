@@ -27,7 +27,6 @@
 
     @include('common.current-node-ogp', ['model' => $title])
 
-
     <div class="title-users-info">
         <div>
             @if (Auth::check())
@@ -245,7 +244,7 @@
                                     <div class="text-sm leading-relaxed text-slate-100">{!! nl2br(e(mb_strimwidth($recentReview->body, 0, 200, '…'))) !!}</div>
                                 @endif
                                 <div class="mt-1 text-xs">
-                                    <a href="{{ route('Game.TitleReview', ['titleKey' => $title->key, 'showId' => $recentReview->user?->show_id]) }}" data-hgn-scope="full">全文を読む</a>
+                                    <a href="{{ route('Game.TitleReview', ['titleKey' => $title->key, 'reviewKey' => $recentReview->key]) }}" data-hgn-scope="full">全文を読む</a>
                                 </div>
                             </div>
                         @endforeach

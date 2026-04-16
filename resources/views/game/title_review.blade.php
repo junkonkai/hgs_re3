@@ -1,12 +1,12 @@
 @extends('layout')
 
-@section('title', $title->name . ' のレビュー — ' . $reviewUser->show_id)
-@section('current-node-title', $title->name . ' のレビュー — ' . $reviewUser->show_id)
+@section('title', $title->name . ' ' . $reviewUser->name . 'さんのレビュー')
+@section('current-node-title', $title->name . ' ' . $reviewUser->name . 'さんのレビュー')
 
 @php
     $_siteName   = 'ホラーゲームネットワーク(α)';
-    $_ogpTitle   = $title->name . ' のレビュー — ' . $reviewUser->show_id;
-    $_ogpUrl     = route('Game.TitleReview', ['titleKey' => $title->key, 'showId' => $reviewUser->show_id]);
+    $_ogpTitle   = $title->name . ' ' . $reviewUser->name . 'さんのレビュー';
+    $_ogpUrl     = route('Game.TitleReview', ['titleKey' => $title->key, 'reviewKey' => $review->key]);
     $_hasOgpFile = !$review->is_deleted && !$review->is_hidden && $review->ogp_image_filename;
     $_ogpImage   = $_hasOgpFile
         ? asset('img/review/' . $review->ogp_image_filename)
@@ -14,7 +14,7 @@
     if (!$review->is_deleted && !$review->is_hidden && !$review->has_spoiler && $review->body) {
         $_ogpDescription = mb_strimwidth($review->body, 0, 120, '…');
     } else {
-        $_ogpDescription = $title->name . ' のレビュー（' . $reviewUser->show_id . '）';
+        $_ogpDescription = $title->name . ' ' . $reviewUser->name . 'さんのレビュー';
     }
 @endphp
 @section('ogp')

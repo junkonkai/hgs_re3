@@ -25,7 +25,6 @@
                     <label for="show_id" class="form-label">ユーザーID</label>
                     <input type="text" name="show_id" id="show_id" class="form-control" value="{{ old('show_id', $user->show_id) }}" required maxlength="30">
                     <small class="form-text text-muted">使用可能文字：英数字、ハイフン、アンダースコア（1〜30文字）</small>
-                    <small class="form-text text-amber-400">ユーザーIDを変更すると、投稿済みレビューのURLも変わります。</small>
                     @error('show_id')
                         <div class="alert alert-warning mt-3">
                             {{ $message }}

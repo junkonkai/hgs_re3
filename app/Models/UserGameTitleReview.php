@@ -9,11 +9,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Sqids\Sqids;
 
 class UserGameTitleReview extends Model
 {
     use HasFactory;
     protected $fillable = [
+        'key',
         'user_id',
         'game_title_id',
         'is_hidden',
@@ -32,6 +34,20 @@ class UserGameTitleReview extends Model
         'ogp_image_filename',
         'is_deleted',
     ];
+
+    protected static function boot(): void
+    {
+        parent::boot();
+        static::creating(function (self $model) {
+            if (empty($model->key)) {
+                $sqids = new Sqids(
+                    alphabet: config('services.sqids.alphabet'),
+                    minLength: config('services.sqids.min_length'),
+                );
+                $model->key = $sqids->encode([$model->game_title_id, $model->user_id]);
+            }
+        });
+    }
 
     protected $casts = [
         'is_hidden'    => 'boolean',

@@ -407,13 +407,13 @@ Route::group(['prefix' => 'game'], function () {
     // タイトル詳細
     Route::get('/title/{titleKey}', [$class, 'titleDetail'])->name('Game.TitleDetail');
     // タイトル詳細（怖さメーターコメントログ）
-    Route::get('/title/{titleKey}/fear-meter-comments', [$class, 'titleFearMeterComments'])->name('Game.TitleFearMeterComments');
+    Route::get('/title/{titleKey}/fear-meter-comments', [GameFearMeterCommentController::class, 'titleFearMeterComments'])->name('Game.TitleFearMeterComments');
     // レビュー一覧（全タイトル）
-    Route::get('/reviews', [$class, 'reviews'])->name('Game.Reviews');
+    Route::get('/reviews', [\App\Http\Controllers\GameReviewController::class, 'reviews'])->name('Game.Reviews');
     // タイトルのレビュー全件
-    Route::get('/title/{titleKey}/reviews', [$class, 'titleReviews'])->name('Game.TitleReviews');
+    Route::get('/title/{titleKey}/reviews', [\App\Http\Controllers\GameReviewController::class, 'titleReviews'])->name('Game.TitleReviews');
     // タイトルのレビュー個別
-    Route::get('/title/{titleKey}/review/{showId}', [$class, 'titleReview'])->name('Game.TitleReview');
+    Route::get('/title/{titleKey}/review/{reviewKey}', [\App\Http\Controllers\GameReviewController::class, 'titleReview'])->name('Game.TitleReview');
     Route::middleware('auth')->group(function () {
         Route::post('/title/{titleKey}/fear-meter-comments/{logId}/like', [GameFearMeterCommentController::class, 'like'])->name('Game.TitleFearMeterComments.Like');
         Route::delete('/title/{titleKey}/fear-meter-comments/{logId}/like', [GameFearMeterCommentController::class, 'unlike'])->name('Game.TitleFearMeterComments.Unlike');

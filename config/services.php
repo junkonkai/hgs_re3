@@ -62,4 +62,9 @@ return [
         'template_path' => env('SVG_TEMPLATE_PATH',  ''),
     ],
 
+    'sqids' => [
+        'alphabet'   => env('SQIDS_ALPHABET'),
+        'min_length' => 10,
+    ],
+
 ];
