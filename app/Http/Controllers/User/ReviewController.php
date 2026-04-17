@@ -41,7 +41,7 @@ class ReviewController extends Controller
         $user = Auth::user();
         $reviews = UserGameTitleReview::where('user_id', $user->id)
             ->where('is_deleted', false)
-            ->with('gameTitle')
+            ->with(['gameTitle', 'horrorTypeTags'])
             ->orderBy('updated_at', 'desc')
             ->paginate(10);
 
@@ -49,10 +49,15 @@ class ReviewController extends Controller
             ->pluck('game_title_id')
             ->toArray();
 
+        $fearMeters = UserGameTitleFearMeter::where('user_id', $user->id)
+            ->whereIn('game_title_id', $reviews->pluck('game_title_id'))
+            ->get()
+            ->keyBy('game_title_id');
+
         $pager = new Pager($reviews->currentPage(), $reviews->lastPage(), 'User.Review.Index', [], 'children');
 
         return $this->tree(
-            view('user.review.index', compact('reviews', 'draftTitleIds', 'pager')),
+            view('user.review.index', compact('reviews', 'draftTitleIds', 'fearMeters', 'pager')),
             options: [
                 'url' => route('User.Review.Index'),
             ]

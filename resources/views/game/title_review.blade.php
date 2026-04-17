@@ -41,72 +41,75 @@
         </div>
     @else
         <div class="mt-3 space-y-3">
-            {{-- ネタバレ --}}
-            @if ($review->has_spoiler)
-                <div class="text-sm text-amber-400">【ネタバレあり】</div>
-            @endif
-
-            {{-- メタ情報 --}}
-            <div class="text-sm text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
-                @if ($review->play_status === \App\Enums\PlayStatus::Watched)
-                    <span class="text-sky-400">{{ $review->play_status->text() }}</span>
-                @else
-                    <span>{{ $review->play_status?->text() }}</span>
+            {{-- XX/100 プレイ状況 --}}
+            <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <div class="flex items-baseline gap-1">
+                    @if ($review->total_score !== null)
+                        <span class="text-2xl font-bold text-slate-100 leading-none">{{ $review->total_score }}</span>
+                        <span class="text-xs text-slate-500">/100</span>
+                    @else
+                        <span class="text-slate-500">-/100</span>
+                    @endif
+                </div>
+                @if ($review->play_status !== null)
+                    @if ($review->play_status === \App\Enums\PlayStatus::Watched)
+                        <span class="text-sm text-sky-400">{{ $review->play_status->text() }}</span>
+                    @else
+                        <span class="text-sm text-slate-400">{{ $review->play_status->text() }}</span>
+                    @endif
                 @endif
-                <span>{{ $review->updated_at->format('Y-m-d') }}</span>
             </div>
 
-            {{-- プレイ環境 --}}
-            @if ($review->packages->isNotEmpty())
-                <div class="text-sm text-slate-400">
-                    プレイ環境:
-                    @foreach ($review->packages as $pkg)
-                        <span class="text-slate-300">{{ $pkg->gamePackage?->platform?->acronym ?? '?' }}{{ $loop->last ? '' : '、' }}</span>
-                    @endforeach
-                </div>
-            @endif
-
-            {{-- ホラー種別タグ --}}
-            @if ($review->horrorTypeTags->isNotEmpty())
-                <div class="flex flex-wrap gap-1">
-                    @foreach ($review->horrorTypeTags as $tag)
-                        <span class="text-xs px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">{{ $tag->tag->text() }}</span>
-                    @endforeach
-                </div>
-            @endif
-
-            {{-- スコア --}}
-            @if ($review->total_score !== null)
+            {{-- 怖さメーターバー --}}
+            @if ($fearMeter !== null)
+                @php
+                    $fearMeterMax = 4;
+                    $fearMeterValue = (float) $fearMeter->fear_meter->value;
+                    $fearMeterPercent = ($fearMeterValue / $fearMeterMax) * 100;
+                @endphp
                 <div class="space-y-1">
-                    <div class="text-2xl font-bold text-slate-100">
-                        {{ $review->total_score }}<span class="text-sm font-normal text-slate-400"> / 100</span>
+                    <div class="h-3 w-full max-w-xs overflow-hidden rounded-full bg-slate-700/60">
+                        <div class="h-full bg-gradient-to-r from-slate-800 via-sky-600 to-indigo-500"
+                             style="width: {{ $fearMeterPercent }}%;"></div>
                     </div>
-                    <div class="text-xs text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
-                        @if ($fearMeter !== null)
-                            <span>怖さ: {{ $fearMeter->fear_meter->value * 10 }}</span>
-                        @endif
-                        @if ($review->score_story !== null)
-                            <span>ストーリー: {{ $review->score_story }}</span>
-                        @endif
-                        @if ($review->score_atmosphere !== null)
-                            <span>雰囲気・演出: {{ $review->score_atmosphere }}</span>
-                        @endif
-                        @if ($review->score_gameplay !== null)
-                            <span>ゲーム性: {{ $review->score_gameplay }}</span>
-                        @endif
-                        @if ($review->user_score_adjustment !== null && $review->user_score_adjustment !== 0)
-                            <span>さじ加減: {{ $review->user_score_adjustment }}</span>
-                        @endif
+                    <div class="text-sm text-slate-200">
+                        <span class="font-semibold">{{ (int) $fearMeterValue }}/{{ $fearMeterMax }}</span>
+                        <span class="text-slate-400 ml-1">{{ $fearMeter->fear_meter->text() }}</span>
                     </div>
                 </div>
             @endif
+
+            {{-- 各スコア --}}
+            <div class="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-400">
+                @if ($fearMeter !== null)
+                    <span>怖さ: <span class="text-slate-200">{{ $fearMeter->fear_meter->value * 10 }}/40</span></span>
+                @endif
+                @if ($review->score_story !== null)
+                    <span>ストーリー: <span class="text-slate-300">{{ $review->score_story }}/20</span></span>
+                @endif
+                @if ($review->score_atmosphere !== null)
+                    <span>雰囲気: <span class="text-slate-300">{{ $review->score_atmosphere }}/20</span></span>
+                @endif
+                @if ($review->score_gameplay !== null)
+                    <span>ゲーム性: <span class="text-slate-300">{{ $review->score_gameplay }}/20</span></span>
+                @endif
+                @if ($review->user_score_adjustment !== null)
+                    <span>さじ加減: <span class="text-slate-300">{{ $review->user_score_adjustment > 0 ? '+' : '' }}{{ $review->user_score_adjustment }}/20</span></span>
+                @endif
+            </div>
+
+            {{-- 更新日時 --}}
+            <div class="text-xs text-slate-500">{{ $review->updated_at->format('Y-m-d H:i') }}</div>
 
             {{-- 本文 --}}
             @if ($review->has_spoiler)
-                <details class="text-sm">
-                    <summary class="cursor-pointer text-slate-400 hover:text-slate-200">本文を表示（ネタバレあり）</summary>
-                    <div class="mt-3 leading-relaxed text-slate-100">{!! nl2br(e($review->body)) !!}</div>
-                </details>
+                <div class="text-xs text-amber-400">【ネタバレがあるようだ】</div>
+                <input type="checkbox" id="spoiler-reveal-{{ $review->id }}" class="sr-only peer">
+                <label for="spoiler-reveal-{{ $review->id }}" class="inline-block cursor-pointer text-xs text-slate-400 hover:text-slate-200 peer-checked:hidden">表示する</label>
+                <label for="spoiler-reveal-{{ $review->id }}" class="hidden peer-checked:inline-block cursor-pointer text-xs text-slate-400 hover:text-slate-200">読みづらくする</label>
+                <div class="text-sm leading-relaxed text-slate-100 opacity-10 peer-checked:opacity-100 transition-opacity duration-300 select-none peer-checked:select-auto">
+                    {!! nl2br(e($review->body)) !!}
+                </div>
             @else
                 <div class="text-sm leading-relaxed text-slate-100">{!! nl2br(e($review->body)) !!}</div>
             @endif
