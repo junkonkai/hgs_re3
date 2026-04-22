@@ -252,7 +252,7 @@
 
                     {{-- 怖さメーター --}}
                     <div class="mb-5">
-                        <label class="mb-2 block font-semibold">怖さメーター</label>
+                        <label class="mb-2 block font-semibold">怖さメーター（0〜40）</label>
                         <input type="hidden" class="js-fear-meter-value" name="fear_meter" value="{{ $fearMeterInitial }}" required>
                         <div
                             class="js-fear-meter-input"
@@ -260,30 +260,31 @@
                             data-fear-meter-max="{{ $fearMeterMax }}"
                             data-fear-meter-texts='@json($fearMeterTexts)'
                         >
-                            <div class="flex flex-nowrap items-center gap-3">
-                                <button
-                                    type="button"
-                                    class="btn btn-secondary btn-sm js-fear-meter-decrease shrink-0"
-                                    aria-label="怖さメーターを下げる"
-                                ><span class="text-lg leading-none">-</span></button>
-                                <div class="flex-1 min-w-0 max-w-xs">
-                                    <div class="h-3 overflow-hidden rounded-full bg-slate-700/60">
-                                        <div
-                                            class="h-full bg-gradient-to-r from-slate-800 via-sky-600 to-indigo-500 transition-all duration-200 js-fear-meter-bar-fill"
-                                            style="width: {{ $fearMeterInitialPercent }}%;"
-                                        ></div>
-                                    </div>
-                                    <div class="mt-2 text-center text-sm text-slate-200" aria-live="polite">
-                                        <span class="font-semibold js-fear-meter-value-label">{{ $fearMeterInitial }}</span>
-                                        :
-                                        <span class="js-fear-meter-text">{{ $fearMeterTexts[$fearMeterInitial] ?? '' }}</span>
-                                    </div>
+                            <div class="inline-flex flex-col">
+                                <div class="flex flex-nowrap items-center gap-3">
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm js-fear-meter-decrease shrink-0 inline-flex items-center justify-center"
+                                        aria-label="怖さメーターを下げる"
+                                    ><span class="text-lg leading-none relative -top-0.5">-</span></button>
+                                    <input
+                                        type="range"
+                                        class="flex-1 min-w-48 max-w-xs js-fear-meter-range"
+                                        min="{{ $fearMeterMin }}"
+                                        max="{{ $fearMeterMax }}"
+                                        value="{{ $fearMeterInitial }}"
+                                        step="1"
+                                    >
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm js-fear-meter-increase shrink-0 inline-flex items-center justify-center"
+                                        aria-label="怖さメーターを上げる"
+                                    ><span class="text-lg leading-none relative -top-0.5">+</span></button>
                                 </div>
-                                <button
-                                    type="button"
-                                    class="btn btn-secondary btn-sm js-fear-meter-increase shrink-0"
-                                    aria-label="怖さメーターを上げる"
-                                ><span class="text-lg leading-none">+</span></button>
+                                <div class="mt-2 text-center text-sm text-slate-200" aria-live="polite">
+                                    <span class="js-fear-meter-text">{{ $fearMeterTexts[$fearMeterInitial] ?? '' }}</span>
+                                    <span class="js-fear-meter-score">(+{{ $fearMeterInitial * 10 }})</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -292,28 +293,76 @@
                     <div class="mb-4">
                         <label class="mb-2 block font-semibold">各スコア（0〜20）</label>
                         <div class="space-y-3">
-                            <div class="flex items-center gap-3">
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
                                 <span class="w-28 text-sm text-slate-300 shrink-0">ストーリー</span>
-                                <input type="range" name="score_story" class="js-review-score-select" min="0" max="20" step="5" value="{{ $initialScoreStory }}">
-                                <span class="js-review-score-value w-4 text-center text-sm text-slate-200">{{ $initialScoreStory }}</span>
+                                <div class="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm js-review-score-decrease shrink-0 inline-flex items-center justify-center"
+                                        aria-label="ストーリースコアを下げる"
+                                        {{ $initialScoreStory <= 0 ? 'disabled' : '' }}
+                                    ><span class="text-lg leading-none relative -top-0.5">-</span></button>
+                                    <input type="range" name="score_story" class="js-review-score-select" min="0" max="20" step="5" value="{{ $initialScoreStory }}">
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm js-review-score-increase shrink-0 inline-flex items-center justify-center"
+                                        aria-label="ストーリースコアを上げる"
+                                        {{ $initialScoreStory >= 20 ? 'disabled' : '' }}
+                                    ><span class="text-lg leading-none relative -top-0.5">+</span></button>
+                                    <span class="js-review-score-value w-4 text-center text-sm text-slate-200">{{ $initialScoreStory }}</span>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-3">
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
                                 <span class="w-28 text-sm text-slate-300 shrink-0">雰囲気・演出</span>
-                                <input type="range" name="score_atmosphere" class="js-review-score-select" min="0" max="20" step="5" value="{{ $initialScoreAtmosphere }}">
-                                <span class="js-review-score-value w-4 text-center text-sm text-slate-200">{{ $initialScoreAtmosphere }}</span>
+                                <div class="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm js-review-score-decrease shrink-0 inline-flex items-center justify-center"
+                                        aria-label="雰囲気スコアを下げる"
+                                        {{ $initialScoreAtmosphere <= 0 ? 'disabled' : '' }}
+                                    ><span class="text-lg leading-none relative -top-0.5">-</span></button>
+                                    <input type="range" name="score_atmosphere" class="js-review-score-select" min="0" max="20" step="5" value="{{ $initialScoreAtmosphere }}">
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm js-review-score-increase shrink-0 inline-flex items-center justify-center"
+                                        aria-label="雰囲気スコアを上げる"
+                                        {{ $initialScoreAtmosphere >= 20 ? 'disabled' : '' }}
+                                    ><span class="text-lg leading-none relative -top-0.5">+</span></button>
+                                    <span class="js-review-score-value w-4 text-center text-sm text-slate-200">{{ $initialScoreAtmosphere }}</span>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-3">
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
                                 <span class="w-28 text-sm text-slate-300 shrink-0">ゲーム性</span>
-                                <input type="range" name="score_gameplay" class="js-review-score-select" min="0" max="20" step="5" value="{{ $initialScoreGameplay }}">
-                                <span class="js-review-score-value w-4 text-center text-sm text-slate-200">{{ $initialScoreGameplay }}</span>
+                                <div class="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm js-review-score-decrease shrink-0 inline-flex items-center justify-center"
+                                        aria-label="ゲーム性スコアを下げる"
+                                        {{ $initialScoreGameplay <= 0 ? 'disabled' : '' }}
+                                    ><span class="text-lg leading-none relative -top-0.5">-</span></button>
+                                    <input type="range" name="score_gameplay" class="js-review-score-select" min="0" max="20" step="5" value="{{ $initialScoreGameplay }}">
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm js-review-score-increase shrink-0 inline-flex items-center justify-center"
+                                        aria-label="ゲーム性スコアを上げる"
+                                        {{ $initialScoreGameplay >= 20 ? 'disabled' : '' }}
+                                    ><span class="text-lg leading-none relative -top-0.5">+</span></button>
+                                    <span class="js-review-score-value w-4 text-center text-sm text-slate-200">{{ $initialScoreGameplay }}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     {{-- スコア調整 --}}
                     <div class="mb-4">
-                        <label for="user_score_adjustment" class="mb-2 block font-semibold">さじ加減（任意・−20〜+20）</label>
+                        <label for="user_score_adjustment" class="mb-2 block font-semibold">さじ加減（−20〜+20）</label>
                         <div class="flex items-center gap-3">
+                            <button
+                                type="button"
+                                class="btn btn-secondary btn-sm js-review-adjustment-decrease shrink-0 inline-flex items-center justify-center"
+                                aria-label="さじ加減を下げる"
+                                {{ $initialAdjustment <= -20 ? 'disabled' : '' }}
+                            ><span class="text-lg leading-none relative -top-0.5">-</span></button>
                             <input
                                 type="range"
                                 id="user_score_adjustment"
@@ -324,6 +373,12 @@
                                 step="1"
                                 value="{{ $initialAdjustment }}"
                             >
+                            <button
+                                type="button"
+                                class="btn btn-secondary btn-sm js-review-adjustment-increase shrink-0 inline-flex items-center justify-center"
+                                aria-label="さじ加減を上げる"
+                                {{ $initialAdjustment >= 20 ? 'disabled' : '' }}
+                            ><span class="text-lg leading-none relative -top-0.5">+</span></button>
                             <span class="js-review-adjustment-value w-8 text-center text-sm text-slate-200">{{ $initialAdjustment >= 0 ? '+' : '' }}{{ $initialAdjustment }}</span>
                         </div>
                     </div>

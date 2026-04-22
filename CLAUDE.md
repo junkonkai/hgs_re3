@@ -79,6 +79,7 @@ php artisan tinker                 # Interactive REPL
 
 ## Key Conventions
 - `app/Console/Commands/` にコマンドを追加・変更した場合、または `database/seeders/` にシーダーを追加・変更した場合は、`docs/claude/artisan-commands.md` も合わせて更新する。
+- 三項演算子の真の値・偽の値にはロジック処理や関数呼び出しを書かない。値や変数の参照は可。処理が必要な場合は if 文で書く。
 
 
 - PSR-4 autoloading under the `App\` namespace

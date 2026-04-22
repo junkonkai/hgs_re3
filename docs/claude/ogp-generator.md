@@ -43,10 +43,11 @@ OUTPUT_DIR=... FONT_PATH=... SVG_TEMPLATE_PATH=... /path/to/ogp-generator '<JSON
 | `game_title_name` | string | ✅ | ゲームタイトル名 |
 | `user_name` | string | ✅ | ユーザーの表示名（`users.name`） |
 | `total_score` | integer\|null | | 総合スコア（0〜100） |
-| `fear_meter` | integer\|null | | 怖さメーター（0〜4） |
+| `fear_meter` | integer\|null | | 怖さメーターのスコア換算値（value × 10、つまり 0〜40） |
 | `score_story` | integer\|null | | ストーリースコア（0〜4） |
 | `score_atmosphere` | integer\|null | | 雰囲気スコア（0〜4） |
 | `score_gameplay` | integer\|null | | ゲーム性スコア（0〜4） |
+| `user_score_adjustment` | integer\|null | | ユーザー調整値（さじ加減） |
 | `has_spoiler` | boolean | ✅ | ネタバレありかどうか |
 
 **例:**
@@ -57,10 +58,11 @@ OUTPUT_DIR=... FONT_PATH=... SVG_TEMPLATE_PATH=... /path/to/ogp-generator '<JSON
     "game_title_name": "バイオハザード RE:2",
     "user_name": "huckle",
     "total_score": 87,
-    "fear_meter": 3,
+    "fear_meter": 30,
     "score_story": 4,
     "score_atmosphere": 4,
     "score_gameplay": 3,
+    "user_score_adjustment": 0,
     "has_spoiler": false
 }
 ```

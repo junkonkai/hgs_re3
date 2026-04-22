@@ -35,28 +35,96 @@ export class ReviewFormInput extends Component
             this._listeners.push({ el: this._fearMeterInput, type: 'input', fn: updateFn });
         }
 
-        this._scoreInputs?.forEach((input, i) => {
+        this._scoreInputs?.forEach((input) => {
             const valueLabel = this.getScoreValueLabel(input);
+            const parent = input.parentElement;
+            const decreaseBtn = parent?.querySelector('.js-review-score-decrease') as HTMLButtonElement | null;
+            const increaseBtn = parent?.querySelector('.js-review-score-increase') as HTMLButtonElement | null;
+            const step = Number(input.step) || 5;
+            const min = Number(input.min);
+            const max = Number(input.max);
+
             const updateWithLabel: EventListener = () => {
                 if (valueLabel) {
                     valueLabel.textContent = input.value;
+                }
+                if (decreaseBtn) {
+                    decreaseBtn.disabled = Number(input.value) <= min;
+                }
+                if (increaseBtn) {
+                    increaseBtn.disabled = Number(input.value) >= max;
                 }
                 this.updateTotalScore();
             };
             input.addEventListener('input', updateWithLabel);
             this._listeners.push({ el: input, type: 'input', fn: updateWithLabel });
+
+            if (decreaseBtn) {
+                const decreaseFn: EventListener = () => {
+                    const newVal = Math.max(min, Number(input.value) - step);
+                    input.value = String(newVal);
+                    input.dispatchEvent(new Event('input'));
+                };
+                decreaseBtn.addEventListener('click', decreaseFn);
+                this._listeners.push({ el: decreaseBtn, type: 'click', fn: decreaseFn });
+            }
+
+            if (increaseBtn) {
+                const increaseFn: EventListener = () => {
+                    const newVal = Math.min(max, Number(input.value) + step);
+                    input.value = String(newVal);
+                    input.dispatchEvent(new Event('input'));
+                };
+                increaseBtn.addEventListener('click', increaseFn);
+                this._listeners.push({ el: increaseBtn, type: 'click', fn: increaseFn });
+            }
         });
 
         if (this._adjustmentInput) {
+            const adjInput = this._adjustmentInput;
+            const adjMin = Number(adjInput.min);
+            const adjMax = Number(adjInput.max);
+            const adjStep = Number(adjInput.step) || 1;
+
+            const parent = adjInput.parentElement;
+            const decreaseBtn = parent?.querySelector('.js-review-adjustment-decrease') as HTMLButtonElement | null;
+            const increaseBtn = parent?.querySelector('.js-review-adjustment-increase') as HTMLButtonElement | null;
+
             const adjustmentFn: EventListener = () => {
                 if (this._adjustmentValueLabel && this._adjustmentInput) {
                     const val = Number(this._adjustmentInput.value);
                     this._adjustmentValueLabel.textContent = (val >= 0 ? '+' : '') + val;
                 }
+                if (decreaseBtn) {
+                    decreaseBtn.disabled = Number(adjInput.value) <= adjMin;
+                }
+                if (increaseBtn) {
+                    increaseBtn.disabled = Number(adjInput.value) >= adjMax;
+                }
                 this.updateTotalScore();
             };
-            this._adjustmentInput.addEventListener('input', adjustmentFn);
-            this._listeners.push({ el: this._adjustmentInput, type: 'input', fn: adjustmentFn });
+            adjInput.addEventListener('input', adjustmentFn);
+            this._listeners.push({ el: adjInput, type: 'input', fn: adjustmentFn });
+
+            if (decreaseBtn) {
+                const decreaseFn: EventListener = () => {
+                    const newVal = Math.max(adjMin, Number(adjInput.value) - adjStep);
+                    adjInput.value = String(newVal);
+                    adjInput.dispatchEvent(new Event('input'));
+                };
+                decreaseBtn.addEventListener('click', decreaseFn);
+                this._listeners.push({ el: decreaseBtn, type: 'click', fn: decreaseFn });
+            }
+
+            if (increaseBtn) {
+                const increaseFn: EventListener = () => {
+                    const newVal = Math.min(adjMax, Number(adjInput.value) + adjStep);
+                    adjInput.value = String(newVal);
+                    adjInput.dispatchEvent(new Event('input'));
+                };
+                increaseBtn.addEventListener('click', increaseFn);
+                this._listeners.push({ el: increaseBtn, type: 'click', fn: increaseFn });
+            }
         }
 
         if (this._draftSaveButton && this._form) {

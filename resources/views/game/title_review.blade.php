@@ -99,7 +99,18 @@
             </div>
 
             {{-- 更新日時 --}}
-            <div class="text-xs text-slate-500">{{ $review->updated_at->format('Y-m-d H:i') }}</div>
+            <div class="flex items-center gap-3 text-xs text-slate-500">
+                <span>{{ $review->updated_at->format('Y-m-d H:i') }}</span>
+                @auth
+                    @if (Auth::id() === $review->user_id)
+                        <a href="{{ route('User.Review.Form', ['titleKey' => $title->key]) }}"
+                           class="inline-flex items-center gap-1 text-slate-400 transition-colors hover:text-slate-200"
+                           data-hgn-scope="full">
+                            <i class="bi bi-pencil"></i> 編集
+                        </a>
+                    @endif
+                @endauth
+            </div>
 
             {{-- 本文 --}}
             @if ($review->has_spoiler)
@@ -117,19 +128,21 @@
             {{-- いいね・通報 --}}
             <div class="mt-4 flex items-center text-sm">
                 @auth
-                    <form method="POST"
-                          action="{{ route('Game.TitleReview.Like', ['titleKey' => $title->key, 'reviewId' => $review->id]) }}"
-                          class="review-reaction-form inline-flex items-center mb-0"
-                          data-component-use="1"
-                          data-reaction-kind="like"
-                          data-done="{{ $userLiked ? '1' : '0' }}"
-                          data-like-url="{{ route('Game.TitleReview.Like', ['titleKey' => $title->key, 'reviewId' => $review->id]) }}"
-                          data-unlike-url="{{ route('Game.TitleReview.UnlikePost', ['titleKey' => $title->key, 'reviewId' => $review->id]) }}">
-                        @csrf
-                        <button type="submit" class="inline-flex h-6 items-center gap-1 leading-none text-slate-400 transition-colors hover:text-sky-400" title="いいね">
-                            <i class="bi bi-hand-thumbs-up"></i> <span class="js-like-count">{{ $review->likes_count }}</span>
-                        </button>
-                    </form>
+                    @if (Auth::id() !== $review->user_id)
+                        <form method="POST"
+                              action="{{ route('Game.TitleReview.Like', ['titleKey' => $title->key, 'reviewId' => $review->id]) }}"
+                              class="review-reaction-form inline-flex items-center mb-0"
+                              data-component-use="1"
+                              data-reaction-kind="like"
+                              data-done="{{ $userLiked ? '1' : '0' }}"
+                              data-like-url="{{ route('Game.TitleReview.Like', ['titleKey' => $title->key, 'reviewId' => $review->id]) }}"
+                              data-unlike-url="{{ route('Game.TitleReview.UnlikePost', ['titleKey' => $title->key, 'reviewId' => $review->id]) }}">
+                            @csrf
+                            <button type="submit" class="inline-flex h-6 items-center gap-1 leading-none text-slate-400 transition-colors hover:text-sky-400" title="いいね">
+                                <i class="bi bi-hand-thumbs-up"></i> <span class="js-like-count">{{ $review->likes_count }}</span>
+                            </button>
+                        </form>
+                    @endif
                 @else
                     <span class="inline-flex h-6 items-center gap-1 leading-none text-slate-400">
                         <i class="bi bi-hand-thumbs-up"></i> {{ $review->likes_count }}
@@ -137,17 +150,19 @@
                 @endauth
 
                 @auth
-                    @if ($userReported)
-                        <span class="ml-auto inline-flex h-6 items-center gap-1 leading-none text-slate-500">
-                            <i class="bi bi-flag-fill"></i> 通報済み
-                        </span>
-                    @else
-                        <button type="button"
-                                class="js-review-report-open ml-auto inline-flex h-6 items-center gap-1 leading-none text-slate-400 transition-colors hover:text-rose-400"
-                                data-modal-id="review-report-modal-{{ $review->id }}"
-                                title="通報">
-                            <i class="bi bi-flag"></i> 通報
-                        </button>
+                    @if (Auth::id() !== $review->user_id)
+                        @if ($userReported)
+                            <span class="ml-auto inline-flex h-6 items-center gap-1 leading-none text-slate-500">
+                                <i class="bi bi-flag-fill"></i> 通報済み
+                            </span>
+                        @else
+                            <button type="button"
+                                    class="js-review-report-open ml-auto inline-flex h-6 items-center gap-1 leading-none text-slate-400 transition-colors hover:text-rose-400"
+                                    data-modal-id="review-report-modal-{{ $review->id }}"
+                                    title="通報">
+                                <i class="bi bi-flag"></i> 通報
+                            </button>
+                        @endif
                     @endif
                 @endauth
             </div>
@@ -258,6 +273,12 @@
                                     </section>
                                 </div>
                             </section>
+                        </div>
+                    </section>
+                    <section class="node basic" id="review-link-node">
+                        <div class="node-head">
+                            <a href="{{ route('Game.Reviews') }}" class="node-head-text" data-hgn-scope="full">レビュー</a>
+                            <span class="node-pt">●</span>
                         </div>
                     </section>
                 </div>

@@ -59,6 +59,18 @@
     @if ($reviews->isEmpty())
         <p class="mt-3">レビューはまだないようだ。</p>
     @endif
+
+    @auth
+        <p class="mt-3 text-sm">
+            @if ($myReview)
+                <a href="{{ route('Game.TitleReview', ['titleKey' => $title->key, 'reviewKey' => $myReview->key]) }}" data-hgn-scope="full">自分のレビューを確認</a>
+            @else
+                <a href="{{ route('User.Review.Form', ['titleKey' => $title->key]) }}" data-hgn-scope="full">レビューを書く</a>
+            @endif
+        </p>
+    @endauth
+
+
 @endsection
 
 @section('nodes')

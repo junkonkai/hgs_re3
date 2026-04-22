@@ -192,8 +192,9 @@ blockquote.description {
 }
 
 .btn-sm {
-    padding: 9px 15px;
-    font-size: 14px;
+    padding: 4px 10px;
+    font-size: 12px;
+    border-width: 1px;
 }
 
 .btn-success {

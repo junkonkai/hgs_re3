@@ -101,8 +101,16 @@ class GameReviewController extends Controller
 
         $pager = new Pager($reviews->currentPage(), $reviews->lastPage(), 'Game.TitleReviews', ['titleKey' => $title->key], 'children');
 
+        $myReview = null;
+        if (Auth::check()) {
+            $myReview = UserGameTitleReview::where('user_id', Auth::id())
+                ->where('game_title_id', $title->id)
+                ->where('is_deleted', false)
+                ->first();
+        }
+
         return $this->tree(
-            view('game.title_reviews', compact('title', 'franchise', 'reviews', 'fearMeters', 'pager')),
+            view('game.title_reviews', compact('title', 'franchise', 'reviews', 'fearMeters', 'pager', 'myReview')),
             options: ['ratingCheck' => $title->rating == Rating::R18A],
         );
     }

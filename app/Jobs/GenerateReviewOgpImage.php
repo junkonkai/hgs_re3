@@ -29,17 +29,19 @@ class GenerateReviewOgpImage implements ShouldQueue
             ->where('game_title_id', $review->game_title_id)
             ->first();
 
+        $fearMeterValue = $fearMeterRecord?->fear_meter?->value;
         $payload = [
-            'type'             => 'review',
-            'review_id'        => $review->id,
-            'game_title_name'  => $review->gameTitle->name,
-            'user_name'        => $review->user->name,
-            'total_score'      => $review->total_score,
-            'fear_meter'       => $fearMeterRecord?->fear_meter?->value,
-            'score_story'      => $review->score_story,
-            'score_atmosphere' => $review->score_atmosphere,
-            'score_gameplay'   => $review->score_gameplay,
-            'has_spoiler'      => (bool) $review->has_spoiler,
+            'type'                  => 'review',
+            'review_id'             => $review->id,
+            'game_title_name'       => $review->gameTitle->name,
+            'user_name'             => $review->user->name,
+            'total_score'           => $review->total_score,
+            'fear_meter'            => $fearMeterValue !== null ? $fearMeterValue * 10 : null,
+            'score_story'           => $review->score_story,
+            'score_atmosphere'      => $review->score_atmosphere,
+            'score_gameplay'        => $review->score_gameplay,
+            'user_score_adjustment' => $review->user_score_adjustment,
+            'has_spoiler'           => (bool) $review->has_spoiler,
         ];
 
         $env = [
