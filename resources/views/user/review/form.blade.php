@@ -42,11 +42,14 @@
         $fearMeterOld = old('fear_meter');
         if (is_numeric($fearMeterOld)) {
             $fearMeterInitial = (int) $fearMeterOld;
+        } elseif (isset($fearMeterDraft)) {
+            $fearMeterInitial = $fearMeterDraft->fear_meter;
         } elseif (isset($fearMeter)) {
             $fearMeterInitial = $fearMeter->fear_meter->value;
         } else {
             $fearMeterInitial = 2;
         }
+        $initialFearMeterComment = old('fear_meter_comment') ?? $fearMeterDraft?->comment ?? $fearMeterLogComment ?? '';
         $fearMeterInitial = max($fearMeterMin, min($fearMeterMax, $fearMeterInitial));
         $fearMeterInitialPercent = (($fearMeterInitial - $fearMeterMin) / $fearMeterRange) * 100;
 
@@ -289,6 +292,20 @@
                         </div>
                     </div>
 
+                    {{-- 怖さメーターコメント --}}
+                    <div class="mb-5">
+                        <label for="fear_meter_comment" class="mb-2 block font-semibold">怖さについて一言コメント <span class="text-slate-400 text-xs font-normal">任意・100文字まで</span></label>
+                        <textarea
+                            id="fear_meter_comment"
+                            name="fear_meter_comment"
+                            class="form-control"
+                            maxlength="100"
+                            rows="3"
+                            style="width: 100%;"
+                            placeholder="怖さについて一言どうぞ"
+                        >{{ $initialFearMeterComment }}</textarea>
+                    </div>
+
                     {{-- 各スコア --}}
                     <div class="mb-4">
                         <label class="mb-2 block font-semibold">各スコア（0〜20）</label>
@@ -446,5 +463,103 @@
         </form>
     </section>
 
-    @include('common.shortcut')
+    @php $shortcutFranchise = $title->getFranchise(); @endphp
+    <section class="node tree-node" id="footer-tree-node">
+        <div class="node-head">
+            <h2 class="node-head-text">近道</h2>
+            <span class="node-pt">●</span>
+        </div>
+        <div class="node-content tree">
+            <section class="node tree-node" id="reviews-link-node">
+                <div class="node-head">
+                    <a href="{{ route('Game.TitleReviews', ['titleKey' => $title->key]) }}" class="node-head-text" data-hgn-scope="full">{{ $title->name }} レビュー一覧</a>
+                    <span class="node-pt">●</span>
+                </div>
+                <div class="node-content tree">
+                    <section class="node tree-node" id="title-link-node">
+                        <div class="node-head">
+                            <a href="{{ route('Game.TitleDetail', ['titleKey' => $title->key]) }}" class="node-head-text" data-hgn-scope="full">{{ $title->name }}</a>
+                            <span class="node-pt">●</span>
+                        </div>
+                        <div class="node-content tree">
+                            @if ($shortcutFranchise !== null)
+                                <section class="node tree-node" id="franchise-link-node">
+                                    <div class="node-head">
+                                        <a href="{{ route('Game.FranchiseDetail', ['franchiseKey' => $shortcutFranchise->key]) }}" class="node-head-text" data-hgn-scope="full">{{ $shortcutFranchise->name }}フランチャイズ</a>
+                                        <span class="node-pt">●</span>
+                                    </div>
+                                    <div class="node-content tree">
+                                        <section class="node tree-node" id="lineup-link-node">
+                                            <div class="node-head">
+                                                <a href="{{ route('Game.Lineup') }}" class="node-head-text" data-hgn-scope="full">ラインナップ</a>
+                                                <span class="node-pt">●</span>
+                                            </div>
+                                            <div class="node-content tree">
+                                                <section class="node basic" id="root-link-node">
+                                                    <div class="node-head">
+                                                        <a href="{{ route('Root') }}" class="node-head-text" data-hgn-scope="full">ルート</a>
+                                                        <span class="node-pt">●</span>
+                                                    </div>
+                                                </section>
+                                            </div>
+                                        </section>
+                                    </div>
+                                </section>
+                            @else
+                                <section class="node tree-node" id="lineup-link-node">
+                                    <div class="node-head">
+                                        <a href="{{ route('Game.Lineup') }}" class="node-head-text" data-hgn-scope="full">ラインナップ</a>
+                                        <span class="node-pt">●</span>
+                                    </div>
+                                    <div class="node-content tree">
+                                        <section class="node basic" id="root-link-node">
+                                            <div class="node-head">
+                                                <a href="{{ route('Root') }}" class="node-head-text" data-hgn-scope="full">ルート</a>
+                                                <span class="node-pt">●</span>
+                                            </div>
+                                        </section>
+                                    </div>
+                                </section>
+                            @endif
+                        </div>
+                    </section>
+                </div>
+            </section>
+            <section class="node tree-node">
+                <div class="node-head">
+                    <a href="{{ route('User.Review.Index') }}" class="node-head-text" data-hgn-scope="full">マイレビュー</a>
+                    <span class="node-pt">●</span>
+                </div>
+                <div class="node-content tree">
+                    <section class="node basic">
+                        <div class="node-head">
+                            <a href="{{ route('User.MyNode.Top') }}" class="node-head-text" data-hgn-scope="full">マイノード</a>
+                            <span class="node-pt">●</span>
+                        </div>
+                    </section>
+                </div>
+            </section>
+            @if (Auth::check())
+                <section class="node basic" id="logout-link-node">
+                    <div class="node-head">
+                        <a href="{{ route('Account.Logout') }}" class="node-head-text">ログアウト</a>
+                        <span class="node-pt">●</span>
+                    </div>
+                </section>
+            @else
+                <section class="node basic">
+                    <div class="node-head">
+                        <a href="{{ route('Account.Register') }}" class="node-head-text">アカウント新規登録</a>
+                        <span class="node-pt">●</span>
+                    </div>
+                </section>
+                <section class="node basic">
+                    <div class="node-head">
+                        <a href="{{ route('Account.Login') }}" class="node-head-text">ログイン</a>
+                        <span class="node-pt">●</span>
+                    </div>
+                </section>
+            @endif
+        </div>
+    </section>
 @endsection

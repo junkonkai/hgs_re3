@@ -15,9 +15,11 @@ export class FearMeterFormInput extends Component
     private _min: number = 0;
     private _max: number = 4;
     private _texts: Record<string, string> = {};
+    private _draftForm: HTMLFormElement | null = null;
     private _onDecrease: (() => void) | null = null;
     private _onIncrease: (() => void) | null = null;
     private _onRangeInput: (() => void) | null = null;
+    private _onDraftSubmit: ((e: Event) => void) | null = null;
 
     constructor(params: any | null = null)
     {
@@ -35,6 +37,23 @@ export class FearMeterFormInput extends Component
         this._rangeInput = this._root.querySelector('.js-fear-meter-range') as HTMLInputElement | null;
         this._textLabel = this._root.querySelector('.js-fear-meter-text') as HTMLElement | null;
         this._scoreLabel = this._root.querySelector('.js-fear-meter-score') as HTMLElement | null;
+
+        this._draftForm = document.querySelector('#fear-meter-draft-form') as HTMLFormElement | null;
+        if (this._draftForm) {
+            this._onDraftSubmit = (e: Event) => {
+                const mainValue = this._hiddenInput?.value ?? '';
+                const commentTextarea = document.querySelector<HTMLTextAreaElement>('#comment');
+                const draftValueInput = (e.currentTarget as HTMLFormElement).querySelector<HTMLInputElement>('.js-fear-meter-draft-value');
+                const draftCommentInput = (e.currentTarget as HTMLFormElement).querySelector<HTMLInputElement>('.js-fear-meter-draft-comment');
+                if (draftValueInput) {
+                    draftValueInput.value = mainValue;
+                }
+                if (draftCommentInput && commentTextarea) {
+                    draftCommentInput.value = commentTextarea.value;
+                }
+            };
+            this._draftForm.addEventListener('submit', this._onDraftSubmit);
+        }
 
         if (!this._hiddenInput || !this._decreaseButton || !this._increaseButton || !this._rangeInput || !this._textLabel || !this._scoreLabel) {
             return;
@@ -80,9 +99,13 @@ export class FearMeterFormInput extends Component
         if (this._rangeInput && this._onRangeInput) {
             this._rangeInput.removeEventListener('input', this._onRangeInput);
         }
+        if (this._draftForm && this._onDraftSubmit) {
+            this._draftForm.removeEventListener('submit', this._onDraftSubmit);
+        }
         this._onDecrease = null;
         this._onIncrease = null;
         this._onRangeInput = null;
+        this._onDraftSubmit = null;
     }
 
     private parseTexts(raw: string): Record<string, string>

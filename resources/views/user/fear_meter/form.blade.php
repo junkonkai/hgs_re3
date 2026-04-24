@@ -35,6 +35,8 @@
                 $fearMeterOld = old('fear_meter');
                 if (is_numeric($fearMeterOld)) {
                     $fearMeterInitial = (int) $fearMeterOld;
+                } elseif (isset($fearMeterDraft)) {
+                    $fearMeterInitial = $fearMeterDraft->fear_meter;
                 } elseif (isset($fearMeter)) {
                     $fearMeterInitial = $fearMeter->fear_meter->value;
                 } else {
@@ -42,9 +44,10 @@
                 }
                 $fearMeterInitial = max($fearMeterMin, min($fearMeterMax, $fearMeterInitial));
                 $fearMeterInitialPercent = (($fearMeterInitial - $fearMeterMin) / $fearMeterRange) * 100;
+                $initialComment = old('comment') ?? $fearMeterDraft?->comment ?? $fearMeterLogComment ?? '';
             @endphp
 
-            <form action="{{ route('User.FearMeter.Form.Store') }}" method="POST" class="fear-meter-input-form">
+            <form id="fear-meter-form" action="{{ route('User.FearMeter.Form.Store') }}" method="POST" class="fear-meter-input-form">
                 @csrf
                 <input type="hidden" name="title_key" value="{{ $title->key }}">
                 @if (!empty($from))
@@ -88,12 +91,15 @@
 
                 <div class="form-group" style="margin-top: 20px;">
                     <label for="comment">怖さについて一言コメント（任意・100文字まで）</label>
-                    <textarea id="comment" name="comment" maxlength="100" rows="3" style="width: 100%;">{{ old('comment', $fearMeterComment ?? '') }}</textarea>
+                    <textarea id="comment" name="comment" class="form-control" maxlength="100" rows="3" style="width: 100%;">{{ $initialComment }}</textarea>
                 </div>
+            </form>
 
-                <div class="form-group" style="margin-top: 20px;">
-                    <button type="submit" class="btn btn-success">{{ isset($fearMeter) ? '更新' : '登録' }}</button>
-                </div>
+            <form id="fear-meter-draft-form" action="{{ route('User.FearMeter.Draft.Save') }}" method="POST">
+                @csrf
+                <input type="hidden" name="title_key" value="{{ $title->key }}">
+                <input type="hidden" class="js-fear-meter-draft-value" name="fear_meter" value="{{ $fearMeterInitial }}">
+                <input type="hidden" class="js-fear-meter-draft-comment" name="comment" value="{{ $initialComment }}">
             </form>
 
             @if (isset($fearMeter))
@@ -102,7 +108,7 @@
                         ? '怖さメーターを削除すると、レビューも一緒に削除されます。よろしいですか？'
                         : '怖さメーターを削除します。よろしいですか？';
                 @endphp
-                <form action="{{ route('User.FearMeter.Form.Delete') }}" method="POST" class="mt-4">
+                <form id="fear-meter-delete-form" action="{{ route('User.FearMeter.Form.Delete') }}" method="POST">
                     @csrf
                     @method('DELETE')
                     <input type="hidden" name="title_key" value="{{ $title->key }}">
@@ -112,9 +118,18 @@
                     @if ($hasReview)
                     <input type="hidden" name="also_delete_review" value="1">
                     @endif
-                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('{{ $deleteConfirmMessage }}')">削除</button>
                 </form>
             @endif
+
+            <div class="flex items-center justify-between mt-5">
+                <div class="flex items-center gap-2">
+                    <button type="submit" form="fear-meter-form" class="btn btn-success">{{ isset($fearMeter) ? '更新' : '登録' }}</button>
+                    <button type="submit" form="fear-meter-draft-form" class="btn btn-secondary btn-sm js-fear-meter-draft-save">下書き保存</button>
+                </div>
+                @if (isset($fearMeter))
+                <button type="submit" form="fear-meter-delete-form" class="btn btn-danger btn-sm" onclick="return confirm('{{ $deleteConfirmMessage }}')">削除</button>
+                @endif
+            </div>
         </div>
     </section>
     @include('common.shortcut', ['shortcutRoute' => $shortcutRoute])

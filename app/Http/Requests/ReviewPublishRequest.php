@@ -84,6 +84,11 @@ class ReviewPublishRequest extends BaseWebRequest
                 'integer',
                 Rule::enum(FearMeter::class),
             ],
+            'fear_meter_comment' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
         ];
     }
 
@@ -101,6 +106,7 @@ class ReviewPublishRequest extends BaseWebRequest
             'packages'             => 'プレイ環境',
             'horror_type_tags'     => 'ホラー種別タグ',
             'fear_meter'           => '怖さメーター',
+            'fear_meter_comment'   => '怖さメーターコメント',
         ];
     }
 }

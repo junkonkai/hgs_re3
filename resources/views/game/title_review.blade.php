@@ -114,13 +114,15 @@
 
             {{-- 本文 --}}
             @if ($review->has_spoiler)
-                <div class="text-xs text-amber-400">【ネタバレがあるようだ】</div>
+            <div>
                 <input type="checkbox" id="spoiler-reveal-{{ $review->id }}" class="sr-only peer">
-                <label for="spoiler-reveal-{{ $review->id }}" class="inline-block cursor-pointer text-xs text-slate-400 hover:text-slate-200 peer-checked:hidden">表示する</label>
-                <label for="spoiler-reveal-{{ $review->id }}" class="hidden peer-checked:inline-block cursor-pointer text-xs text-slate-400 hover:text-slate-200">読みづらくする</label>
-                <div class="text-sm leading-relaxed text-slate-100 opacity-10 peer-checked:opacity-100 transition-opacity duration-300 select-none peer-checked:select-auto">
+                <span class="text-xs text-amber-400 mt-3 mb-3">【ネタバレがあるようだ】</span>
+                <label for="spoiler-reveal-{{ $review->id }}" class="ml-3 cursor-pointer text-xs text-slate-400 hover:text-slate-200 peer-checked:hidden">表示する</label>
+                <label for="spoiler-reveal-{{ $review->id }}" class="ml-3 hidden peer-checked:inline cursor-pointer text-xs text-slate-400 hover:text-slate-200">読みづらくする</label>
+                <div class="text-sm leading-relaxed text-slate-100 opacity-10 peer-checked:opacity-100 transition-opacity duration-300 select-none peer-checked:select-auto mt-3">
                     {!! nl2br(e($review->body)) !!}
                 </div>
+            </div>
             @else
                 <div class="text-sm leading-relaxed text-slate-100">{!! nl2br(e($review->body)) !!}</div>
             @endif

@@ -83,6 +83,7 @@ Route::group(['prefix' => 'user'], function () {
     // 怖さメーター
     Route::get('fear-meter', [User\FearMeterController::class, 'index'])->name('User.FearMeter.Index');
     Route::get('fear-meter/{titleKey}/form', [User\FearMeterController::class, 'form'])->name('User.FearMeter.Form');
+    Route::post('fear-meter/draft', [User\FearMeterController::class, 'saveDraft'])->name('User.FearMeter.Draft.Save');
     Route::post('fear-meter', [User\FearMeterController::class, 'store'])->name('User.FearMeter.Form.Store');
     Route::delete('fear-meter', [User\FearMeterController::class, 'destroy'])->name('User.FearMeter.Form.Delete');
 

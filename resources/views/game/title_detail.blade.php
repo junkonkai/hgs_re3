@@ -47,49 +47,42 @@
 @endsection
 
 @section('nodes')
-    <section class="node tree-node" id="title-reputation-node">
-        <div class="node-head">
-            <h2 class="node-head-text">評判</h2>
-            <span class="node-pt">●</span>
-        </div>
-        <div class="node-content tree">
-
-    <section class="node" id="title-review-node">
+    <section class="node" id="title-fear-meter-node">
         <div class="node-head">
             <h2 class="node-head-text">怖さメーター</h2>
             <span class="node-pt">●</span>
         </div>
         <div class="node-content basic mb-5">
-            @if ($fearMeter)    
-            <div class="title-fear-meter">
-                @php
-                    $fearMeterMax = 4;
-                    $fearMeterAverage = (float) $fearMeter->average_rating;
-                    $fearMeterAverage = max(0, min($fearMeterMax, $fearMeterAverage));
-                    $fearMeterPercent = ($fearMeterAverage / $fearMeterMax) * 100;
-                @endphp
-                <div class="space-y-2">
-                    <div class="h-3 w-full max-w-xs overflow-hidden rounded-full bg-slate-700/60">
-                        <div
-                            class="h-full bg-gradient-to-r from-slate-800 via-sky-600 to-indigo-500"
-                            style="width: {{ $fearMeterPercent }}%;"
-                        ></div>
-                    </div>
-                    <div class="text-sm text-slate-200">
-                        <span class="font-semibold">{{ number_format($fearMeterAverage, 2) }} / {{ $fearMeterMax }}</span>
-                        <span class="text-slate-400">（{{ $fearMeter->fear_meter->text() }}）</span>
+            @if ($fearMeter)
+                <div class="title-fear-meter">
+                    @php
+                        $fearMeterMax = 4;
+                        $fearMeterAverage = (float) $fearMeter->average_rating;
+                        $fearMeterAverage = max(0, min($fearMeterMax, $fearMeterAverage));
+                        $fearMeterPercent = ($fearMeterAverage / $fearMeterMax) * 100;
+                    @endphp
+                    <div class="space-y-2">
+                        <div class="h-3 w-full max-w-xs overflow-hidden rounded-full bg-slate-700/60">
+                            <div
+                                class="h-full bg-gradient-to-r from-slate-800 via-sky-600 to-indigo-500"
+                                style="width: {{ $fearMeterPercent }}%;"
+                            ></div>
+                        </div>
+                        <div class="text-sm text-slate-200">
+                            <span class="font-semibold">{{ number_format($fearMeterAverage, 2) }} / {{ $fearMeterMax }}</span>
+                            <span class="text-slate-400">（{{ $fearMeter->fear_meter->text() }}）</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div style="margin-top: 12px;">
-                <a href="{{ route('Game.TitleFearMeterComments', ['titleKey' => $title->key]) }}" data-hgn-scope="full">コメントを見る</a>
-            </div>
+                <div style="margin-top: 12px;">
+                    <a href="{{ route('Game.TitleFearMeterComments', ['titleKey' => $title->key]) }}" data-hgn-scope="full">コメントを見る</a>
+                </div>
             @else
-            <p>怖さメーターは入力されていないようだ</p>
+                <p>怖さメーターは入力されていないようだ</p>
                 @if (Auth::check())
-                <p class="mt-5">
-                    <a href="{{ route('User.FearMeter.Form', ['titleKey' => $title->key, 'from' => 'title-detail']) }}" data-hgn-scope="full">怖さメーターを入力しますか？</a>
-                </p>
+                    <p class="mt-5">
+                        <a href="{{ route('User.FearMeter.Form', ['titleKey' => $title->key, 'from' => 'title-detail']) }}" data-hgn-scope="full">怖さメーターを入力しますか？</a>
+                    </p>
                 @endif
             @endif
         </div>
@@ -102,26 +95,33 @@
         </div>
         <div class="node-content basic mb-5">
             @if ($reviewStatistic)
-                <div class="space-y-2">
-                    <div class="text-sm text-slate-200">
-                        <span class="font-semibold text-lg">{{ $reviewStatistic->avg_total_score !== null ? round((float)$reviewStatistic->avg_total_score) : '-' }}</span>
-                        <span class="text-slate-400 text-xs"> / 100</span>
-                    </div>
-                    <div class="text-xs text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
-                        @if ($reviewStatistic->avg_story !== null)
-                            <span>ストーリー: {{ round((float)$reviewStatistic->avg_story) }}/20</span>
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+                    <div class="flex items-baseline gap-1">
+                        @if ($reviewStatistic->avg_total_score !== null)
+                            <span class="text-3xl font-bold text-slate-100 leading-none">{{ round((float) $reviewStatistic->avg_total_score) }}</span>
+                            <span class="text-xs text-slate-500">/ 100</span>
+                        @else
+                            <span class="text-slate-500">-</span>
                         @endif
-                        @if ($reviewStatistic->avg_atmosphere !== null)
-                            <span>雰囲気・演出: {{ round((float)$reviewStatistic->avg_atmosphere) }}/20</span>
-                        @endif
-                        @if ($reviewStatistic->avg_gameplay !== null)
-                            <span>ゲーム性: {{ round((float)$reviewStatistic->avg_gameplay) }}/20</span>
-                        @endif
-                        @if ($reviewStatistic->user_score_adjustment !== null)
-                            <span>さじ加減: {{ round((float)$reviewStatistic->user_score_adjustment) }}/20</span>
-                        @endif
+                        <span class="text-xs text-slate-400 ml-1">{{ $reviewStatistic->review_count }}件</span>
                     </div>
                 </div>
+                @if ($reviewStatistic->avg_story !== null || $reviewStatistic->avg_atmosphere !== null || $reviewStatistic->avg_gameplay !== null)
+                    <div class="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-400">
+                        @if ($reviewStatistic->avg_story !== null)
+                            <span>ストーリー: <span class="text-slate-300">{{ round((float) $reviewStatistic->avg_story) }}/20</span></span>
+                        @endif
+                        @if ($reviewStatistic->avg_atmosphere !== null)
+                            <span>雰囲気: <span class="text-slate-300">{{ round((float) $reviewStatistic->avg_atmosphere) }}/20</span></span>
+                        @endif
+                        @if ($reviewStatistic->avg_gameplay !== null)
+                            <span>ゲーム性: <span class="text-slate-300">{{ round((float) $reviewStatistic->avg_gameplay) }}/20</span></span>
+                        @endif
+                        @if ($reviewStatistic->user_score_adjustment !== null)
+                            <span>さじ加減: <span class="text-slate-300">{{ round((float) $reviewStatistic->user_score_adjustment) }}/20</span></span>
+                        @endif
+                    </div>
+                @endif
                 <div class="mt-3">
                     <a href="{{ route('Game.TitleReviews', ['titleKey' => $title->key]) }}" data-hgn-scope="full">個別のレビューを見る（全{{ $reviewStatistic->review_count }}件）</a>
                 </div>
@@ -133,11 +133,8 @@
                     </div>
                 @endif
             @endif
-                </div>
-            </section>
-
         </div>
-    </section>{{-- /評判 --}}
+    </section>
 
     @if ($title->packageGroups()->exists())
         <section class="node tree-node" id="pkg-lineup-tree-node">

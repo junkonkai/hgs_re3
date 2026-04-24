@@ -11,6 +11,7 @@ use App\Models\FearMeterStatisticsDirtyTitle;
 use App\Models\GameTitle;
 use App\Models\ReviewStatisticsDirtyTitle;
 use App\Models\UserGameTitleFearMeter;
+use App\Models\UserGameTitleFearMeterDraft;
 use App\Models\UserGameTitleFearMeterLog;
 use App\Models\UserGameTitleReview;
 use App\Models\UserGameTitleReviewDraft;
@@ -94,12 +95,23 @@ class ReviewController extends Controller
             ->where('game_title_id', $title->id)
             ->first();
 
+        $fearMeterDraft = UserGameTitleFearMeterDraft::where('user_id', $user->id)
+            ->where('game_title_id', $title->id)
+            ->first();
+
+        $fearMeterLogComment = UserGameTitleFearMeterLog::query()
+            ->where('user_id', $user->id)
+            ->where('game_title_id', $title->id)
+            ->where('is_deleted', false)
+            ->latest('id')
+            ->value('comment');
+
         $title->loadMissing(['packageGroups.packages.platform']);
         $packages = $title->packageGroups->flatMap(fn ($pg) => $pg->packages)->unique('id')->values();
 
         return $this->tree(
             view('user.review.form', compact(
-                'title', 'review', 'draft', 'fearMeter', 'packages',
+                'title', 'review', 'draft', 'fearMeter', 'fearMeterDraft', 'fearMeterLogComment', 'packages',
             )),
             options: [
                 'csrfToken' => csrf_token(),
@@ -167,6 +179,18 @@ class ReviewController extends Controller
             ]);
         }
 
+        // 怖さメータードラフト保存
+        if ($request->validated('fear_meter') !== null) {
+            $rawComment = trim((string) $request->validated('fear_meter_comment', ''));
+            UserGameTitleFearMeterDraft::updateOrCreate(
+                ['user_id' => $user->id, 'game_title_id' => $title->id],
+                [
+                    'fear_meter' => (int) $request->validated('fear_meter'),
+                    'comment'    => $rawComment === '' ? null : $rawComment,
+                ]
+            );
+        }
+
         return redirect()->route('User.Review.Form', ['titleKey' => $title->key])
             ->with('success', '下書きを保存しました。');
     }
@@ -195,10 +219,13 @@ class ReviewController extends Controller
         $gameplay   = (int) $request->validated('score_gameplay');
         $adjustment = $request->validated('user_score_adjustment') !== null ? (int) $request->validated('user_score_adjustment') : null;
 
+        $rawComment = trim((string) $request->validated('fear_meter_comment', ''));
+        $fearMeterComment = $rawComment === '' ? null : $rawComment;
+
         $baseScore  = UserGameTitleReview::calcBaseScore($fearMeterValue, $story, $atmosphere, $gameplay);
         $totalScore = UserGameTitleReview::calcTotalScore($baseScore, $adjustment);
 
-        DB::transaction(function () use ($user, $title, $request, $fearMeterValue, $story, $atmosphere, $gameplay, $adjustment, $baseScore, $totalScore) {
+        DB::transaction(function () use ($user, $title, $request, $fearMeterValue, $fearMeterComment, $story, $atmosphere, $gameplay, $adjustment, $baseScore, $totalScore) {
             // 1. 怖さメーター保存
             $existingFearMeter = UserGameTitleFearMeter::where('user_id', $user->id)
                 ->where('game_title_id', $title->id)
@@ -214,7 +241,7 @@ class ReviewController extends Controller
                     'game_title_id'  => $title->id,
                     'old_fear_meter' => $oldFearMeterValue,
                     'new_fear_meter' => $fearMeterValue,
-                    'comment'        => null,
+                    'comment'        => $fearMeterComment,
                     'action'         => 2,
                 ]);
                 if ($oldFearMeterValue !== $fearMeterValue) {
@@ -231,7 +258,7 @@ class ReviewController extends Controller
                     'game_title_id'  => $title->id,
                     'old_fear_meter' => null,
                     'new_fear_meter' => $fearMeterValue,
-                    'comment'        => null,
+                    'comment'        => $fearMeterComment,
                     'action'         => 1,
                 ]);
                 FearMeterStatisticsDirtyTitle::updateOrCreate(['game_title_id' => $title->id]);
@@ -311,8 +338,12 @@ class ReviewController extends Controller
                 ]);
             }
 
-            // 6. 下書き削除
+            // 6. 下書き削除・怖さメータードラフト削除
             UserGameTitleReviewDraft::where('user_id', $user->id)
+                ->where('game_title_id', $title->id)
+                ->delete();
+
+            UserGameTitleFearMeterDraft::where('user_id', $user->id)
                 ->where('game_title_id', $title->id)
                 ->delete();
 
