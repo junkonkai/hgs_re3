@@ -1,4 +1,5 @@
 import { Component } from "../component";
+import { HgnTree } from "../hgn-tree";
 
 /**
  * レビュー入力フォーム（スコア計算・下書き保存ボタン制御）
@@ -125,6 +126,17 @@ export class ReviewFormInput extends Component
                 increaseBtn.addEventListener('click', increaseFn);
                 this._listeners.push({ el: increaseBtn, type: 'click', fn: increaseFn });
             }
+        }
+
+        if (this._form) {
+            const form = this._form;
+            const publishFn: EventListener = (e: Event) => {
+                e.preventDefault();
+                const currentNode = HgnTree.getInstance().currentNode;
+                currentNode.changeChildNodesWithData(form.action, new FormData(form));
+            };
+            form.addEventListener('submit', publishFn);
+            this._listeners.push({ el: form, type: 'submit', fn: publishFn });
         }
 
         if (this._draftSaveButton && this._form) {

@@ -361,7 +361,7 @@ class ReviewController extends Controller
         }
 
         return redirect()->route('User.Review.Index')
-            ->with('success', 'レビューを公開しました。');
+            ->with('success', 'レビューを投稿しました。' . PHP_EOL . '総合スコアへの反映はしばらく時間がかかります。');
     }
 
     /**

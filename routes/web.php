@@ -49,7 +49,7 @@ Route::get('/password-reset/complete/{token}', [AccountController::class, 'showP
 Route::post('/password-reset/complete/{token}', [AccountController::class, 'completePasswordReset'])->name('Account.PasswordReset.Complete.Store');
 
 Route::group(['prefix' => 'user'], function () {
-    // マイページ（認証が必要）
+    // マイノード（認証が必要）
     Route::middleware('auth')->group(function () {
         Route::get('my-node', [User\MyNodeController::class, 'top'])->name('User.MyNode.Top');
         Route::get('my-node/profile', [User\MyNodeController::class, 'profile'])->name('User.MyNode.Profile');

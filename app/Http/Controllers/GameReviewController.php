@@ -7,6 +7,7 @@ use App\Enums\Rating;
 use App\Http\Requests\ReviewReportRequest;
 use App\Models\GameTitle;
 use App\Models\UserGameTitleFearMeter;
+use App\Models\UserGameTitleFearMeterLog;
 use App\Models\UserGameTitleReview;
 use App\Models\UserGameTitleReviewLike;
 use App\Models\UserGameTitleReviewReport;
@@ -142,6 +143,15 @@ class GameReviewController extends Controller
             ->where('game_title_id', $title->id)
             ->first();
 
+        $fearMeterComment = null;
+        if ($fearMeter !== null) {
+            $fearMeterComment = UserGameTitleFearMeterLog::where('user_id', $reviewUser->id)
+                ->where('game_title_id', $title->id)
+                ->visibleComments()
+                ->latest('id')
+                ->value('comment');
+        }
+
         $userLiked = false;
         $userReported = false;
         if (Auth::check() && !$review->is_deleted && !$review->is_hidden) {
@@ -154,7 +164,7 @@ class GameReviewController extends Controller
         }
 
         return $this->tree(
-            view('game.title_review', compact('title', 'franchise', 'review', 'reviewUser', 'userLiked', 'userReported', 'fearMeter')),
+            view('game.title_review', compact('title', 'franchise', 'review', 'reviewUser', 'userLiked', 'userReported', 'fearMeter', 'fearMeterComment')),
             options: [
                 'ratingCheck' => $title->rating == Rating::R18A,
                 'url' => route('Game.TitleReview', ['titleKey' => $title->key, 'reviewKey' => $review->key]),

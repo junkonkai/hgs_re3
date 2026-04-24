@@ -177,10 +177,15 @@ div.connection-line {
             margin-bottom: 0px !important;
         }
     }
-    
+
 
     > .node-content {
         padding-right: 1rem;
+    }
+
+    &.node-sm > .node-head {
+        min-height: 28px;
+        margin-bottom: 6px;
     }
 }
 

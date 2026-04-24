@@ -449,7 +449,7 @@
 
                     <div class="mt-10">
                         <div class="flex flex-wrap items-center gap-3">
-                            <button type="submit" class="btn btn-success">公開する</button>
+                            <button type="submit" class="btn btn-success">投稿</button>
                             <button
                                 type="button"
                                 class="btn btn-secondary js-review-draft-save"
