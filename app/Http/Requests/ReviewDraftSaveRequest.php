@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use App\Enums\FearMeter;
-use App\Enums\HorrorTypeTag;
 use App\Enums\PlayStatus;
 use Illuminate\Validation\Rule;
 
@@ -71,14 +70,6 @@ class ReviewDraftSaveRequest extends BaseWebRequest
                 'integer',
                 'exists:game_packages,id',
             ],
-            'horror_type_tags' => [
-                'nullable',
-                'array',
-            ],
-            'horror_type_tags.*' => [
-                'string',
-                Rule::enum(HorrorTypeTag::class),
-            ],
             'fear_meter' => [
                 'nullable',
                 'integer',
@@ -104,7 +95,6 @@ class ReviewDraftSaveRequest extends BaseWebRequest
             'score_gameplay'       => 'ゲーム性評価',
             'user_score_adjustment' => 'スコア調整',
             'packages'             => 'プレイ環境',
-            'horror_type_tags'     => 'ホラー種別タグ',
             'fear_meter'           => '怖さメーター',
             'fear_meter_comment'   => '怖さメーターコメント',
         ];

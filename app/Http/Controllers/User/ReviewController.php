@@ -15,9 +15,7 @@ use App\Models\UserGameTitleFearMeterDraft;
 use App\Models\UserGameTitleFearMeterLog;
 use App\Models\UserGameTitleReview;
 use App\Models\UserGameTitleReviewDraft;
-use App\Models\UserGameTitleReviewDraftHorrorTypeTag;
 use App\Models\UserGameTitleReviewDraftPackage;
-use App\Models\UserGameTitleReviewHorrorTypeTag;
 use App\Models\UserGameTitleReviewLog;
 use App\Models\UserGameTitleReviewPackage;
 use App\Support\Pager;
@@ -42,7 +40,7 @@ class ReviewController extends Controller
         $user = Auth::user();
         $reviews = UserGameTitleReview::where('user_id', $user->id)
             ->where('is_deleted', false)
-            ->with(['gameTitle', 'horrorTypeTags'])
+            ->with(['gameTitle'])
             ->orderBy('updated_at', 'desc')
             ->paginate(10);
 
@@ -83,12 +81,12 @@ class ReviewController extends Controller
         $review = UserGameTitleReview::where('user_id', $user->id)
             ->where('game_title_id', $title->id)
             ->where('is_deleted', false)
-            ->with(['packages', 'horrorTypeTags'])
+            ->with(['packages'])
             ->first();
 
         $draft = UserGameTitleReviewDraft::where('user_id', $user->id)
             ->where('game_title_id', $title->id)
-            ->with(['packages', 'horrorTypeTags'])
+            ->with(['packages'])
             ->first();
 
         $fearMeter = UserGameTitleFearMeter::where('user_id', $user->id)
@@ -168,14 +166,6 @@ class ReviewController extends Controller
             UserGameTitleReviewDraftPackage::create([
                 'draft_id'        => $draft->id,
                 'game_package_id' => (int) $packageId,
-            ]);
-        }
-
-        $draft->horrorTypeTags()->delete();
-        foreach ($request->validated('horror_type_tags', []) ?? [] as $tag) {
-            UserGameTitleReviewDraftHorrorTypeTag::create([
-                'draft_id' => $draft->id,
-                'tag'      => $tag,
             ]);
         }
 
@@ -298,7 +288,6 @@ class ReviewController extends Controller
             // 3. スナップショットログ記録
             $maxVersion  = UserGameTitleReviewLog::where('review_id', $review->id)->max('version') ?? 0;
             $packageIds  = $request->validated('packages') ? array_map('intval', (array) $request->validated('packages')) : null;
-            $tagValues   = $request->validated('horror_type_tags');
 
             $log = UserGameTitleReviewLog::create([
                 'review_id'            => $review->id,
@@ -306,7 +295,6 @@ class ReviewController extends Controller
                 'version'              => $maxVersion + 1,
                 'play_status'          => $reviewData['play_status'],
                 'game_package_ids'     => $packageIds,
-                'horror_type_tags'     => $tagValues,
                 'body'                 => $reviewData['body'],
                 'has_spoiler'          => $reviewData['has_spoiler'],
                 'score_story'          => $story,
@@ -327,14 +315,6 @@ class ReviewController extends Controller
                 UserGameTitleReviewPackage::create([
                     'review_id'       => $review->id,
                     'game_package_id' => (int) $packageId,
-                ]);
-            }
-
-            $review->horrorTypeTags()->delete();
-            foreach ($request->validated('horror_type_tags', []) ?? [] as $tag) {
-                UserGameTitleReviewHorrorTypeTag::create([
-                    'review_id' => $review->id,
-                    'tag'       => $tag,
                 ]);
             }
 

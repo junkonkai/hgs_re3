@@ -24,14 +24,12 @@ class UserGameTitleReviewLog extends Model
         'user_score_adjustment',
         'base_score',
         'total_score',
-        'horror_type_tags',
     ];
 
     protected $casts = [
         'play_status'       => PlayStatus::class,
         'game_package_ids'  => 'array',
         'has_spoiler'       => 'boolean',
-        'horror_type_tags'  => 'array',
         'created_at'        => 'datetime',
     ];
 

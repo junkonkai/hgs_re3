@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\HorrorTypeTag;
 use App\Enums\PlayStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -85,16 +84,6 @@ class UserGameTitleReview extends Model
     public function packages(): HasMany
     {
         return $this->hasMany(UserGameTitleReviewPackage::class, 'review_id');
-    }
-
-    /**
-     * ホラー種別タグ
-     *
-     * @return HasMany
-     */
-    public function horrorTypeTags(): HasMany
-    {
-        return $this->hasMany(UserGameTitleReviewHorrorTypeTag::class, 'review_id');
     }
 
     /**

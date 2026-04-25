@@ -84,17 +84,6 @@
             $initialPackageIds = [];
         }
 
-        $oldTags = old('horror_type_tags');
-        if ($oldTags !== null) {
-            $initialTags = (array) $oldTags;
-        } elseif ($draft !== null) {
-            $initialTags = $draft->horrorTypeTags->map(fn ($t) => $t->tag->value)->toArray();
-        } elseif ($review !== null) {
-            $initialTags = $review->horrorTypeTags->map(fn ($t) => $t->tag->value)->toArray();
-        } else {
-            $initialTags = [];
-        }
-
         $scoreOptions = ['0' => '0', '1' => '1', '2' => '2', '3' => '3', '4' => '4'];
         $fearMeterExists = isset($fearMeter) && $fearMeter !== null;
     @endphp
@@ -221,29 +210,6 @@
                     </div>
                 </section>
             @endif
-
-            {{-- ホラー種別タグ --}}
-            <section class="node" id="review-horror-tags-node">
-                <div class="node-head">
-                    <h3 class="node-head-text">ホラー種別タグ <span class="text-slate-400 text-xs font-normal">任意・複数選択可</span></h3>
-                    <span class="node-pt">●</span>
-                </div>
-                <div class="node-content basic">
-                    <div class="flex flex-wrap gap-3">
-                        @foreach (\App\Enums\HorrorTypeTag::cases() as $case)
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    name="horror_type_tags[]"
-                                    value="{{ $case->value }}"
-                                    {{ in_array($case->value, $initialTags) ? 'checked' : '' }}
-                                >
-                                {{ $case->text() }}
-                            </label>
-                        @endforeach
-                    </div>
-                </div>
-            </section>
 
             {{-- スコア評価 --}}
             <section class="node" id="review-score-node">

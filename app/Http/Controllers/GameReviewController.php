@@ -92,7 +92,7 @@ class GameReviewController extends Controller
             ->where('is_deleted', false)
             ->where('is_hidden', false)
             ->orderByDesc('updated_at')
-            ->with(['user', 'horrorTypeTags'])
+            ->with(['user'])
             ->paginate(10);
 
         $fearMeters = UserGameTitleFearMeter::where('game_title_id', $title->id)
@@ -130,7 +130,7 @@ class GameReviewController extends Controller
         $review = UserGameTitleReview::where('key', $reviewKey)
             ->where('game_title_id', $title->id)
             ->withCount('likes')
-            ->with(['user', 'horrorTypeTags', 'packages.gamePackage.platform'])
+            ->with(['user', 'packages.gamePackage.platform'])
             ->first();
 
         if (!$review) {

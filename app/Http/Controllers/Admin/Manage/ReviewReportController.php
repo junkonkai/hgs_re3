@@ -132,7 +132,6 @@ class ReviewReportController extends AbstractAdminController
             $review->reports()->delete();
             $review->logs()->delete();
             $review->packages()->delete();
-            $review->horrorTypeTags()->delete();
             $review->delete();
         });
 

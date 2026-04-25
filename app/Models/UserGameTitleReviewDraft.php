@@ -66,14 +66,4 @@ class UserGameTitleReviewDraft extends Model
     {
         return $this->hasMany(UserGameTitleReviewDraftPackage::class, 'draft_id');
     }
-
-    /**
-     * 下書き用ホラー種別タグ
-     *
-     * @return HasMany
-     */
-    public function horrorTypeTags(): HasMany
-    {
-        return $this->hasMany(UserGameTitleReviewDraftHorrorTypeTag::class, 'draft_id');
-    }
 }

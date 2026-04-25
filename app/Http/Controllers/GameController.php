@@ -575,7 +575,7 @@ class GameController extends Controller
             ->orderByRaw('has_spoiler ASC')
             ->orderByDesc('updated_at')
             ->limit(3)
-            ->with(['user', 'horrorTypeTags'])
+            ->with(['user'])
             ->get();
 
         // ログインユーザーがレビューに書けるかどうか

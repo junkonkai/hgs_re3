@@ -120,15 +120,6 @@
                     @endif
                 </div>
 
-                {{-- ホラータグ --}}
-                @if ($review->horrorTypeTags->isNotEmpty())
-                    <div class="mt-2 flex flex-wrap gap-1">
-                        @foreach ($review->horrorTypeTags as $tag)
-                            <span class="text-xs px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">{{ $tag->tag->text() }}</span>
-                        @endforeach
-                    </div>
-                @endif
-
                 {{-- プレイ状況・更新日 --}}
                 <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">
                     @if ($review->play_status !== null)
