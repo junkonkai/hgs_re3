@@ -45,78 +45,47 @@
 @section('nodes')
     @if (!$review->is_deleted && !$review->is_hidden)
         {{-- スコア --}}
-        <section class="node tree-node" id="review-score-node">
+        <section class="node basic" id="review-score-node">
             <div class="node-head">
-                <h2 class="node-head-text pl-1">
-                    @if ($review->total_score !== null)
-                        <span class="text-3xl font-bold text-slate-100 leading-none">{{ $review->total_score }}</span>
-                        <span class="text-xs text-slate-500">/ 100</span>
-                    @else
-                        <span class="text-slate-500">-/ 100</span>
-                    @endif
-                </h2>
+                <h2 class="node-head-text">スコア</h2>
                 <span class="node-pt">●</span>
             </div>
-            <div class="node-content tree">
-                {{-- 怖さメーター --}}
-                @php
-                    if ($fearMeter !== null) {
-                        $fearMeterValue = (int) $fearMeter->fear_meter->value;
-                        $fearMeterPercent = ($fearMeterValue / 4) * 100;
-                    } else {
-                        $fearMeterValue = null;
-                        $fearMeterPercent = 0;
-                    }
-                @endphp
-                <section class="node basic" id="review-fear-meter-node">
-                    <div class="node-head">
-                        <h3 class="node-head-text">怖さメーター　@if ($fearMeterValue !== null)<span class="text-lg font-bold text-slate-100">{{ $fearMeterValue * 10 }}</span><span class="text-xs text-slate-500">/40</span>@else<span class="text-slate-500">-</span>@endif</h3>
-                        <span class="node-pt">●</span>
-                    </div>
-                    <div class="node-content basic">
-                        @if ($fearMeterValue !== null)
-                            <div class="space-y-1">
-                                <div class="h-3 w-full max-w-xs overflow-hidden rounded-full bg-slate-700/60">
-                                    <div class="h-full bg-gradient-to-r from-slate-800 via-sky-600 to-indigo-500"
-                                         style="width: {{ $fearMeterPercent }}%;"></div>
-                                </div>
-                                <span class="text-sm text-slate-400">{{ $fearMeter->fear_meter->text() }}</span>
-                            </div>
+            <div class="node-content basic">
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+                    <div class="flex items-baseline gap-1">
+                        @if ($review->total_score !== null)
+                            <span class="text-3xl font-bold text-slate-100 leading-none">{{ $review->total_score }}</span>
+                            <span class="text-xs text-slate-500">/ 100</span>
+                        @else
+                            <span class="text-slate-500">-</span>
                         @endif
                     </div>
-                </section>
-
-                {{-- ストーリー --}}
-                <section class="node basic node-sm" id="review-story-node">
-                    <div class="node-head">
-                        <h3 class="node-head-text">ストーリー　@if ($review->score_story !== null)<span class="text-lg font-bold text-slate-100">{{ $review->score_story }}</span><span class="text-xs text-slate-500">/20</span>@else<span class="text-slate-500">-</span>@endif</h3>
-                        <span class="node-pt">●</span>
+                    @if ($fearMeter !== null)
+                        <div class="text-xs text-slate-400 self-end">
+                            怖さメーター:
+                            <span class="text-slate-200">{{ $fearMeter->fear_meter->text() }}</span>
+                        </div>
+                    @endif
+                </div>
+                @if ($fearMeter !== null || $review->score_story !== null || $review->score_atmosphere !== null || $review->score_gameplay !== null || $review->user_score_adjustment !== null)
+                    <div class="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-400">
+                        @if ($fearMeter !== null)
+                            <span>怖さ: <span class="text-slate-200">{{ (int) $fearMeter->fear_meter->value * 10 }}/40</span></span>
+                        @endif
+                        @if ($review->score_story !== null)
+                            <span>ストーリー: <span class="text-slate-300">{{ $review->score_story }}/20</span></span>
+                        @endif
+                        @if ($review->score_atmosphere !== null)
+                            <span>雰囲気: <span class="text-slate-300">{{ $review->score_atmosphere }}/20</span></span>
+                        @endif
+                        @if ($review->score_gameplay !== null)
+                            <span>ゲーム性: <span class="text-slate-300">{{ $review->score_gameplay }}/20</span></span>
+                        @endif
+                        @if ($review->user_score_adjustment !== null)
+                            <span>さじ加減: <span class="text-slate-300">{{ ($review->user_score_adjustment > 0 ? '+' : '') . $review->user_score_adjustment }}/20</span></span>
+                        @endif
                     </div>
-                </section>
-
-                {{-- 雰囲気・演出 --}}
-                <section class="node basic node-sm" id="review-atmosphere-node">
-                    <div class="node-head">
-                        <h3 class="node-head-text">雰囲気・演出　@if ($review->score_atmosphere !== null)<span class="text-lg font-bold text-slate-100">{{ $review->score_atmosphere }}</span><span class="text-xs text-slate-500">/20</span>@else<span class="text-slate-500">-</span>@endif</h3>
-                        <span class="node-pt">●</span>
-                    </div>
-                </section>
-
-                {{-- ゲーム性 --}}
-                <section class="node basic node-sm" id="review-gameplay-node">
-                    <div class="node-head">
-                        <h3 class="node-head-text">ゲーム性　@if ($review->score_gameplay !== null)<span class="text-lg font-bold text-slate-100">{{ $review->score_gameplay }}</span><span class="text-xs text-slate-500">/20</span>@else<span class="text-slate-500">-</span>@endif</h3>
-                        <span class="node-pt">●</span>
-                    </div>
-                </section>
-
-                {{-- さじ加減 --}}
-                <section class="node basic node-sm" id="review-adjustment-node">
-                    <div class="node-head">
-                        <h3 class="node-head-text">さじ加減　@if ($review->user_score_adjustment !== null)<span class="text-lg font-bold text-slate-100">{{ ($review->user_score_adjustment > 0 ? '+' : '') . $review->user_score_adjustment }}</span><span class="text-xs text-slate-500">/20</span>@else<span class="text-slate-500">-</span>@endif</h3>
-                        <span class="node-pt">●</span>
-                    </div>
-                </section>
+                @endif
             </div>
         </section>
 
