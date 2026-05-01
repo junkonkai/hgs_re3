@@ -30,21 +30,34 @@
 @endsection
 
 @section('nodes')
-    <section class="node tree-node" id="mypage-welcome-node">
+
+    <section class="node tree-node" id="user-data-tree-node">
         <div class="node-head">
-            <h2 class="node-head-text">設定・管理</h2>
+            <h3 class="node-head-text">ゲーム</h3>
             <span class="node-pt">●</span>
         </div>
-        <div class="node-content tree" id="user-tree-node">
-            <section class="node tree-node" id="user-data-tree-node">
+        <div class="node-content tree">
+            <section class="node basic" id="user-favorite-title-link-node">
                 <div class="node-head">
-                    <h3 class="node-head-text">ゲーム</h3>
+                    <a href="{{ route('User.Follow.FavoriteTitles') }}" class="node-head-text">お気に入りタイトル</a>
+                    <span class="node-pt">●</span>
+                </div>
+            </section>
+            <section class="node tree-node" id="user-review-tree-node">
+                <div class="node-head">
+                    <h3 class="node-head-text">レビュー</h3>
                     <span class="node-pt">●</span>
                 </div>
                 <div class="node-content tree">
-                    <section class="node basic" id="user-favorite-title-link-node">
+                    <section class="node basic" id="user-review-index-link-node">
                         <div class="node-head">
-                            <a href="{{ route('User.Follow.FavoriteTitles') }}" class="node-head-text">お気に入りタイトル</a>
+                            <a href="{{ route('User.Review.Index') }}" class="node-head-text">レビュー</a>
+                            <span class="node-pt">●</span>
+                        </div>
+                    </section>
+                    <section class="node basic" id="user-review-likes-link-node">
+                        <div class="node-head">
+                            <a href="{{ route('User.MyNode.ReviewLikes') }}" class="node-head-text">いいねしたレビュー</a>
                             <span class="node-pt">●</span>
                         </div>
                     </section>
@@ -56,6 +69,14 @@
                     </section>
                 </div>
             </section>
+        </div>
+    </section>
+    <section class="node tree-node" id="mypage-welcome-node">
+        <div class="node-head">
+            <h2 class="node-head-text">設定・管理</h2>
+            <span class="node-pt">●</span>
+        </div>
+        <div class="node-content tree" id="user-tree-node">
 
             <section class="node tree-node" id="user-account-tree-node">
                 <div class="node-head">

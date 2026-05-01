@@ -93,6 +93,12 @@
                     <td>{{ $model->updated_at?->format('Y-m-d H:i:s') ?? '-' }}</td>
                 </tr>
                 <tr>
+                    <th>レビュー数</th>
+                    <td>
+                        <a href="{{ route('Admin.Manage.User.Reviews', $model) }}">{{ $reviewCount }} 件</a>
+                    </td>
+                </tr>
+                <tr>
                     <th>Fear Meter Restriction</th>
                     <td>
                         @if ($activeFearMeterRestriction)

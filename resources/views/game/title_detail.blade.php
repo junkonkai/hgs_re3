@@ -27,7 +27,6 @@
 
     @include('common.current-node-ogp', ['model' => $title])
 
-
     <div class="title-users-info">
         <div>
             @if (Auth::check())
@@ -48,113 +47,93 @@
 @endsection
 
 @section('nodes')
-    <section class="node @if ($fearMeter) tree-node @endif" id="title-review-node">
+    <section class="node" id="title-fear-meter-node">
         <div class="node-head">
             <h2 class="node-head-text">怖さメーター</h2>
             <span class="node-pt">●</span>
         </div>
-        <div class="node-content basic @if ($fearMeter) pl-4 @endif mb-5">
-            <div class="title-fear-meter">
-                @if ($fearMeter)    
-                @php
-                    $fearMeterMax = 4;
-                    $fearMeterAverage = (float) $fearMeter->average_rating;
-                    $fearMeterAverage = max(0, min($fearMeterMax, $fearMeterAverage));
-                    $fearMeterPercent = ($fearMeterAverage / $fearMeterMax) * 100;
-                @endphp
-                <div class="space-y-2">
-                    <div class="h-3 w-full max-w-xs overflow-hidden rounded-full bg-slate-700/60">
-                        <div
-                            class="h-full bg-gradient-to-r from-slate-800 via-sky-600 to-indigo-500"
-                            style="width: {{ $fearMeterPercent }}%;"
-                        ></div>
-                    </div>
-                    <div class="text-sm text-slate-200">
-                        <span class="font-semibold">{{ number_format($fearMeterAverage, 2) }} / {{ $fearMeterMax }}</span>
-                        <span class="text-slate-400">（{{ $fearMeter->fear_meter->text() }}）</span>
-                    </div>
-                </div>
-                @else
-                <p>怖さメーターは入力されていないようだ</p>
-                    @if (Auth::check())
-                    <div class="mt-5">
-                        <a href="{{ route('User.FearMeter.Form', ['titleKey' => $title->key, 'from' => 'title-detail']) }}" data-hgn-scope="full">怖さメーターを入力しますか？</a>
-                    </div>
-                    @endif
-                @endif
-            </div>
-        </div>
-
-        @if ($fearMeter)    
-        <div class="node-content tree">
-            <section class="node" id="title-fear-meter-comment-pickup-node">
-                <div class="node-head">
-                    <h3 class="node-head-text">コメントピックアップ</h3>
-                    <span class="node-pt">●</span>
-                </div>
-                
-                <div class="node-content basic">
-                    @if ($commentLogPickup->isEmpty())
-                        <p>コメントの投稿はまだないようだ</p>
-                    @else
-                        @foreach ($commentLogPickup as $commentLog)
-                            <div class="pb-4 border-b border-white/10 last:border-b-0">
-                                <div class="mb-1 text-xs text-slate-400">
-                                    {{ $commentLog->created_at }} / {{ $commentLog->user?->name ?? '(不明)' }}
-                                </div>
-                                <div class="mb-2 text-sm text-slate-200">
-                                    @php
-                                        $fearMeter = \App\Enums\FearMeter::tryFrom((int) $commentLog->new_fear_meter);
-                                    @endphp
-                                    <strong>怖さ:</strong> {{ $fearMeter?->text() ?? '-' }}
-                                </div>
-                                <div class="text-sm leading-relaxed text-slate-100">{!! nl2br(e($commentLog->comment)) !!}</div>
-                                <div class="mt-2 text-sm flex items-center gap-6">
-                                    @if (Auth::check())
-                                        <form method="POST" action="{{ route('Game.TitleFearMeterComments.Like', ['titleKey' => $title->key, 'logId' => $commentLog->id]) }}" class="fear-meter-reaction-form inline-flex items-center mb-0" data-component-use="1" data-reaction-kind="like" data-done="{{ in_array($commentLog->id, $likedLogIds, true) ? '1' : '0' }}" data-like-url="{{ route('Game.TitleFearMeterComments.Like', ['titleKey' => $title->key, 'logId' => $commentLog->id]) }}" data-unlike-url="{{ route('Game.TitleFearMeterComments.UnlikePost', ['titleKey' => $title->key, 'logId' => $commentLog->id]) }}">
-                                            @csrf
-                                            <button type="submit" class="inline-flex h-6 items-center gap-1 leading-none text-slate-400 transition-colors hover:text-sky-400" title="いいね">
-                                                <i class="bi bi-hand-thumbs-up"></i> <span class="js-like-count">{{ $commentLog->likes_count }}</span>
-                                            </button>
-                                        </form>
-                                    @else
-                                        <span class="inline-flex h-6 items-center gap-1 leading-none text-slate-400">
-                                            <i class="bi bi-hand-thumbs-up"></i> {{ $commentLog->likes_count }}
-                                        </span>
-                                    @endif
-
-                                    <div>
-                                        @if (Auth::check())
-                                            @if (in_array($commentLog->id, $reportedLogIds, true))
-                                                <span class="inline-flex h-6 items-center gap-1 leading-none text-slate-500" title="通報済み">
-                                                    <i class="bi bi-flag-fill"></i> 通報済み
-                                                </span>
-                                            @else
-                                                <form method="POST" action="{{ route('Game.TitleFearMeterComments.Report', ['titleKey' => $title->key, 'logId' => $commentLog->id]) }}" class="fear-meter-reaction-form inline-flex items-center mb-0" data-component-use="1" data-reaction-kind="report" data-done="0">
-                                                    @csrf
-                                                    <button type="submit" class="inline-flex h-6 items-center gap-1 leading-none text-slate-400 transition-colors hover:text-rose-400" title="通報">
-                                                        <i class="bi bi-flag"></i> 通報
-                                                    </button>
-                                                </form>
-                                            @endif
-                                        @else
-                                            <span class="inline-flex h-6 items-center gap-1 leading-none text-slate-500" title="通報">
-                                                <i class="bi bi-flag"></i> 通報
-                                            </span>
-                                        @endif
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                        <div style="margin-top: 12px;">
-                            <a href="{{ route('Game.TitleFearMeterComments', ['titleKey' => $title->key]) }}" data-hgn-scope="full">コメントをもっと見る</a>
+        <div class="node-content basic mb-5">
+            @if ($fearMeter)
+                <div class="title-fear-meter">
+                    @php
+                        $fearMeterMax = 4;
+                        $fearMeterAverage = (float) $fearMeter->average_rating;
+                        $fearMeterAverage = max(0, min($fearMeterMax, $fearMeterAverage));
+                        $fearMeterPercent = ($fearMeterAverage / $fearMeterMax) * 100;
+                    @endphp
+                    <div class="space-y-2">
+                        <div class="h-3 w-full max-w-xs overflow-hidden rounded-full bg-slate-700/60">
+                            <div
+                                class="h-full bg-gradient-to-r from-slate-800 via-sky-600 to-indigo-500"
+                                style="width: {{ $fearMeterPercent }}%;"
+                            ></div>
                         </div>
-                    @endif
+                        <div class="text-sm text-slate-200">
+                            <span class="font-semibold">{{ number_format($fearMeterAverage, 2) }} / {{ $fearMeterMax }}</span>
+                            <span class="text-slate-400">（{{ $fearMeter->fear_meter->text() }}）</span>
+                        </div>
+                    </div>
                 </div>
-            </section>
-            
+                <div style="margin-top: 12px;">
+                    <a href="{{ route('Game.TitleFearMeterComments', ['titleKey' => $title->key]) }}" data-hgn-scope="full">コメントを見る</a>
+                </div>
+            @else
+                <p>怖さメーターは入力されていないようだ</p>
+                @if (Auth::check())
+                    <p class="mt-5">
+                        <a href="{{ route('User.FearMeter.Form', ['titleKey' => $title->key, 'from' => 'title-detail']) }}" data-hgn-scope="full">怖さメーターを入力しますか？</a>
+                    </p>
+                @endif
+            @endif
         </div>
-        @endif
+    </section>
+
+    <section class="node" id="title-reviews-node">
+        <div class="node-head">
+            <h2 class="node-head-text">レビュー</h2>
+            <span class="node-pt">●</span>
+        </div>
+        <div class="node-content basic mb-5">
+            @if ($reviewStatistic)
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+                    <div class="flex items-baseline gap-1">
+                        @if ($reviewStatistic->avg_total_score !== null)
+                            <span class="text-3xl font-bold text-slate-100 leading-none">{{ round((float) $reviewStatistic->avg_total_score) }}</span>
+                            <span class="text-xs text-slate-500">/ 100</span>
+                        @else
+                            <span class="text-slate-500">-</span>
+                        @endif
+                        <span class="text-xs text-slate-400 ml-1">{{ $reviewStatistic->review_count }}件</span>
+                    </div>
+                </div>
+                @if ($reviewStatistic->avg_story !== null || $reviewStatistic->avg_atmosphere !== null || $reviewStatistic->avg_gameplay !== null)
+                    <div class="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-400">
+                        @if ($reviewStatistic->avg_story !== null)
+                            <span>ストーリー: <span class="text-slate-300">{{ round((float) $reviewStatistic->avg_story) }}/20</span></span>
+                        @endif
+                        @if ($reviewStatistic->avg_atmosphere !== null)
+                            <span>雰囲気: <span class="text-slate-300">{{ round((float) $reviewStatistic->avg_atmosphere) }}/20</span></span>
+                        @endif
+                        @if ($reviewStatistic->avg_gameplay !== null)
+                            <span>ゲーム性: <span class="text-slate-300">{{ round((float) $reviewStatistic->avg_gameplay) }}/20</span></span>
+                        @endif
+                        @if ($reviewStatistic->user_score_adjustment !== null)
+                            <span>さじ加減: <span class="text-slate-300">{{ round((float) $reviewStatistic->user_score_adjustment) }}/20</span></span>
+                        @endif
+                    </div>
+                @endif
+                <div class="mt-3">
+                    <a href="{{ route('Game.TitleReviews', ['titleKey' => $title->key]) }}" data-hgn-scope="full">個別のレビューを見る（全{{ $reviewStatistic->review_count }}件）</a>
+                </div>
+            @else
+                <p>レビューはまだないようだ</p>
+                @if (Auth::check())
+                    <div class="mt-5">
+                        <a href="{{ route('User.Review.Form', ['titleKey' => $title->key]) }}" data-hgn-scope="full">レビューを書く</a>
+                    </div>
+                @endif
+            @endif
+        </div>
     </section>
 
     @if ($title->packageGroups()->exists())

@@ -13,10 +13,12 @@ use App\Models\GamePlatform;
 use App\Models\GameSeries;
 use App\Models\GameTitle;
 use App\Models\GameTitleFearMeterStatistic;
+use App\Models\GameTitleReviewStatistic;
 use App\Models\UserFavoriteGameTitle;
 use App\Models\UserGameTitleFearMeterCommentLike;
 use App\Models\UserGameTitleFearMeterCommentReport;
 use App\Models\UserGameTitleFearMeterLog;
+use App\Models\UserGameTitleReview;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -563,6 +565,28 @@ class GameController extends Controller
                 ->toArray();
         }
 
+        // レビュー統計
+        $reviewStatistic = GameTitleReviewStatistic::find($title->id);
+
+        // 新着レビュー（ネタバレなし優先、最大3件）
+        $recentReviews = UserGameTitleReview::where('game_title_id', $title->id)
+            ->where('is_deleted', false)
+            ->where('is_hidden', false)
+            ->orderByRaw('has_spoiler ASC')
+            ->orderByDesc('updated_at')
+            ->limit(3)
+            ->with(['user'])
+            ->get();
+
+        // ログインユーザーがレビューに書けるかどうか
+        $userReview = null;
+        if (Auth::check()) {
+            $userReview = UserGameTitleReview::where('user_id', Auth::id())
+                ->where('game_title_id', $title->id)
+                ->where('is_deleted', false)
+                ->first();
+        }
+
         return $this->tree(
             view('game.title_detail', compact(
                 'title',
@@ -572,7 +596,10 @@ class GameController extends Controller
                 'fearMeter',
                 'commentLogPickup',
                 'likedLogIds',
-                'reportedLogIds'
+                'reportedLogIds',
+                'reviewStatistic',
+                'recentReviews',
+                'userReview',
             )),
             options: [
                 'ratingCheck' => $ratingCheck,
@@ -585,58 +612,6 @@ class GameController extends Controller
         );
     }
 
-    /**
-     * タイトルの怖さメーターコメントログ
-     *
-     * @param Request $request
-     * @param string $titleKey
-     * @return JsonResponse|Application|Factory|View
-     */
-    public function titleFearMeterComments(Request $request, string $titleKey): JsonResponse|Application|Factory|View
-    {
-        $title = GameTitle::findByKey($titleKey);
-        if (!$title) {
-            abort(404);
-        }
-        $franchise = $title->getFranchise();
-
-        $commentLogs = UserGameTitleFearMeterLog::query()
-            ->visibleComments()
-            ->where('game_title_id', $title->id)
-            ->with('user')
-            ->withCount(['likes', 'reports'])
-            ->orderBy('created_at')
-            ->paginate(30);
-        $likedLogIds = [];
-        $reportedLogIds = [];
-        if (Auth::check() && $commentLogs->isNotEmpty()) {
-            $logIds = $commentLogs->getCollection()->pluck('id')->toArray();
-            $likedLogIds = UserGameTitleFearMeterCommentLike::query()
-                ->where('user_id', Auth::id())
-                ->whereIn('fear_meter_log_id', $logIds)
-                ->pluck('fear_meter_log_id')
-                ->map(fn ($id) => (int) $id)
-                ->toArray();
-            $reportedLogIds = UserGameTitleFearMeterCommentReport::query()
-                ->where('reporter_user_id', Auth::id())
-                ->whereIn('fear_meter_log_id', $logIds)
-                ->pluck('fear_meter_log_id')
-                ->map(fn ($id) => (int) $id)
-                ->toArray();
-        }
-
-        $pager = new Pager($commentLogs->currentPage(), $commentLogs->lastPage(), 'Game.TitleFearMeterComments', ['titleKey' => $title->key]);
-
-        return $this->tree(
-            view('game.title_fear_meter_comments', compact('title', 'franchise', 'commentLogs', 'likedLogIds', 'reportedLogIds', 'pager')),
-            options: [
-                'ratingCheck' => $title->rating == Rating::R18A,
-                'components' => [
-                    'FearMeterCommentReaction' => [],
-                ],
-            ],
-        );
-    }
 
     /**
      * メディアミックスの詳細ネットワーク

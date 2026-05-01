@@ -32,6 +32,10 @@ class FearMeterDestroyRequest extends BaseWebRequest
                 'string',
                 'in:title-detail',
             ],
+            'also_delete_review' => [
+                'nullable',
+                'boolean',
+            ],
         ];
     }
 
@@ -43,8 +47,9 @@ class FearMeterDestroyRequest extends BaseWebRequest
     public function attributes(): array
     {
         return [
-            'title_key' => 'タイトル',
-            'from' => '遷移元',
+            'title_key'           => 'タイトル',
+            'from'                => '遷移元',
+            'also_delete_review'  => 'レビューも削除',
         ];
     }
 }

@@ -192,8 +192,9 @@ blockquote.description {
 }
 
 .btn-sm {
-    padding: 9px 15px;
-    font-size: 14px;
+    padding: 4px 10px;
+    font-size: 12px;
+    border-width: 1px;
 }
 
 .btn-success {
@@ -298,11 +299,26 @@ form {
     color: #888888;
 }
 
+input.form-control,
+select.form-control,
+textarea.form-control {
+    color: #000;
+    padding: 4px 8px;
+}
+
 
 .form-row {
     display: flex;
     gap: 10px;
     align-items: center;
+}
+
+dialog.js-review-report-modal::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+}
+
+dialog.js-review-report-modal {
+    color: #e2e8f0;
 }
 
 /* Input Styles */

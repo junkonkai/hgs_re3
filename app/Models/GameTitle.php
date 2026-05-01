@@ -142,6 +142,16 @@ class GameTitle extends Model
     }
 
     /**
+     * レビュー統計を取得
+     *
+     * @return HasOne
+     */
+    public function reviewStatistic(): HasOne
+    {
+        return $this->hasOne(GameTitleReviewStatistic::class, 'game_title_id');
+    }
+
+    /**
      * 紐づいているパッケージから最初の発売日を設定
      *
      * @return self

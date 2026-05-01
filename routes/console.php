@@ -26,6 +26,9 @@ Schedule::command(\App\Console\Commands\CleanupExpiredEmailChangeRequests::class
 Schedule::command(\App\Console\Commands\RecalculateFearMeterStatisticsCommand::class)
     ->everyFourHours();
 
+Schedule::command(\App\Console\Commands\RecalculateReviewStatisticsCommand::class)
+    ->everyFourHours();
+
 Schedule::command(\App\Console\Commands\SendApachePhpErrorLogCommand::class)
     ->dailyAt('11:00')
     ->environments(['production']);

@@ -17,7 +17,8 @@
         "meilisearch/meilisearch-php": "^1.16",
         "pragmarx/google2fa": "^9.0",
         "socialiteproviders/steam": "^4.3",
-        "spatie/laravel-html": "^3.9"
+        "spatie/laravel-html": "^3.9",
+        "sqids/sqids": "^0.5.0"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.16",
