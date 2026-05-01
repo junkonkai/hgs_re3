@@ -49,6 +49,10 @@ class DiscordWebhookService
 
         $this->message->content = $content;
 
+        if (app()->environment('staging')) {
+            $this->message->username = 'STG ERROR通知';
+        }
+
         $url = $this->channel->webhookUrl();
 
         if (empty($this->message->files)) {
