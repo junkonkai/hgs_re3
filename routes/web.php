@@ -136,12 +136,20 @@ Route::group(['prefix' => 'admin'], function () {
             Route::post('user/{user}/fear-meter-restrictions', [Admin\Manage\UserController::class, 'storeFearMeterRestriction'])->name('Admin.Manage.User.FearMeterRestriction.Store');
             Route::post('user/{user}/fear-meter-restrictions/release', [Admin\Manage\UserController::class, 'releaseFearMeterRestriction'])->name('Admin.Manage.User.FearMeterRestriction.Release');
             Route::delete('user/{user}', [Admin\Manage\UserController::class, 'destroy'])->name('Admin.Manage.User.Destroy');
+            Route::get('user/{user}/reviews', [Admin\Manage\UserController::class, 'reviews'])->name('Admin.Manage.User.Reviews');
+            Route::get('user/{user}/reviews/{review}', [Admin\Manage\ReviewController::class, 'showForUser'])->name('Admin.Manage.User.Reviews.Show');
 
-            // 怖さメーター通報
-            Route::get('fear-meter-report', [Admin\Manage\FearMeterReportController::class, 'index'])->name('Admin.Manage.FearMeterReport');
-            Route::get('fear-meter-report/{report}', [Admin\Manage\FearMeterReportController::class, 'show'])->name('Admin.Manage.FearMeterReport.Show');
-            Route::post('fear-meter-report/{report}/status', [Admin\Manage\FearMeterReportController::class, 'updateStatus'])->name('Admin.Manage.FearMeterReport.Status');
-            Route::post('fear-meter-report/{report}/restrict-user', [Admin\Manage\FearMeterReportController::class, 'restrictUser'])->name('Admin.Manage.FearMeterReport.RestrictUser');
+            // 怖さメーター
+            Route::get('fear-meter', [Admin\Manage\FearMeterController::class, 'index'])->name('Admin.Manage.FearMeter');
+            Route::get('fear-meter/{user}/{gameTitle}', [Admin\Manage\FearMeterController::class, 'show'])->name('Admin.Manage.FearMeter.Show');
+            Route::get('fear-meter/{user}/{gameTitle}/reports', [Admin\Manage\FearMeterController::class, 'reports'])->name('Admin.Manage.FearMeter.Reports');
+            Route::delete('fear-meter/{user}/{gameTitle}/logs/{log}', [Admin\Manage\FearMeterController::class, 'deleteLog'])->name('Admin.Manage.FearMeter.DeleteLog');
+
+            // レビュー
+            Route::get('review', [Admin\Manage\ReviewController::class, 'index'])->name('Admin.Manage.Review');
+            Route::get('review/{review}', [Admin\Manage\ReviewController::class, 'show'])->name('Admin.Manage.Review.Show');
+            Route::get('review/{review}/reports', [Admin\Manage\ReviewController::class, 'reports'])->name('Admin.Manage.Review.Reports');
+            Route::delete('review/{review}/force-delete', [Admin\Manage\ReviewController::class, 'forceDelete'])->name('Admin.Manage.Review.ForceDelete');
 
             // レビュー通報
             Route::get('review-report', [Admin\Manage\ReviewReportController::class, 'index'])->name('Admin.Manage.ReviewReport');

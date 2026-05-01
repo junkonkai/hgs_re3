@@ -266,7 +266,7 @@ class GameReviewController extends Controller
         }
         $reason = !empty($reasonParts) ? implode('、', $reasonParts) : null;
 
-        [$report, $created] = UserGameTitleReviewReport::firstOrCreate(
+        $report = UserGameTitleReviewReport::firstOrCreate(
             [
                 'user_id'   => $user->id,
                 'review_id' => $review->id,
@@ -278,9 +278,10 @@ class GameReviewController extends Controller
             ]
         );
 
-        if ($created) {
+        if ($report->wasRecentlyCreated) {
             try {
                 $reasonText = $reason ? "\n通報理由: {$reason}" : '';
+                $adminUrl = route('Admin.Manage.Review.Reports', $review->id);
                 app(DiscordWebhookService::class)
                     ->to(DiscordChannel::Contact)
                     ->username('HGN 通報Bot')
@@ -289,7 +290,8 @@ class GameReviewController extends Controller
                         "タイトル: {$title->name}\n" .
                         "レビューID: {$review->id}\n" .
                         "通報者ID: {$user->id}" .
-                        $reasonText
+                        $reasonText .
+                        "\n通報一覧: {$adminUrl}"
                     );
             } catch (\Throwable) {
                 // 通知失敗は無視

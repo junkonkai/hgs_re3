@@ -8,6 +8,8 @@ use App\Http\Requests\Admin\Manage\UserFearMeterRestrictionStoreRequest;
 use App\Http\Requests\Admin\Manage\UserPasswordUpdateRequest;
 use App\Models\User;
 use App\Models\UserFearMeterRestriction;
+use App\Models\UserGameTitleReview;
+use App\Models\UserGameTitleReviewDraft;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -85,9 +87,38 @@ class UserController extends AbstractAdminController
             ->active()
             ->first();
 
+        $reviewCount = UserGameTitleReview::where('user_id', $user->id)->count();
+
         return view('admin.manage.user.detail', [
             'model' => $user,
             'activeFearMeterRestriction' => $activeFearMeterRestriction,
+            'reviewCount' => $reviewCount,
+        ]);
+    }
+
+    /**
+     * ユーザーのレビュー一覧
+     *
+     * @param User $user
+     * @return Application|Factory|View
+     */
+    public function reviews(User $user): Application|Factory|View
+    {
+        $reviews = UserGameTitleReview::where('user_id', $user->id)
+            ->with('gameTitle')
+            ->orderByDesc('id')
+            ->paginate(AdminDefine::ITEMS_PER_PAGE);
+
+        $drafts = UserGameTitleReviewDraft::where('user_id', $user->id)
+            ->whereNull('review_id')
+            ->with('gameTitle')
+            ->orderByDesc('id')
+            ->get();
+
+        return view('admin.manage.user.reviews', [
+            'user'    => $user,
+            'reviews' => $reviews,
+            'drafts'  => $drafts,
         ]);
     }
 

@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DiscordChannel;
 use App\Enums\Rating;
 use App\Http\Requests\FearMeterCommentReportRequest;
 use App\Models\GameTitle;
 use App\Models\UserGameTitleFearMeterCommentLike;
 use App\Models\UserGameTitleFearMeterCommentReport;
 use App\Models\UserGameTitleFearMeterLog;
+use App\Services\Discord\DiscordWebhookService;
 use App\Support\Pager;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
@@ -156,13 +158,34 @@ class GameFearMeterCommentController extends Controller
             ->where('game_title_id', $title->id)
             ->firstOrFail();
 
-        UserGameTitleFearMeterCommentReport::firstOrCreate([
+        $report = UserGameTitleFearMeterCommentReport::firstOrCreate([
             'fear_meter_log_id' => $log->id,
             'reporter_user_id' => $user->id,
         ], [
             'reason' => $request->validated('reason'),
             'status' => 'open',
         ]);
+
+        if ($report->wasRecentlyCreated) {
+            try {
+                $reason = $report->reason;
+                $reasonText = $reason ? "\n通報理由: {$reason}" : '';
+                $adminUrl = route('Admin.Manage.FearMeter.Reports', [$log->user_id, $log->game_title_id]);
+                app(DiscordWebhookService::class)
+                    ->to(DiscordChannel::Contact)
+                    ->username('HGN 通報Bot')
+                    ->send(
+                        "怖さメーターコメントへの通報がありました。\n" .
+                        "タイトル: {$title->name}\n" .
+                        "コメントID: {$log->id}\n" .
+                        "通報者ID: {$user->id}" .
+                        $reasonText .
+                        "\n通報一覧: {$adminUrl}"
+                    );
+            } catch (\Throwable) {
+                // 通知失敗は無視
+            }
+        }
 
         return redirect()->back()
             ->with('success', '通報しました。');
