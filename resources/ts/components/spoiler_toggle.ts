@@ -1,10 +1,11 @@
 import { Component } from "../component";
 
 /**
- * ネタバレトグル
+ * ネタバレ表示
  *
- * iOS Safari では display:none → display:inline の CSS 切り替えでタッチヒットテストが
- * 更新されないため、CSS-only のチェックボックス方式ではなく JS で制御する。
+ * iOS Safari の display:none → display:inline によるタッチヒットテスト問題を避けるため
+ * CSS-only のチェックボックス方式ではなく JS で制御する。
+ * 一度表示したら戻せない（片方向のみ）。
  */
 export class SpoilerToggle extends Component
 {
@@ -16,7 +17,7 @@ export class SpoilerToggle extends Component
 
         const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('.js-spoiler-btn'));
         buttons.forEach((btn) => {
-            const handler = () => this.toggle(btn);
+            const handler = () => this.reveal(btn);
             btn.addEventListener('click', handler);
             this._handlers.set(btn, handler);
         });
@@ -30,29 +31,15 @@ export class SpoilerToggle extends Component
         this._handlers.clear();
     }
 
-    private toggle(btn: HTMLButtonElement): void
+    private reveal(btn: HTMLButtonElement): void
     {
-        const container = btn.closest('[data-spoiler]');
-        if (!container) {
-            return;
-        }
-        const content = container.querySelector<HTMLElement>('.js-spoiler-content');
+        const content = btn.parentElement?.querySelector<HTMLElement>('.js-spoiler-content');
         if (!content) {
             return;
         }
 
-        const isRevealed = container.getAttribute('data-spoiler') === 'revealed';
-
-        if (isRevealed) {
-            container.setAttribute('data-spoiler', 'hidden');
-            content.style.opacity = '0.1';
-            content.style.userSelect = 'none';
-            btn.textContent = '表示する';
-        } else {
-            container.setAttribute('data-spoiler', 'revealed');
-            content.style.opacity = '1';
-            content.style.userSelect = 'auto';
-            btn.textContent = '読みづらくする';
-        }
+        content.style.opacity = '1';
+        content.style.userSelect = 'auto';
+        btn.remove();
     }
 }
