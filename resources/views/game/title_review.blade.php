@@ -116,7 +116,7 @@
                         <div data-spoiler="hidden">
                             <span class="text-xs text-amber-400 mb-3">【ネタバレがあるようだ】</span>
                             <button type="button" class="js-spoiler-btn ml-3 cursor-pointer text-xs text-slate-400 hover:text-slate-200">表示する</button>
-                            <div class="js-spoiler-content text-sm leading-relaxed text-slate-100 opacity-10 transition-opacity duration-300 select-none mt-3">
+                            <div class="js-spoiler-content text-sm leading-relaxed text-slate-100 transition-opacity duration-300 mt-3" style="opacity: 0.1; user-select: none;">
                                 {!! nl2br(e($review->body)) !!}
                             </div>
                         </div>

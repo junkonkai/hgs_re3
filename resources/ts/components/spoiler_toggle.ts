@@ -45,13 +45,13 @@ export class SpoilerToggle extends Component
 
         if (isRevealed) {
             container.setAttribute('data-spoiler', 'hidden');
-            content.classList.add('opacity-10', 'select-none');
-            content.classList.remove('opacity-100', 'select-auto');
+            content.style.opacity = '0.1';
+            content.style.userSelect = 'none';
             btn.textContent = '表示する';
         } else {
             container.setAttribute('data-spoiler', 'revealed');
-            content.classList.remove('opacity-10', 'select-none');
-            content.classList.add('opacity-100', 'select-auto');
+            content.style.opacity = '1';
+            content.style.userSelect = 'auto';
             btn.textContent = '読みづらくする';
         }
     }
