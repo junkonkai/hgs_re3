@@ -10,9 +10,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('user_game_title_reviews', function (Blueprint $table) {
-            $table->string('key', 20)->nullable()->unique()->after('id');
-        });
+        if (!Schema::hasColumn('user_game_title_reviews', 'key')) {
+            Schema::table('user_game_title_reviews', function (Blueprint $table) {
+                $table->string('key', 20)->nullable()->unique()->after('id');
+            });
+        }
 
         $sqids = new Sqids(
             alphabet: config('services.sqids.alphabet'),
