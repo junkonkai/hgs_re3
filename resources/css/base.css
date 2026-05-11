@@ -103,6 +103,17 @@ blockquote.description {
     opacity: 0;
 }
 
+button,
+a,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+input[type="range"],
+label {
+    touch-action: manipulation;
+}
+
+
 
 
 /* Alert Styles */
@@ -179,6 +190,7 @@ blockquote.description {
 }
 
 /* Button Styles */
+
 .btn {
     background-color: transparent;
     padding: 12px 30px;
