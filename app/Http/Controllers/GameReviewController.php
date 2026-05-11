@@ -170,6 +170,7 @@ class GameReviewController extends Controller
                 'url' => route('Game.TitleReview', ['titleKey' => $title->key, 'reviewKey' => $review->key]),
                 'components' => [
                     'ReviewReaction' => [],
+                    'SpoilerToggle' => [],
                 ],
             ],
         );

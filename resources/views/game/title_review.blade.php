@@ -113,12 +113,10 @@
             <div class="node-content basic">
                 @if ($review->body)
                     @if ($review->has_spoiler)
-                        <div>
-                            <input type="checkbox" id="spoiler-reveal-{{ $review->id }}" class="sr-only peer">
+                        <div data-spoiler="hidden">
                             <span class="text-xs text-amber-400 mb-3">【ネタバレがあるようだ】</span>
-                            <label for="spoiler-reveal-{{ $review->id }}" class="ml-3 cursor-pointer text-xs text-slate-400 hover:text-slate-200 peer-checked:hidden">表示する</label>
-                            <label for="spoiler-reveal-{{ $review->id }}" class="ml-3 hidden peer-checked:inline cursor-pointer text-xs text-slate-400 hover:text-slate-200">読みづらくする</label>
-                            <div class="text-sm leading-relaxed text-slate-100 opacity-10 peer-checked:opacity-100 transition-opacity duration-300 select-none peer-checked:select-auto mt-3">
+                            <button type="button" class="js-spoiler-btn ml-3 cursor-pointer text-xs text-slate-400 hover:text-slate-200">表示する</button>
+                            <div class="js-spoiler-content text-sm leading-relaxed text-slate-100 opacity-10 transition-opacity duration-300 select-none mt-3">
                                 {!! nl2br(e($review->body)) !!}
                             </div>
                         </div>
