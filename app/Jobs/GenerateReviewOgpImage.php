@@ -2,8 +2,10 @@
 
 namespace App\Jobs;
 
+use App\Enums\DiscordChannel;
 use App\Models\UserGameTitleFearMeter;
 use App\Models\UserGameTitleReview;
+use App\Services\Discord\DiscordWebhookService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -62,22 +64,36 @@ class GenerateReviewOgpImage implements ShouldQueue
         $result = Process::env($env)->run([$binary, $jsonArg]);
 
         if (!$result->successful()) {
+            $exitCode   = $result->exitCode();
+            $stdout     = trim($result->output());
+            $stderr     = trim($result->errorOutput());
             Log::error("GenerateReviewOgpImage: process failed", [
                 'review_id' => $this->reviewId,
-                'exit_code' => $result->exitCode(),
-                'output'    => $result->output(),
-                'error'     => $result->errorOutput(),
+                'exit_code' => $exitCode,
+                'output'    => $stdout,
+                'error'     => $stderr,
             ]);
+            $detail = implode("\n", array_filter([
+                $stdout !== '' ? "stdout: {$stdout}" : null,
+                $stderr !== '' ? "stderr: {$stderr}" : null,
+            ]));
+            app(DiscordWebhookService::class)
+                ->to(DiscordChannel::Log)
+                ->send("OGP生成失敗 [review_id={$this->reviewId}] exit_code={$exitCode}\n{$detail}");
             return;
         }
 
         $json = json_decode($result->output(), true);
 
         if (!($json['ok'] ?? false)) {
+            $errorMsg = $json['error'] ?? 'unknown';
             Log::error("GenerateReviewOgpImage: generator returned error", [
                 'review_id' => $this->reviewId,
-                'error'     => $json['error'] ?? 'unknown',
+                'error'     => $errorMsg,
             ]);
+            app(DiscordWebhookService::class)
+                ->to(DiscordChannel::Log)
+                ->send("OGP生成失敗 [review_id={$this->reviewId}] {$errorMsg}");
             return;
         }
 
