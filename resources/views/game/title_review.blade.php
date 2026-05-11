@@ -60,12 +60,6 @@
                             <span class="text-slate-500">-</span>
                         @endif
                     </div>
-                    @if ($fearMeter !== null)
-                        <div class="text-xs text-slate-400 self-end">
-                            怖さメーター:
-                            <span class="text-slate-200">{{ $fearMeter->fear_meter->text() }}</span>
-                        </div>
-                    @endif
                 </div>
                 @if ($fearMeter !== null || $review->score_story !== null || $review->score_atmosphere !== null || $review->score_gameplay !== null || $review->user_score_adjustment !== null)
                     <div class="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-400">
@@ -89,17 +83,35 @@
             </div>
         </section>
 
-        {{-- 怖さコメント --}}
-        <section class="node basic" id="review-fear-comment-node">
+        {{-- 怖さメーター --}}
+        <section class="node basic" id="review-fear-meter-node">
             <div class="node-head">
-                <h2 class="node-head-text">怖さコメント</h2>
+                <h2 class="node-head-text">怖さメーター</h2>
                 <span class="node-pt">●</span>
             </div>
             <div class="node-content basic">
-                @if ($fearMeterComment)
-                    <div class="text-sm leading-relaxed text-slate-100">{!! nl2br(e($fearMeterComment)) !!}</div>
+                @if ($fearMeter !== null)
+                    @php
+                        $fearMeterMax = 4;
+                        $fearMeterPercent = ($fearMeter->fear_meter->value / $fearMeterMax) * 100;
+                    @endphp
+                    <div class="space-y-1">
+                        <div class="h-3 w-48 overflow-hidden rounded-full bg-slate-700/60">
+                            <div
+                                class="h-full bg-gradient-to-r from-slate-800 via-sky-600 to-indigo-500"
+                                style="width: {{ $fearMeterPercent }}%;"
+                            ></div>
+                        </div>
+                        <div class="text-sm text-slate-200">
+                            <span class="font-semibold">{{ $fearMeter->fear_meter->value }} / {{ $fearMeterMax }}</span>
+                            <span class="text-slate-400">（{{ $fearMeter->fear_meter->text() }}）</span>
+                        </div>
+                    </div>
+                    @if ($fearMeterComment)
+                        <div class="mt-3 text-sm leading-relaxed text-slate-100">{!! nl2br(e($fearMeterComment)) !!}</div>
+                    @endif
                 @else
-                    <span class="text-slate-500">怖さコメントはないようだ</span>
+                    <span class="text-slate-500">怖さメーターは未入力のようだ</span>
                 @endif
             </div>
         </section>
@@ -285,7 +297,7 @@
                 <span class="node-pt">●</span>
             </div>
             <div class="node-content basic">
-                <div class="flex items-center gap-4 text-sm">
+                <div class="flex items-center gap-10 text-sm">
                     <a href="https://twitter.com/intent/tweet?text={{ urlencode($_shareText) }}&url={{ urlencode($_ogpUrl) }}"
                        target="_blank"
                        class="inline-flex items-center gap-1 text-slate-400 transition-colors hover:text-sky-400">
