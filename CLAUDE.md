@@ -55,6 +55,11 @@ php artisan tinker                 # Interactive REPL
 - Components live in `resources/ts/components/`, animations in `resources/ts/animation/`
 - CSS: TailwindCSS in `resources/css/`, compiled via Vite
 
+### Rust Tools (`/src/hgn_rust_tools`)
+- 別リポジトリ（`/src/hgn_rust_tools`）に Rust 製のマイクロツール群がある
+- **ogp-generator**: OGP画像をサーバーサイドで生成するバイナリ。Laravel の Queue Job から呼び出す
+- 詳細は `docs/claude/ogp-generator.md` を参照
+
 ### Branches & Deployment
 - `main` → production (auto-deploys via GitHub Actions SSH)
 - `develop` → staging (auto-deploys via GitHub Actions SSH)
@@ -66,11 +71,17 @@ php artisan tinker                 # Interactive REPL
 
 @docs/claude/frontend-conventions.md
 @docs/claude/discord-webhook.md
+@docs/claude/ogp-generator.md
+@docs/claude/artisan-commands.md
 
 ## Interaction Rules
 - プロンプトに全角の「？」が含まれる場合は、実装を行わず回答のみ行う。半角の「?」はこの対象外。
 
 ## Key Conventions
+- `app/Console/Commands/` にコマンドを追加・変更した場合、または `database/seeders/` にシーダーを追加・変更した場合は、`docs/claude/artisan-commands.md` も合わせて更新する。
+- 三項演算子の真の値・偽の値にはロジック処理や関数呼び出しを書かない。値や変数の参照は可。処理が必要な場合は if 文で書く。
+
+
 - PSR-4 autoloading under the `App\` namespace
 - Form validation via Laravel Form Requests (`app/Http/Requests/`)
 - Game Master API uses Sanctum token abilities configured via `GAME_MASTER_API_TOKEN_ABILITY` env var

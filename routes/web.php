@@ -49,7 +49,7 @@ Route::get('/password-reset/complete/{token}', [AccountController::class, 'showP
 Route::post('/password-reset/complete/{token}', [AccountController::class, 'completePasswordReset'])->name('Account.PasswordReset.Complete.Store');
 
 Route::group(['prefix' => 'user'], function () {
-    // マイページ（認証が必要）
+    // マイノード（認証が必要）
     Route::middleware('auth')->group(function () {
         Route::get('my-node', [User\MyNodeController::class, 'top'])->name('User.MyNode.Top');
         Route::get('my-node/profile', [User\MyNodeController::class, 'profile'])->name('User.MyNode.Profile');
@@ -74,14 +74,26 @@ Route::group(['prefix' => 'user'], function () {
 
         // フォロー/お気に入り
         Route::get('follow/favorite-titles', [User\FollowController::class, 'favoriteTitles'])->name('User.Follow.FavoriteTitles');
+
+        // いいねしたレビュー
+        Route::get('my-node/review-likes', [User\FollowController::class, 'reviewLikes'])->name('User.MyNode.ReviewLikes');
     });
     Route::get('my-node/email/verify/{token}', [User\MyNodeController::class, 'emailVerify'])->name('User.MyNode.Email.Verify');
 
     // 怖さメーター
     Route::get('fear-meter', [User\FearMeterController::class, 'index'])->name('User.FearMeter.Index');
     Route::get('fear-meter/{titleKey}/form', [User\FearMeterController::class, 'form'])->name('User.FearMeter.Form');
+    Route::post('fear-meter/draft', [User\FearMeterController::class, 'saveDraft'])->name('User.FearMeter.Draft.Save');
     Route::post('fear-meter', [User\FearMeterController::class, 'store'])->name('User.FearMeter.Form.Store');
     Route::delete('fear-meter', [User\FearMeterController::class, 'destroy'])->name('User.FearMeter.Form.Delete');
+
+    // レビュー
+    Route::get('review', [User\ReviewController::class, 'index'])->name('User.Review.Index');
+    Route::get('review/{titleKey}/form', [User\ReviewController::class, 'form'])->name('User.Review.Form');
+    Route::post('review/draft', [User\ReviewController::class, 'saveDraft'])->name('User.Review.Draft.Save');
+    Route::delete('review/draft', [User\ReviewController::class, 'discardDraft'])->name('User.Review.Draft.Discard');
+    Route::post('review', [User\ReviewController::class, 'publish'])->name('User.Review.Publish');
+    Route::delete('review', [User\ReviewController::class, 'destroy'])->name('User.Review.Destroy');
 });
 
 use App\Http\Controllers\Admin;
@@ -124,12 +136,27 @@ Route::group(['prefix' => 'admin'], function () {
             Route::post('user/{user}/fear-meter-restrictions', [Admin\Manage\UserController::class, 'storeFearMeterRestriction'])->name('Admin.Manage.User.FearMeterRestriction.Store');
             Route::post('user/{user}/fear-meter-restrictions/release', [Admin\Manage\UserController::class, 'releaseFearMeterRestriction'])->name('Admin.Manage.User.FearMeterRestriction.Release');
             Route::delete('user/{user}', [Admin\Manage\UserController::class, 'destroy'])->name('Admin.Manage.User.Destroy');
+            Route::get('user/{user}/reviews', [Admin\Manage\UserController::class, 'reviews'])->name('Admin.Manage.User.Reviews');
+            Route::get('user/{user}/reviews/{review}', [Admin\Manage\ReviewController::class, 'showForUser'])->name('Admin.Manage.User.Reviews.Show');
 
-            // 怖さメーター通報
-            Route::get('fear-meter-report', [Admin\Manage\FearMeterReportController::class, 'index'])->name('Admin.Manage.FearMeterReport');
-            Route::get('fear-meter-report/{report}', [Admin\Manage\FearMeterReportController::class, 'show'])->name('Admin.Manage.FearMeterReport.Show');
-            Route::post('fear-meter-report/{report}/status', [Admin\Manage\FearMeterReportController::class, 'updateStatus'])->name('Admin.Manage.FearMeterReport.Status');
-            Route::post('fear-meter-report/{report}/restrict-user', [Admin\Manage\FearMeterReportController::class, 'restrictUser'])->name('Admin.Manage.FearMeterReport.RestrictUser');
+            // 怖さメーター
+            Route::get('fear-meter', [Admin\Manage\FearMeterController::class, 'index'])->name('Admin.Manage.FearMeter');
+            Route::get('fear-meter/{user}/{gameTitle}', [Admin\Manage\FearMeterController::class, 'show'])->name('Admin.Manage.FearMeter.Show');
+            Route::get('fear-meter/{user}/{gameTitle}/reports', [Admin\Manage\FearMeterController::class, 'reports'])->name('Admin.Manage.FearMeter.Reports');
+            Route::delete('fear-meter/{user}/{gameTitle}/logs/{log}', [Admin\Manage\FearMeterController::class, 'deleteLog'])->name('Admin.Manage.FearMeter.DeleteLog');
+
+            // レビュー
+            Route::get('review', [Admin\Manage\ReviewController::class, 'index'])->name('Admin.Manage.Review');
+            Route::get('review/{review}', [Admin\Manage\ReviewController::class, 'show'])->name('Admin.Manage.Review.Show');
+            Route::get('review/{review}/reports', [Admin\Manage\ReviewController::class, 'reports'])->name('Admin.Manage.Review.Reports');
+            Route::delete('review/{review}/force-delete', [Admin\Manage\ReviewController::class, 'forceDelete'])->name('Admin.Manage.Review.ForceDelete');
+
+            // レビュー通報
+            Route::get('review-report', [Admin\Manage\ReviewReportController::class, 'index'])->name('Admin.Manage.ReviewReport');
+            Route::get('review-report/{report}', [Admin\Manage\ReviewReportController::class, 'show'])->name('Admin.Manage.ReviewReport.Show');
+            Route::post('review-report/{report}/status', [Admin\Manage\ReviewReportController::class, 'updateStatus'])->name('Admin.Manage.ReviewReport.Status');
+            Route::post('review-report/{report}/hide-review', [Admin\Manage\ReviewReportController::class, 'hideReview'])->name('Admin.Manage.ReviewReport.HideReview');
+            Route::delete('review-report/{report}/review', [Admin\Manage\ReviewReportController::class, 'deleteReview'])->name('Admin.Manage.ReviewReport.DeleteReview');
         });
 
         // マスター
@@ -389,12 +416,22 @@ Route::group(['prefix' => 'game'], function () {
     // タイトル詳細
     Route::get('/title/{titleKey}', [$class, 'titleDetail'])->name('Game.TitleDetail');
     // タイトル詳細（怖さメーターコメントログ）
-    Route::get('/title/{titleKey}/fear-meter-comments', [$class, 'titleFearMeterComments'])->name('Game.TitleFearMeterComments');
+    Route::get('/title/{titleKey}/fear-meter-comments', [GameFearMeterCommentController::class, 'titleFearMeterComments'])->name('Game.TitleFearMeterComments');
+    // レビュー一覧（全タイトル）
+    Route::get('/reviews', [\App\Http\Controllers\GameReviewController::class, 'reviews'])->name('Game.Reviews');
+    // タイトルのレビュー全件
+    Route::get('/title/{titleKey}/reviews', [\App\Http\Controllers\GameReviewController::class, 'titleReviews'])->name('Game.TitleReviews');
+    // タイトルのレビュー個別
+    Route::get('/title/{titleKey}/review/{reviewKey}', [\App\Http\Controllers\GameReviewController::class, 'titleReview'])->name('Game.TitleReview');
     Route::middleware('auth')->group(function () {
         Route::post('/title/{titleKey}/fear-meter-comments/{logId}/like', [GameFearMeterCommentController::class, 'like'])->name('Game.TitleFearMeterComments.Like');
         Route::delete('/title/{titleKey}/fear-meter-comments/{logId}/like', [GameFearMeterCommentController::class, 'unlike'])->name('Game.TitleFearMeterComments.Unlike');
         Route::post('/title/{titleKey}/fear-meter-comments/{logId}/unlike', [GameFearMeterCommentController::class, 'unlike'])->name('Game.TitleFearMeterComments.UnlikePost');
         Route::post('/title/{titleKey}/fear-meter-comments/{logId}/report', [GameFearMeterCommentController::class, 'report'])->name('Game.TitleFearMeterComments.Report');
+        Route::post('/title/{titleKey}/reviews/{reviewId}/like', [\App\Http\Controllers\GameReviewController::class, 'like'])->name('Game.TitleReview.Like');
+        Route::delete('/title/{titleKey}/reviews/{reviewId}/like', [\App\Http\Controllers\GameReviewController::class, 'unlike'])->name('Game.TitleReview.Unlike');
+        Route::post('/title/{titleKey}/reviews/{reviewId}/unlike', [\App\Http\Controllers\GameReviewController::class, 'unlike'])->name('Game.TitleReview.UnlikePost');
+        Route::post('/title/{titleKey}/reviews/{reviewId}/report', [\App\Http\Controllers\GameReviewController::class, 'report'])->name('Game.TitleReview.Report');
     });
 
     // メーカー詳細

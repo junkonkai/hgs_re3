@@ -4,7 +4,7 @@ namespace App\Http\Requests\Admin\Manage;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class FearMeterReportStatusUpdateRequest extends FormRequest
+class ReviewReportStatusUpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,11 +22,7 @@ class FearMeterReportStatusUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => [
-                'required',
-                'string',
-                'in:open,reviewed,rejected,resolved',
-            ],
+            'is_resolved' => ['required', 'boolean'],
         ];
     }
 }

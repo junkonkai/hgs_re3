@@ -13,24 +13,14 @@
             <h4 class="panel-title">Search</h4>
         </div>
         <div class="panel-body">
-            <form action="{{ route('Admin.Manage.FearMeterReport') }}" method="GET">
+            <form action="{{ route('Admin.Manage.ReviewReport') }}" method="GET">
                 <div class="row mb-3">
                     <label class="form-label col-form-label col-md-3">Status</label>
                     <div class="col-md-9">
-                        <select name="status" class="form-select w-auto">
+                        <select name="is_resolved" class="form-select w-auto">
                             <option value="">All</option>
-                            @foreach ($statuses as $status)
-                                <option value="{{ $status }}" {{ $search['status'] === $status ? 'selected' : '' }}>{{ $status }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <label class="form-label col-form-label col-md-3">Threshold Candidate</label>
-                    <div class="col-md-9">
-                        <select name="threshold_only" class="form-select w-auto">
-                            <option value="">All</option>
-                            <option value="1" {{ $search['threshold_only'] === '1' ? 'selected' : '' }}>Only >= {{ $reportThreshold }}</option>
+                            <option value="0" {{ $search['is_resolved'] === '0' ? 'selected' : '' }}>未解決</option>
+                            <option value="1" {{ $search['is_resolved'] === '1' ? 'selected' : '' }}>解決済み</option>
                         </select>
                     </div>
                 </div>
@@ -45,7 +35,7 @@
 
     <div class="panel panel-inverse">
         <div class="panel-heading">
-            <h4 class="panel-title">Fear Meter Reports</h4>
+            <h4 class="panel-title">Review Reports</h4>
         </div>
         <div class="panel-body">
             <div>{{ $reports->appends($search)->links() }}</div>
@@ -55,7 +45,7 @@
                     <th>ID</th>
                     <th>Status</th>
                     <th>Title</th>
-                    <th>投稿者</th>
+                    <th>レビュー投稿者</th>
                     <th>通報者</th>
                     <th>通報日時</th>
                     <th></th>
@@ -65,13 +55,13 @@
                 @foreach ($reports as $report)
                     <tr>
                         <td>{{ $report->id }}</td>
-                        <td>{{ $report->status }}</td>
-                        <td>{{ $report->fearMeterLog?->gameTitle?->name ?? '-' }}</td>
-                        <td>{{ $report->fearMeterLog?->user?->name ?? '-' }}</td>
-                        <td>{{ $report->reporter?->name ?? '-' }}</td>
+                        <td>{{ $report->is_resolved ? '解決済み' : '未解決' }}</td>
+                        <td>{{ $report->review?->gameTitle?->name ?? '-' }}</td>
+                        <td>{{ $report->review?->user?->name ?? '-' }}</td>
+                        <td>{{ $report->user?->name ?? '-' }}</td>
                         <td>{{ $report->created_at?->format('Y-m-d H:i') }}</td>
                         <td class="text-center">
-                            <a href="{{ route('Admin.Manage.FearMeterReport.Show', $report) }}" class="btn btn-default btn-sm">Detail</a>
+                            <a href="{{ route('Admin.Manage.ReviewReport.Show', $report) }}" class="btn btn-default btn-sm">Detail</a>
                         </td>
                     </tr>
                 @endforeach

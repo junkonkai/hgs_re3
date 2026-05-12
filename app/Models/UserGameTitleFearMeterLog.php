@@ -21,6 +21,7 @@ class UserGameTitleFearMeterLog extends Model
         'deleted_at',
         'deleted_by_user_id',
         'deleted_by_admin_id',
+        'action',
     ];
 
     protected $casts = [

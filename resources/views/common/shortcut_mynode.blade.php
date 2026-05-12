@@ -3,7 +3,7 @@
     @else
     <section class="node basic">
         <div class="node-head">
-            <a href="{{ route('User.MyNode.Top') }}" class="node-head-text">マイページ</a>
+            <a href="{{ route('User.MyNode.Top') }}" class="node-head-text">マイノード</a>
             <span class="node-pt">●</span>
         </div>
     </section>
