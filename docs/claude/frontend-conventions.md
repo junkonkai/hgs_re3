@@ -4,7 +4,7 @@
 - **TypeScript または CSS を変更したら、最後に必ず `npm run build` を実行する。**
 - **`<a>` タグに `rel="noreferrer"` は付けない。**
 - **Bootstrap は使用不可。** スタイリングは TailwindCSS または自前の CSS で行う。
-- **OGP の `og:image` / `twitter:image` には絶対URLを使う。** `asset()` ではなく `secure_asset()` を使うこと。`asset()` は環境によって相対パスになる場合があり、SNS クローラーが画像を取得できなくなる。
+- **OGP の `og:image` / `twitter:image` には絶対URLを使う。** `asset()` / `secure_asset()` は `ASSET_URL` の設定によって相対パスになる場合があるため、`url()` ヘルパーを使うこと。`url()` は `APP_URL` を元に常に絶対URLを返す。
 
 ## Link Conventions (Blade テンプレート)
 
