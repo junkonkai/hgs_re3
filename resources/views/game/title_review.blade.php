@@ -9,8 +9,8 @@
     $_ogpUrl     = route('Game.TitleReview', ['titleKey' => $title->key, 'reviewKey' => $review->key]);
     $_hasOgpFile = !$review->is_deleted && !$review->is_hidden && $review->ogp_image_filename;
     $_ogpImage   = $_hasOgpFile
-        ? asset('img/review/' . $review->ogp_image_filename)
-        : asset('img/ogp.png');
+        ? secure_asset('img/review/' . $review->ogp_image_filename)
+        : secure_asset('img/ogp.png');
     if (!$review->is_deleted && !$review->is_hidden && !$review->has_spoiler && $review->body) {
         $_ogpDescription = mb_strimwidth($review->body, 0, 120, '…');
     } else {
