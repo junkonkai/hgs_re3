@@ -18,6 +18,7 @@
 | `game-master:issue-token` | `IssueGameMasterApiToken.php` | ゲームマスターAPI用 Sanctum トークンを発行する（平文表示は一度のみ） |
 | `mail:test` | `TestMailCommand.php` | メール送信テストを実行する |
 | `test:create-show-tests [type]` | `CreateShowTestsCommand.php` | Playwright 用の基本ページアクセステストを生成する |
+| `shop:check-links` | `CheckShopLinksCommand.php` | ショップリンクの販売状況を10件ずつチェックし、販売終了リンクを記録する |
 
 ---
 

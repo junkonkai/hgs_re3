@@ -157,6 +157,10 @@ Route::group(['prefix' => 'admin'], function () {
             Route::post('review-report/{report}/status', [Admin\Manage\ReviewReportController::class, 'updateStatus'])->name('Admin.Manage.ReviewReport.Status');
             Route::post('review-report/{report}/hide-review', [Admin\Manage\ReviewReportController::class, 'hideReview'])->name('Admin.Manage.ReviewReport.HideReview');
             Route::delete('review-report/{report}/review', [Admin\Manage\ReviewReportController::class, 'deleteReview'])->name('Admin.Manage.ReviewReport.DeleteReview');
+
+            // ショップリンク販売終了
+            Route::get('shop-sold-out', [Admin\Manage\ShopSoldOutController::class, 'index'])->name('Admin.Manage.ShopSoldOut');
+            Route::delete('shop-sold-out/{result}', [Admin\Manage\ShopSoldOutController::class, 'destroy'])->name('Admin.Manage.ShopSoldOut.Destroy');
         });
 
         // マスター
