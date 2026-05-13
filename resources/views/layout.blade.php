@@ -1,5 +1,5 @@
 @php
-    $siteName = 'ホラーゲームネットワーク(α)';
+    $siteName = 'ホラーゲームネットワーク(β)';
     $ogpTitle = $ogpTitle ?? $siteName;
     $ogpDescription = $ogpDescription ?? 'ホラーゲーム好きのためのコミュニティサイトです。レビューや二次創作など、みなさんの「好き」を共有し、より深くホラーゲームを楽しんでほしいという想いで運営しています。';
     $ogpImage = $ogpImage ?? '/img/ogp.png';

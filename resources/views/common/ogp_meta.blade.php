@@ -1,5 +1,5 @@
 @php
-    $siteName = $siteName ?? 'ホラーゲームネットワーク(α)';
+    $siteName = $siteName ?? 'ホラーゲームネットワーク(β)';
     $ogpTitle = $ogpTitle ?? $siteName;
     $ogpDescription = $ogpDescription ?? '';
     $ogpImage = $ogpImage ?? '/img/ogp.png';

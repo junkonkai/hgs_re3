@@ -4,7 +4,7 @@
 @section('current-node-title'){{ $title->name }}<br>{{ $reviewUser->name }}さんのレビュー@endsection
 
 @php
-    $_siteName   = 'ホラーゲームネットワーク(α)';
+    $_siteName   = 'ホラーゲームネットワーク(β)';
     $_ogpTitle   = $title->name . ' ' . $reviewUser->name . 'さんのレビュー';
     $_ogpUrl     = route('Game.TitleReview', ['titleKey' => $title->key, 'reviewKey' => $review->key]);
     $_hasOgpFile = !$review->is_deleted && !$review->is_hidden && $review->ogp_image_filename;
