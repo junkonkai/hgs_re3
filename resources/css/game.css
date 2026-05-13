@@ -1,4 +1,8 @@
 
+.packages-readonly input[type="checkbox"]:not(:checked) {
+    opacity: 0.35;
+}
+
 img.default-img {
     width: 50px;
 }

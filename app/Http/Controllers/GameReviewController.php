@@ -152,6 +152,8 @@ class GameReviewController extends Controller
                 ->value('comment');
         }
 
+        $title->loadMissing(['packageGroups.packages.platform']);
+
         $userLiked = false;
         $userReported = false;
         if (Auth::check() && !$review->is_deleted && !$review->is_hidden) {
