@@ -81,7 +81,7 @@ enum Shop: int
             self::Steam            => 'Steam',
             self::PlayStationStore => 'PlayStation Store',
             self::MicrosoftStore   => 'Microsoft ストア',
-            self::NintendoStore    => 'My Nintendo Store',
+            self::NintendoStore    => 'Nintendo Store',
             self::NintendoEShop    => 'Nintendo eShop',
             self::DMM_GAMES        => 'DMM GAMES',
             self::EGG              => 'EGG',
@@ -458,6 +458,90 @@ enum Shop: int
         }
 
         return $result;
+    }
+
+    /**
+     * 販売終了判定キーワード（HTML内にいずれかが含まれれば販売終了）
+     *
+     * @return string[]
+     */
+    public function soldOutKeywords(): array
+    {
+        return match($this) {
+            self::Amazon           => [],
+            self::DMM              => [],
+            self::RAKUTEN_BOOKS    => [],
+            self::SURUGAYA         => [],
+            self::Steam            => [],
+            self::PlayStationStore => [],
+            self::MicrosoftStore   => [],
+            self::NintendoStore    => [],
+            self::NintendoEShop    => [],
+            self::DMM_GAMES        => [],
+            self::EGG              => [],
+            self::XboxStore        => [],
+            self::GOG              => [],
+            self::EPIC             => [],
+            self::BOOTH            => [],
+            self::APP_STORE        => [],
+            self::GooglePlay       => [],
+            self::SQM              => [],
+            self::Getchu           => [],
+            self::DLsite           => [],
+            self::FANZA            => [],
+            self::FANZA_GAMES      => [],
+            self::PRIME_VIDEO_SUBSCRIPTION => [],
+            self::NETFLIX          => [],
+            self::DMM_TV           => [],
+            self::PRIME_VIDEO_BUY_RENTAL => [],
+            self::PRIME_VIDEO_ALL  => [],
+            self::RAKUTEN_TV       => [],
+            self::DISNEY_PLUS      => [],
+            self::KINDLE           => [],
+            self::DMM_BOOKS        => [],
+            self::DMM_RENTAL       => [],
+            self::FANZA_BOOKS      => [],
+            self::FANZA_RENTAL     => [],
+            self::Amazon_SEARCH    => [],
+            self::MERCARI_SEARCH   => [],
+            self::RAKUTEN_ICHIBA_SEARCH => [],
+            self::SURUGAYA_SEARCH  => [],
+            self::OFFICIAL_SITE    => [],
+        };
+    }
+
+    /**
+     * 年齢確認ページの判定キーワード（HTML内にいずれかが含まれれば販売中と判断する）
+     *
+     * @return string[]
+     */
+    public function ageGateKeywords(): array
+    {
+        return match($this) {
+            self::Amazon           => ['年齢確認', '警告', '歳以上ですか'],
+            self::DMM              => [],
+            self::FANZA            => ['歳以上ですか'],
+            self::FANZA_GAMES      => ['歳以上ですか'],
+            self::DLsite           => [],
+            self::Getchu           => [],
+            self::NintendoStore    => ['歳以上ですか'],
+            default                => [],
+        };
+    }
+
+    /**
+     * URLチェックの対象にするか
+     * 検索系ショップはリンクが汎用URLのためスキップする
+     */
+    public function isCheckable(): bool
+    {
+        return match($this) {
+            self::Amazon_SEARCH,
+            self::MERCARI_SEARCH,
+            self::RAKUTEN_ICHIBA_SEARCH,
+            self::SURUGAYA_SEARCH => false,
+            default               => true,
+        };
     }
 
     /**
