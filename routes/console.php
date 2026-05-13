@@ -36,3 +36,6 @@ Schedule::command(\App\Console\Commands\SendApachePhpErrorLogCommand::class)
 Schedule::command(\App\Console\Commands\SendApachePhpErrorLogCommand::class)
     ->dailyAt('10:00')
     ->environments(['staging']);
+
+Schedule::command(\App\Console\Commands\CheckShopLinksCommand::class)
+    ->cron('40 */2 * * *');
