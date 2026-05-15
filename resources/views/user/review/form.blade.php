@@ -94,56 +94,24 @@
             <span class="node-pt">●</span>
         </div>
 
-        {{-- 下書き警告・下書き破棄・レビュー削除 --}}
-        @if ($draft !== null || $review !== null)
+        {{-- 下書き警告・下書き破棄 --}}
+        @if ($draft !== null)
             <div class="node-content basic">
-                @if ($draft !== null)
-                    <div class="alert alert-warning mb-4">
-                        下書きがあります。公開するには「公開する」ボタンを押してください。
-                    </div>
-                @endif
+                <div class="alert alert-warning mb-4">
+                    下書きがあります。公開するには「公開する」ボタンを押してください。
+                </div>
 
                 <div class="flex flex-wrap gap-3">
-                    @if ($draft !== null)
-                        <form action="{{ route('User.Review.Draft.Discard') }}" method="POST">
-                            @csrf
-                            @method('DELETE')
-                            <input type="hidden" name="title_key" value="{{ $title->key }}">
-                            <button
-                                type="submit"
-                                class="btn btn-warning btn-sm"
-                                onclick="return confirm('下書きを破棄します。よろしいですか？')"
-                            >下書きを破棄</button>
-                        </form>
-                    @endif
-
-                    @if ($review !== null)
-                        <form action="{{ route('User.Review.Destroy') }}" method="POST" id="review-delete-form">
-                            @csrf
-                            @method('DELETE')
-                            <input type="hidden" name="title_key" value="{{ $title->key }}">
-                            <input type="hidden" name="also_delete_fear_meter" value="0" id="also-delete-fear-meter-input">
-                            @if ($fearMeterExists)
-                                <button
-                                    type="button"
-                                    class="btn btn-danger btn-sm"
-                                    onclick="
-                                        var result = confirm('レビューを削除します。よろしいですか？\n（怖さメーターも一緒に削除する場合は次の確認でOKを押してください）');
-                                        if (!result) return;
-                                        var alsoFear = confirm('怖さメーターも一緒に削除しますか？\nOK: 両方削除　　キャンセル: レビューのみ削除');
-                                        document.getElementById('also-delete-fear-meter-input').value = alsoFear ? '1' : '0';
-                                        document.getElementById('review-delete-form').submit();
-                                    "
-                                >レビューを削除</button>
-                            @else
-                                <button
-                                    type="submit"
-                                    class="btn btn-danger btn-sm"
-                                    onclick="return confirm('レビューを削除します。よろしいですか？')"
-                                >レビューを削除</button>
-                            @endif
-                        </form>
-                    @endif
+                    <form action="{{ route('User.Review.Draft.Discard') }}" method="POST">
+                        @csrf
+                        @method('DELETE')
+                        <input type="hidden" name="title_key" value="{{ $title->key }}">
+                        <button
+                            type="submit"
+                            class="btn btn-warning btn-sm"
+                            onclick="return confirm('下書きを破棄します。よろしいですか？')"
+                        >下書きを破棄</button>
+                    </form>
                 </div>
             </div>
         @endif
@@ -156,60 +124,6 @@
         >
             @csrf
             <input type="hidden" name="title_key" value="{{ $title->key }}">
-
-            {{-- プレイ状況 --}}
-            <section class="node" id="review-play-status-node">
-                <div class="node-head">
-                    <h3 class="node-head-text">プレイ状況 <span class="text-red-400 text-xs font-normal">必須</span></h3>
-                    <span class="node-pt">●</span>
-                </div>
-                <div class="node-content basic">
-                    <div class="flex flex-wrap gap-4">
-                        @foreach (\App\Enums\PlayStatus::cases() as $case)
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="play_status"
-                                    value="{{ $case->value }}"
-                                    class="js-play-status-radio"
-                                    {{ $initialPlayStatus === $case->value ? 'checked' : '' }}
-                                >
-                                {{ $case->text() }}
-                            </label>
-                        @endforeach
-                    </div>
-                </div>
-            </section>
-
-            {{-- プレイ環境 --}}
-            @if ($packages->isNotEmpty())
-                <section class="node" id="review-packages-node">
-                    <div class="node-head">
-                        <h3 class="node-head-text">プレイ環境 <span class="text-slate-400 text-xs font-normal">任意・複数選択可</span></h3>
-                        <span class="node-pt">●</span>
-                    </div>
-                    <div class="node-content basic">
-                        @foreach ($title->packageGroups->sortByDesc('sort_order') as $pkgGroup)
-                            <div class="mb-3">
-                                <p class="mb-1 text-slate-400">{{ $pkgGroup->name }}</p>
-                                <div class="flex flex-wrap gap-3">
-                                    @foreach ($pkgGroup->packages->sortBy([['sort_order', 'desc'], ['game_platform_id', 'desc'], ['default_img_type', 'desc']]) as $package)
-                                        <label class="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                name="packages[]"
-                                                value="{{ $package->id }}"
-                                                {{ in_array($package->id, $initialPackageIds) ? 'checked' : '' }}
-                                            >
-                                            {{ $package->platform->acronym }}&nbsp;{!! $package->node_name !!}
-                                        </label>
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </section>
-            @endif
 
             {{-- スコア評価 --}}
             <section class="node" id="review-score-node">
@@ -396,6 +310,60 @@
                 </div>
             </section>
 
+            {{-- プレイ状況 --}}
+            <section class="node" id="review-play-status-node">
+                <div class="node-head">
+                    <h3 class="node-head-text">プレイ状況 <span class="text-red-400 text-xs font-normal">必須</span></h3>
+                    <span class="node-pt">●</span>
+                </div>
+                <div class="node-content basic">
+                    <div class="flex flex-wrap gap-4">
+                        @foreach (\App\Enums\PlayStatus::cases() as $case)
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="play_status"
+                                    value="{{ $case->value }}"
+                                    class="js-play-status-radio"
+                                    {{ $initialPlayStatus === $case->value ? 'checked' : '' }}
+                                >
+                                {{ $case->text() }}
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+            </section>
+
+            {{-- プレイ環境 --}}
+            @if ($packages->isNotEmpty())
+                <section class="node" id="review-packages-node">
+                    <div class="node-head">
+                        <h3 class="node-head-text">プレイ環境 <span class="text-slate-400 text-xs font-normal">任意・複数選択可</span></h3>
+                        <span class="node-pt">●</span>
+                    </div>
+                    <div class="node-content basic">
+                        @foreach ($title->packageGroups->sortByDesc('sort_order') as $pkgGroup)
+                            <div class="mb-3">
+                                <p class="mb-1 text-slate-400">{{ $pkgGroup->name }}</p>
+                                <div class="flex flex-wrap gap-3">
+                                    @foreach ($pkgGroup->packages->sortBy([['sort_order', 'desc'], ['game_platform_id', 'desc'], ['default_img_type', 'desc']]) as $package)
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                name="packages[]"
+                                                value="{{ $package->id }}"
+                                                {{ in_array($package->id, $initialPackageIds) ? 'checked' : '' }}
+                                            >
+                                            {{ $package->platform->acronym }}&nbsp;{!! $package->node_name !!}
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+
             {{-- ネタバレを含む --}}
             <section class="node" id="review-spoiler-node">
                 <div class="node-head">
@@ -422,12 +390,42 @@
                                 data-draft-url="{{ route('User.Review.Draft.Save') }}"
                             >下書き保存</button>
                         </div>
+
                     </div>
                 </div>
             </section>
 
         </form>
     </section>
+
+    @if ($review !== null)
+        <section class="node" id="review-delete-node">
+            <div class="node-head">
+                <h2 class="node-head-text">削除</h2>
+                <span class="node-pt">●</span>
+            </div>
+            <div class="node-content basic">
+                <form action="{{ route('User.Review.Destroy') }}" method="POST">
+                    @csrf
+                    @method('DELETE')
+                    <input type="hidden" name="title_key" value="{{ $title->key }}">
+                    @if ($fearMeterExists)
+                        <label class="mb-4 flex items-center gap-2 cursor-pointer text-sm">
+                            <input type="checkbox" name="also_delete_fear_meter" value="1">
+                            怖さメーターも一緒に削除する
+                        </label>
+                    @else
+                        <input type="hidden" name="also_delete_fear_meter" value="0">
+                    @endif
+                    <button
+                        type="submit"
+                        class="btn btn-danger btn-sm"
+                        onclick="return confirm('レビューを削除します。よろしいですか？')"
+                    >レビューを削除</button>
+                </form>
+            </div>
+        </section>
+    @endif
 
     @php $shortcutFranchise = $title->getFranchise(); @endphp
     <section class="node tree-node" id="footer-tree-node">
