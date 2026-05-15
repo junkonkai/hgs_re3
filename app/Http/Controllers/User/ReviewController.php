@@ -334,13 +334,17 @@ class ReviewController extends Controller
         $publishedReview = UserGameTitleReview::where('user_id', $user->id)
             ->where('game_title_id', $title->id)
             ->where('is_deleted', false)
-            ->value('id');
+            ->first(['id', 'key']);
 
         if ($publishedReview) {
-            GenerateReviewOgpImage::dispatch($publishedReview);
+            GenerateReviewOgpImage::dispatch($publishedReview->id);
         }
 
-        return redirect()->route('User.Review.Index')
+        $redirectRoute = $publishedReview
+            ? route('Game.TitleReview', ['titleKey' => $title->key, 'reviewKey' => $publishedReview->key])
+            : route('User.Review.Index');
+
+        return redirect($redirectRoute)
             ->with('success', 'レビューを投稿しました。' . PHP_EOL . '総合スコアへの反映はしばらく時間がかかります。');
     }
 

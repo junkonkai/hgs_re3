@@ -15,14 +15,11 @@
             'gameplay'   => 'ゲーム性',
         ];
     @endphp
-    <div class="mb-8 flex flex-wrap gap-1.5">
+    <div class="mb-8 flex flex-wrap gap-1.5" data-sort-tabs>
         @foreach ($sortOptions as $key => $label)
             <a href="{{ route('Game.Reviews', $key !== 'newest' ? ['sort' => $key] : []) }}"
                data-hgn-scope="children"
-               class="text-xs px-2.5 py-1 rounded border transition-colors
-                      {{ $sort === $key
-                          ? 'bg-slate-200 text-slate-900 border-slate-200'
-                          : 'border-white/20 text-slate-400 hover:text-white hover:border-white/40' }}">
+               class="btn btn-sm btn-default{{ $sort === $key ? ' is-active' : '' }}">
                 {{ $label }}
             </a>
         @endforeach

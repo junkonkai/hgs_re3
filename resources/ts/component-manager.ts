@@ -7,6 +7,7 @@ import { ReviewReaction } from "./components/review_reaction";
 import { SpoilerToggle } from "./components/spoiler_toggle";
 import { TitleDetailFavorite } from "./components/title_detail_favorite";
 import { OtpInput } from "./components/otp_input";
+import { SortTabs } from "./components/sort_tabs";
 
 /**
  * コンポーネント管理クラス
@@ -24,6 +25,7 @@ export class ComponentManager
         'ReviewReaction': ReviewReaction,
         'SpoilerToggle': SpoilerToggle,
         'OtpInput': OtpInput,
+        'SortTabs': SortTabs,
     };
 
     /**

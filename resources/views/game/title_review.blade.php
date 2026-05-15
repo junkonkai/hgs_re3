@@ -31,6 +31,12 @@
 @endsection
 
 @section('current-node-content')
+    @if (session('success'))
+        <div class="alert alert-success mt-3 relative pr-10">
+            <button type="button" class="absolute top-0 right-0 p-2 border-0 bg-transparent cursor-pointer" style="line-height: 1;" onclick="this.closest('.alert').style.display='none'" aria-label="閉じる"><i class="bi bi-x"></i></button>
+            {!! nl2br(e(session('success'))) !!}
+        </div>
+    @endif
     @if ($review->is_deleted)
         <div class="alert alert-warning mt-3">
             このレビューは削除されました。
@@ -62,21 +68,25 @@
                     </div>
                 </div>
                 @if ($fearMeter !== null || $review->score_story !== null || $review->score_atmosphere !== null || $review->score_gameplay !== null || $review->user_score_adjustment !== null)
-                    <div class="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-400">
+                    <div class="mt-3 space-y-1">
                         @if ($fearMeter !== null)
-                            <span>怖さ: <span class="text-slate-200">{{ (int) $fearMeter->fear_meter->value * 10 }}/40</span></span>
+                            <div class="text-sm text-slate-400">怖さ: <span class="text-slate-200">{{ (int) $fearMeter->fear_meter->value * 10 }}/40</span></div>
                         @endif
-                        @if ($review->score_story !== null)
-                            <span>ストーリー: <span class="text-slate-300">{{ $review->score_story }}/20</span></span>
-                        @endif
-                        @if ($review->score_atmosphere !== null)
-                            <span>雰囲気: <span class="text-slate-300">{{ $review->score_atmosphere }}/20</span></span>
-                        @endif
-                        @if ($review->score_gameplay !== null)
-                            <span>ゲーム性: <span class="text-slate-300">{{ $review->score_gameplay }}/20</span></span>
-                        @endif
-                        @if ($review->user_score_adjustment !== null)
-                            <span>さじ加減: <span class="text-slate-300">{{ ($review->user_score_adjustment > 0 ? '+' : '') . $review->user_score_adjustment }}/20</span></span>
+                        @if ($review->score_story !== null || $review->score_atmosphere !== null || $review->score_gameplay !== null || $review->user_score_adjustment !== null)
+                            <div class="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-400">
+                                @if ($review->score_story !== null)
+                                    <span>ストーリー: <span class="text-slate-300">{{ $review->score_story }}/20</span></span>
+                                @endif
+                                @if ($review->score_atmosphere !== null)
+                                    <span>雰囲気: <span class="text-slate-300">{{ $review->score_atmosphere }}/20</span></span>
+                                @endif
+                                @if ($review->score_gameplay !== null)
+                                    <span>ゲーム性: <span class="text-slate-300">{{ $review->score_gameplay }}/20</span></span>
+                                @endif
+                                @if ($review->user_score_adjustment !== null)
+                                    <span>さじ加減: <span class="text-slate-300">{{ ($review->user_score_adjustment > 0 ? '+' : '') . $review->user_score_adjustment }}/20</span></span>
+                                @endif
+                            </div>
                         @endif
                     </div>
                 @endif
@@ -138,9 +148,96 @@
                 @else
                     <span class="text-slate-500">コメントはないようだ</span>
                 @endif
+            </div>
+        </section>
 
-                {{-- いいね・通報 --}}
-                <div class="mt-4 flex items-center text-sm">
+        {{-- プレイ状況 --}}
+        <section class="node basic" id="review-play-status-node">
+            <div class="node-head">
+                <h2 class="node-head-text">プレイ状況</h2>
+                <span class="node-pt">●</span>
+            </div>
+            <div class="node-content basic">
+                @if ($review->play_status !== null)
+                    @if ($review->play_status === \App\Enums\PlayStatus::Watched)
+                        <span class="text-sky-400">{{ $review->play_status->text() }}</span>
+                    @else
+                        <span class="text-slate-300">{{ $review->play_status->text() }}</span>
+                    @endif
+                @else
+                    <span class="text-slate-500">-</span>
+                @endif
+            </div>
+        </section>
+
+        {{-- プレイ環境 --}}
+        @if ($title->packageGroups->isNotEmpty())
+            @php
+                $checkedPackageIds = $review->packages->pluck('game_package_id')->all();
+            @endphp
+            <section class="node basic" id="review-packages-node">
+                <div class="node-head">
+                    <h2 class="node-head-text">プレイ環境</h2>
+                    <span class="node-pt">●</span>
+                </div>
+                <div class="node-content basic">
+                    @foreach ($title->packageGroups->sortByDesc('sort_order') as $pkgGroup)
+                        <div class="mb-3">
+                            <p class="mb-1 text-slate-400">{{ $pkgGroup->name }}</p>
+                            <div class="packages-readonly flex flex-wrap gap-3 pointer-events-none">
+                                @foreach ($pkgGroup->packages->sortBy([['sort_order', 'desc'], ['game_platform_id', 'desc'], ['default_img_type', 'desc']]) as $package)
+                                    <label class="flex items-center gap-2 cursor-default">
+                                        <input
+                                            type="checkbox"
+                                            value="{{ $package->id }}"
+                                            {{ in_array($package->id, $checkedPackageIds) ? 'checked' : '' }}
+                                        >
+                                        {{ $package->platform->acronym }}&nbsp;{!! $package->node_name !!}
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        {{-- シェア --}}
+        @php
+            $_shareText = Auth::id() === $reviewUser->id
+                ? $title->name . ' のレビューを書きました！'
+                : $title->name . ' のレビュー（' . $reviewUser->show_id . '）';
+        @endphp
+        <section class="node basic" id="review-share-node">
+            <div class="node-head">
+                <h2 class="node-head-text">シェア</h2>
+                <span class="node-pt">●</span>
+            </div>
+            <div class="node-content basic">
+                <div class="flex items-center gap-10 text-sm">
+                    <a href="https://twitter.com/intent/tweet?text={{ urlencode($_shareText) }}&url={{ urlencode($_ogpUrl) }}"
+                       target="_blank"
+                       class="inline-flex items-center gap-1 text-slate-400 transition-colors hover:text-sky-400">
+                        <i class="bi bi-twitter-x"></i>
+                    </a>
+                    <a href="https://social-plugins.line.me/lineit/share?url={{ urlencode($_ogpUrl) }}"
+                       target="_blank"
+                       class="inline-flex items-center gap-1 text-slate-400 transition-colors hover:text-green-400">
+                        LINE
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        {{-- 投稿情報 --}}
+        <section class="node basic" id="review-meta-node">
+            <div class="node-head">
+                <h2 class="node-head-text">投稿情報</h2>
+                <span class="node-pt">●</span>
+            </div>
+            <div class="node-content basic space-y-3 text-sm text-slate-400">
+                {{-- いいね --}}
+                <div class="flex items-center text-sm">
                     @auth
                         @if (Auth::id() !== $review->user_id)
                             <form method="POST"
@@ -156,34 +253,21 @@
                                     <i class="bi bi-hand-thumbs-up"></i> <span class="js-like-count">{{ $review->likes_count }}</span>
                                 </button>
                             </form>
+                        @else
+                            <span class="inline-flex h-6 items-center gap-1 leading-none">
+                                <i class="bi bi-hand-thumbs-up"></i> {{ $review->likes_count }}
+                            </span>
                         @endif
                     @else
-                        <span class="inline-flex h-6 items-center gap-1 leading-none text-slate-400">
+                        <span class="inline-flex h-6 items-center gap-1 leading-none">
                             <i class="bi bi-hand-thumbs-up"></i> {{ $review->likes_count }}
                         </span>
-                    @endauth
-
-                    @auth
-                        @if (Auth::id() !== $review->user_id)
-                            @if ($userReported)
-                                <span class="ml-auto inline-flex h-6 items-center gap-1 leading-none text-slate-500">
-                                    <i class="bi bi-flag-fill"></i> 通報済み
-                                </span>
-                            @else
-                                <button type="button"
-                                        class="js-review-report-open ml-auto inline-flex h-6 items-center gap-1 leading-none text-slate-400 transition-colors hover:text-rose-400"
-                                        data-modal-id="review-report-modal-{{ $review->id }}"
-                                        title="通報">
-                                    <i class="bi bi-flag"></i> 通報
-                                </button>
-                            @endif
-                        @endif
                     @endauth
                 </div>
 
                 {{-- 通報モーダル --}}
                 @auth
-                    @if (!$userReported)
+                    @if (!$userReported && Auth::id() !== $review->user_id)
                         @php
                             $_reportReasons = ['スパム・宣伝', '荒らし・嫌がらせ', 'ネタバレが記載されていない', '不適切な内容', 'その他'];
                         @endphp
@@ -222,92 +306,36 @@
                         </dialog>
                     @endif
                 @endauth
-            </div>
-        </section>
 
-        {{-- プレイ状況 --}}
-        <section class="node basic" id="review-play-status-node">
-            <div class="node-head">
-                <h2 class="node-head-text">プレイ状況</h2>
-                <span class="node-pt">●</span>
-            </div>
-            <div class="node-content basic">
-                @if ($review->play_status !== null)
-                    @if ($review->play_status === \App\Enums\PlayStatus::Watched)
-                        <span class="text-sky-400">{{ $review->play_status->text() }}</span>
-                    @else
-                        <span class="text-slate-300">{{ $review->play_status->text() }}</span>
-                    @endif
-                @else
-                    <span class="text-slate-500">-</span>
-                @endif
-            </div>
-        </section>
-
-        {{-- プレイ環境 --}}
-        <section class="node basic" id="review-packages-node">
-            <div class="node-head">
-                <h2 class="node-head-text">プレイ環境</h2>
-                <span class="node-pt">●</span>
-            </div>
-            <div class="node-content basic">
-                @if ($review->packages->isNotEmpty())
-                    <div class="flex flex-wrap gap-2 text-sm text-slate-300">
-                        @foreach ($review->packages as $pkg)
-                            <span>{{ $pkg->gamePackage->platform->acronym }}&nbsp;{{ $pkg->gamePackage->node_name }}</span>
-                        @endforeach
-                    </div>
-                @else
-                    <span class="text-slate-500">-</span>
-                @endif
-            </div>
-        </section>
-
-        {{-- 更新日時 --}}
-        <section class="node basic" id="review-updated-at-node">
-            <div class="node-head">
-                <h2 class="node-head-text">更新日時</h2>
-                <span class="node-pt">●</span>
-            </div>
-            <div class="node-content basic">
-                <div class="flex items-center gap-3 text-sm text-slate-400">
-                    <span>{{ $review->updated_at->format('Y-m-d H:i') }}</span>
+                {{-- 更新日時・編集リンク・通報 --}}
+                <div>
+                    <div>更新日時：{{ $review->updated_at->format('Y-m-d H:i') }}</div>
                     @auth
                         @if (Auth::id() === $review->user_id)
-                            <a href="{{ route('User.Review.Form', ['titleKey' => $title->key]) }}"
-                               class="inline-flex items-center gap-1 text-slate-400 transition-colors hover:text-slate-200"
-                               data-hgn-scope="full">
-                                <i class="bi bi-pencil"></i> 編集
-                            </a>
+                            <div class="mt-3">
+                                <a href="{{ route('User.Review.Form', ['titleKey' => $title->key]) }}"
+                                   class="inline-flex items-center gap-1 text-slate-400 transition-colors hover:text-slate-200"
+                                   data-hgn-scope="full"><i class="bi bi-pencil"></i> 編集する（削除もこちらから）</a>
+                            </div>
+                        @else
+                            @if ($userReported)
+                                <div class="mt-3">
+                                    <span class="inline-flex h-6 items-center gap-1 leading-none text-slate-500">
+                                        <i class="bi bi-flag-fill"></i> 通報済み
+                                    </span>
+                                </div>
+                            @else
+                                <div class="mt-3">
+                                    <button type="button"
+                                            class="js-review-report-open inline-flex h-6 items-center gap-1 leading-none text-slate-400 transition-colors hover:text-rose-400"
+                                            data-modal-id="review-report-modal-{{ $review->id }}"
+                                            title="通報">
+                                        <i class="bi bi-flag"></i> 通報
+                                    </button>
+                                </div>
+                            @endif
                         @endif
                     @endauth
-                </div>
-            </div>
-        </section>
-
-        {{-- シェア --}}
-        @php
-            $_shareText = Auth::id() === $reviewUser->id
-                ? $title->name . ' のレビューを書きました！'
-                : $title->name . ' のレビュー（' . $reviewUser->show_id . '）';
-        @endphp
-        <section class="node basic" id="review-share-node">
-            <div class="node-head">
-                <h2 class="node-head-text">シェア</h2>
-                <span class="node-pt">●</span>
-            </div>
-            <div class="node-content basic">
-                <div class="flex items-center gap-10 text-sm">
-                    <a href="https://twitter.com/intent/tweet?text={{ urlencode($_shareText) }}&url={{ urlencode($_ogpUrl) }}"
-                       target="_blank"
-                       class="inline-flex items-center gap-1 text-slate-400 transition-colors hover:text-sky-400">
-                        <i class="bi bi-twitter-x"></i>
-                    </a>
-                    <a href="https://social-plugins.line.me/lineit/share?url={{ urlencode($_ogpUrl) }}"
-                       target="_blank"
-                       class="inline-flex items-center gap-1 text-slate-400 transition-colors hover:text-green-400">
-                        LINE
-                    </a>
                 </div>
             </div>
         </section>
