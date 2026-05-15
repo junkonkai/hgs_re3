@@ -72,6 +72,7 @@ class GameReviewController extends Controller
 
         return $this->tree(
             view('game.reviews', compact('titles', 'pager', 'sort')),
+            options: ['components' => ['SortTabs' => []]],
         );
     }
 
@@ -151,6 +152,8 @@ class GameReviewController extends Controller
                 ->latest('id')
                 ->value('comment');
         }
+
+        $title->loadMissing(['packageGroups.packages.platform']);
 
         $userLiked = false;
         $userReported = false;

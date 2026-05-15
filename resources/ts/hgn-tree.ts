@@ -28,6 +28,7 @@ export class HgnTree
     private _disappearSpeedRate: number = 1;
     private _animationScheduler: AnimationScheduler;
     private _sceneAnimatable: Animatable;
+    private _stateStore: NavigationStateStore;
 
     public isForceResize: boolean = false;
 
@@ -87,6 +88,11 @@ export class HgnTree
         return this._disappearSpeedRate;
     }
 
+    public get isNavigating(): boolean
+    {
+        return this._stateStore.isNavigating;
+    }
+
     /**
      * Phase3: アニメーションスケジューラーを取得
      */
@@ -112,10 +118,10 @@ export class HgnTree
         this._mainElement = document.querySelector('main') as HTMLElement;
         this._currentNode = new CurrentNode(this._mainElement.querySelector('#current-node') as HTMLElement);
         this._depthSceneController = new DepthSceneController(this._currentNode.nodeElement);
-        const stateStore = new NavigationStateStore();
+        this._stateStore = new NavigationStateStore();
         const fetcher = new NavigationFetcher();
         this._historyCoordinator = new HistoryCoordinator();
-        this._navigationController = new NavigationController(this._currentNode, fetcher, stateStore, this._historyCoordinator, this._depthSceneController);
+        this._navigationController = new NavigationController(this._currentNode, fetcher, this._stateStore, this._historyCoordinator, this._depthSceneController);
         this._animationScheduler = new AnimationScheduler();
         const self = this;
         this._sceneAnimatable = {

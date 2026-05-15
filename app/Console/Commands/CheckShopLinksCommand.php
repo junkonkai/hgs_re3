@@ -116,6 +116,10 @@ class CheckShopLinksCommand extends Command
      */
     private function checkItem(string $sourceTable, int $sourceId, int $shopId, string $url): ?array
     {
+        if ($url === '') {
+            return null;
+        }
+
         $shop = Shop::tryFrom($shopId);
 
         if ($shop === null || !$shop->isCheckable()) {
@@ -180,7 +184,7 @@ class CheckShopLinksCommand extends Command
 
             return ['sold_out' => false, 'restored' => false];
         } catch (\Exception $e) {
-            Log::warning('shop:check-links HTTP エラー' . PHP_EOL . $e->getMessage(), [
+            Log::warning("shop:check-links HTTP エラー({$url})" . PHP_EOL . $e->getMessage(), [
                 'source_table' => $sourceTable,
                 'source_id'    => $sourceId,
                 'url'          => $url,
