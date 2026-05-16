@@ -3,6 +3,7 @@
 
     > .node-head {
         margin-bottom: 0px !important;
+        align-items: flex-start;
     }
 }
 
@@ -62,6 +63,8 @@ div.connection-line {
     font-size: 13px !important;
     width: 25px !important;
     min-width: 25px !important;
+    /* h1 (25px) × line-height (1.5) = 37.5px — 複数行時も1行目中央に固定 */
+    height: 37.5px !important;
     color: var(--node-pt-light) !important;
     text-shadow: 0 0 10px var(--node-pt-light-shadow), 0 0 30px var(--node-pt-light-shadow) !important;
     visibility: visible !important;
