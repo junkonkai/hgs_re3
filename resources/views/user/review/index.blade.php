@@ -23,15 +23,15 @@
         @php $fearMeter = $fearMeters[$review->game_title_id] ?? null; @endphp
         <section class="node" id="review-{{ $review->game_title_id }}-node">
             <div class="node-head">
-                <span class="node-head-text relative">
-                    @if (in_array($review->game_title_id, $draftTitleIds))
-                        <span class="absolute -top-1 -left-1 translate-y-[-100%] text-[10px] leading-none px-1 py-0.5 rounded bg-yellow-600 text-white">下書き</span>
-                    @endif
+                <span class="node-head-text">
                     <a href="{{ route('Game.TitleReview', ['titleKey' => $review->gameTitle->key, 'reviewKey' => $review->key]) }}" data-hgn-scope="full">{{ $review->gameTitle->name }}</a>
                 </span>
                 <span class="node-pt">●</span>
             </div>
             <div class="node-content basic">
+                @if (in_array($review->game_title_id, $draftTitleIds))
+                    <div class="mb-2"><span class="text-[10px] leading-none px-1 py-0.5 rounded bg-yellow-600 text-white">下書き</span></div>
+                @endif
                 <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
                     {{-- 総合スコア --}}
                     <div class="flex items-baseline gap-1">

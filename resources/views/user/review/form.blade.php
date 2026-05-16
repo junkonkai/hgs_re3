@@ -18,7 +18,7 @@
 
     @if ($errors->any())
         <div class="alert alert-danger mt-3">
-            <ul class="mb-0 pl-4">
+            <ul>
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
                 @endforeach
@@ -199,7 +199,7 @@
                                         aria-label="ストーリースコアを下げる"
                                         {{ $initialScoreStory <= 0 ? 'disabled' : '' }}
                                     ><span class="text-lg leading-none relative -top-0.5">-</span></button>
-                                    <input type="range" name="score_story" class="js-review-score-select" min="0" max="20" step="5" value="{{ $initialScoreStory }}">
+                                    <input type="range" name="score_story" class="js-review-score-select" min="0" max="20" step="5" value="{{ $initialScoreStory }}" required>
                                     <button
                                         type="button"
                                         class="btn btn-secondary btn-sm js-review-score-increase shrink-0 inline-flex items-center justify-center"
@@ -218,7 +218,7 @@
                                         aria-label="雰囲気スコアを下げる"
                                         {{ $initialScoreAtmosphere <= 0 ? 'disabled' : '' }}
                                     ><span class="text-lg leading-none relative -top-0.5">-</span></button>
-                                    <input type="range" name="score_atmosphere" class="js-review-score-select" min="0" max="20" step="5" value="{{ $initialScoreAtmosphere }}">
+                                    <input type="range" name="score_atmosphere" class="js-review-score-select" min="0" max="20" step="5" value="{{ $initialScoreAtmosphere }}" required>
                                     <button
                                         type="button"
                                         class="btn btn-secondary btn-sm js-review-score-increase shrink-0 inline-flex items-center justify-center"
@@ -237,7 +237,7 @@
                                         aria-label="ゲーム性スコアを下げる"
                                         {{ $initialScoreGameplay <= 0 ? 'disabled' : '' }}
                                     ><span class="text-lg leading-none relative -top-0.5">-</span></button>
-                                    <input type="range" name="score_gameplay" class="js-review-score-select" min="0" max="20" step="5" value="{{ $initialScoreGameplay }}">
+                                    <input type="range" name="score_gameplay" class="js-review-score-select" min="0" max="20" step="5" value="{{ $initialScoreGameplay }}" required>
                                     <button
                                         type="button"
                                         class="btn btn-secondary btn-sm js-review-score-increase shrink-0 inline-flex items-center justify-center"
@@ -326,6 +326,7 @@
                                     value="{{ $case->value }}"
                                     class="js-play-status-radio"
                                     {{ $initialPlayStatus === $case->value ? 'checked' : '' }}
+                                    required
                                 >
                                 {{ $case->text() }}
                             </label>
