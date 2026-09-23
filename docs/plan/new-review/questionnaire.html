@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>レビューの好みアンケート・試回答</title>
+<style>
+body { max-width: 850px; margin: 24px auto; padding: 0 16px; font-family: sans-serif; line-height: 1.7; }
+fieldset { margin: 16px 0; padding: 16px; }
+label { display: block; margin: 8px 0; }
+textarea, input[type="text"] { box-sizing: border-box; width: 100%; font: inherit; }
+textarea { min-height: 80px; }
+select, button { font: inherit; padding: 4px; }
+.question { margin: 16px 0; }
+.question label { display: inline-block; margin-right: 16px; }
+#result { min-height: 360px; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<h1>レビューの好みアンケート・試回答</h1>
+<p>すべて任意です。未回答と「どちらでもない」「分からない」は区別します。回答は外部に送信しません。ページを閉じると消えるため、回答後は下部のテキストをコピーしてください。</p>
+<p>「どちらでもない」は、特に好まないが気にならない場合も含みます。判断できない場合は「分からない」を選んでください。</p>
+<noscript>回答結果の生成にはJavaScriptを有効にしてください。</noscript>
+<form id="survey">
+<fieldset><legend>問1：ゲームで、どんなことを楽しみたいですか？</legend>
+<p>いくつでも選べます。選ばなかった項目は「嫌い」とは扱いません。</p>
+<div id="interests"></div>
+<label><input type="checkbox" id="unsure"> まだ分からない</label>
+<label for="other">その他・補足</label><textarea id="other"></textarea>
+</fieldset>
+<fieldset><legend>問2：選んだ楽しみ方について、近いものはありますか？</legend>
+<p>それぞれ独立して回答できます。両方「好き」でも構いません。問1の選択を外した項目は、回答結果からも除外します（再選択すると入力が戻ります）。</p>
+<p id="empty">問1で項目を選ぶと、詳しい質問が表示されます。</p>
+<div id="details"></div>
+</fieldset>
+<fieldset><legend>問3：次のホラー表現は、好みに合いますか？</legend>
+<p>怖さへの強さではなく、好き嫌いについて回答してください。</p>
+<div id="horror"></div>
+<label for="horror-note">条件や補足（「少しなら好き」「音だけ苦手」など）</label><textarea id="horror-note"></textarea>
+</fieldset>
+<fieldset><legend>任意：好きな作品と、その理由</legend>
+<p>複数の作品を書いても構いません。</p>
+<label for="favorites">作品名・好きな理由</label><textarea id="favorites" placeholder="作品名：好きなところ"></textarea>
+</fieldset>
+<fieldset><legend>任意：一作品についてレビューも試す</legend>
+<label for="game">作品名</label><input type="text" id="game">
+<label for="context">プレイ状況・難易度・モードなど</label><input type="text" id="context">
+<label for="fit">全体として、自分の好みに合いましたか？</label>
+<select id="fit"><option value="">未回答</option><option>合った</option><option>どちらともいえない</option><option>合わなかった</option></select>
+<p>作品の出来の採点ではなく、自分の楽しみ方に合ったかを選んでください。</p>
+<label for="review">印象に残った点・合った／合わなかった理由</label><textarea id="review" placeholder="何が、どのように楽しさや不満につながったかを書いてください。"></textarea>
+<label for="fear">感じた怖さ（好みに合ったかとは別です・自由記述）</label><input type="text" id="fear" placeholder="あまり怖くなかった／かなり怖かった、など">
+</fieldset>
+<fieldset><legend>任意：このアンケートへの感想</legend>
+<label for="feedback">答えにくい質問、足りない項目、自分の好みを表せなかったところなど</label><textarea id="feedback"></textarea>
+</fieldset>
+</form>
+<section aria-labelledby="result-title">
+<h2 id="result-title">チャットに貼り付ける回答結果</h2>
+<p>入力に合わせて自動更新されます。コピーして、このチャットに貼り付けてください。</p>
+<label for="result">回答テキスト</label><textarea id="result" readonly spellcheck="false"></textarea>
+<button type="button" id="copy">回答をコピー</button>
+<button type="button" id="select">回答を全選択</button>
+<p id="status" role="status" aria-live="polite"></p>
+</section>
+<script>
+'use strict';
+const groups = [
+ ['combat','戦闘や操作が上達すること',['狙いやタイミングを練習すること','失敗しながら敵の対処法を覚えること']],
+ ['action','敵を倒す爽快感',['多くの敵を続けて倒すこと','最初は怖かった敵に反撃できるようになること','狙いどおりに攻撃や回避が決まること','手強い一体を倒したときの達成感','攻撃が当たったときの音や動きの気持ちよさ']],
+ ['explore','場所を探索して発見すること',['自分のペースで隅々まで調べること','危険を警戒しながら先へ進むこと']],
+ ['puzzle','謎や仕掛けを解くこと',['時間をかけてじっくり考えること','時間制限の中で判断すること']],
+ ['story','登場人物や物語を追うこと',['登場人物の感情に入り込むこと','先の展開や真相を追うこと','世界観や設定を味わうこと','冒険を一つの物語として体験すること','一本の道筋に沿って物語を最後まで追うこと','選択や行動によって、途中の物語が大きく分岐すること','主な道筋は共通で、終盤の行動などによって結末が変わること','別のルートを見るために、繰り返し遊ぶこと']],
+ ['interpret','手掛かりから背景を考察すること',['断片的な手掛かりをつなぐこと','答えが一つに定まらない余韻']],
+ ['resource','道具や物資の使い方を考えること',['限られた物資の使い道を判断すること','持ち物を準備して探索に出ること']],
+ ['invent','自分で方法を工夫すること',['道具の使い方をいろいろ試すこと','限られた手段で慎重に作戦を立てること']]
+];
+const horrors = ['突然の音や出現で驚かされる','敵に追われる','何か起きそうな不安が続く','残酷な描写や身体の変形','物語の意味を考えると怖くなる','日常の場所が少しずつ変わっていく'];
+const answers = ['未回答','好き','どちらでもない','避けたい','分からない'];
+const byId = id => document.getElementById(id);
+function makeQuestion(parent, id, title) {
+ const field = document.createElement('fieldset');
+ field.className = 'question';
+ const legend = document.createElement('legend');
+ legend.textContent = title;
+ field.append(legend);
+ answers.forEach((answer, index) => {
+  const label = document.createElement('label');
+  const input = document.createElement('input');
+  input.type = 'radio'; input.name = id; input.value = answer; input.checked = index === 0;
+  label.append(input, ' ' + answer); field.append(label);
+ });
+ parent.append(field);
+}
+groups.forEach(([id, title, questions]) => {
+ const label = document.createElement('label');
+ const check = document.createElement('input');
+ check.type = 'checkbox'; check.id = id;
+ label.append(check, ' ' + title); byId('interests').append(label);
+ const section = document.createElement('fieldset');
+ section.id = id + '-details'; section.hidden = true;
+ const legend = document.createElement('legend'); legend.textContent = title; section.append(legend);
+ questions.forEach((question, i) => makeQuestion(section, id + '-' + i, question));
+ const noteLabel = document.createElement('label'); noteLabel.htmlFor = id + '-note'; noteLabel.textContent = '条件や補足（任意）';
+ const note = document.createElement('textarea'); note.id = id + '-note';
+ section.append(noteLabel, note); byId('details').append(section);
+});
+horrors.forEach((title, i) => makeQuestion(byId('horror'), 'horror-' + i, title));
+function value(id) { return byId(id).value.trim(); }
+function radio(name) { return document.querySelector('input[name="' + name + '"]:checked').value; }
+function update() {
+ const chosen = groups.filter(([id]) => byId(id).checked);
+ groups.forEach(([id]) => { byId(id + '-details').hidden = !byId(id).checked; });
+ byId('empty').hidden = chosen.length > 0;
+ const lines = ['# レビューの好みアンケート回答（試案 v0.3）', '', '## 問1：楽しみたいこと'];
+ chosen.forEach(([, title]) => lines.push('- ' + title));
+ if (byId('unsure').checked) lines.push('- まだ分からない');
+ if (chosen.length === 0 && !byId('unsure').checked) lines.push('- 未回答');
+ if (value('other')) lines.push('その他・補足：' + value('other'));
+ lines.push('※未選択の項目は嫌いという意味ではありません。', '', '## 問2：楽しみ方の詳細');
+ if (chosen.length === 0) lines.push('対象項目なし（問1で項目未選択）');
+ chosen.forEach(([id, title, questions]) => {
+  lines.push('', '【' + title + '】');
+  questions.forEach((question, i) => lines.push('- ' + question + '：' + radio(id + '-' + i)));
+  if (value(id + '-note')) lines.push('補足：' + value(id + '-note'));
+ });
+ lines.push('', '## 問3：ホラー表現の好み');
+ horrors.forEach((title, i) => lines.push('- ' + title + '：' + radio('horror-' + i)));
+ if (value('horror-note')) lines.push('補足：' + value('horror-note'));
+ lines.push('', '## 好きな作品と理由', value('favorites') || '未回答');
+ lines.push('', '## レビューの試回答');
+ [['game','作品名'],['context','プレイ状況・難易度・モード'],['fit','好みに合ったか'],['review','印象に残った点・理由'],['fear','感じた怖さ']].forEach(([id, label]) => lines.push(label + '：' + (value(id) || '未回答')));
+ lines.push('', '## アンケートへの感想', value('feedback') || '未回答');
+ byId('result').value = lines.join('\n');
+ byId('status').textContent = '';
+}
+byId('survey').addEventListener('submit', event => event.preventDefault());
+byId('survey').addEventListener('input', update);
+byId('survey').addEventListener('change', update);
+function selectResult() { byId('result').focus(); byId('result').select(); }
+byId('select').addEventListener('click', () => {
+ selectResult(); byId('status').textContent = '全選択しました。Ctrl+C（MacはCommand+C）でコピーしてください。';
+});
+byId('copy').addEventListener('click', async () => {
+ const snapshot = byId('result').value;
+ try {
+  await navigator.clipboard.writeText(snapshot);
+  byId('status').textContent = '回答をコピーしました。チャットに貼り付けてください。';
+ } catch {
+  selectResult();
+  byId('status').textContent = '自動コピーが利用できないため全選択しました。Ctrl+C（MacはCommand+C）でコピーしてください。';
+ }
+});
+// 試回答 v0.3 を初期値にする。自由入力・レビューは未回答のまま。
+const initialPreferences = {
+ combat: ['好き', '好き'],
+ action: ['避けたい', '好き', '好き', '好き', '好き'],
+ explore: ['好き', '好き'],
+ puzzle: ['好き', '避けたい'],
+ story: ['どちらでもない', '好き', '好き', '好き', '好き', '避けたい', 'どちらでもない', '好き']
+};
+Object.entries(initialPreferences).forEach(([id, responses]) => {
+ byId(id).checked = true;
+ responses.forEach((answer, i) => {
+  document.querySelector('input[name="' + id + '-' + i + '"][value="' + answer + '"]').checked = true;
+ });
+});
+const initialHorror = ['避けたい', '好き', '好き', 'どちらでもない', 'どちらでもない', 'どちらでもない'];
+initialHorror.forEach((answer, i) => {
+ document.querySelector('input[name="horror-' + i + '"][value="' + answer + '"]').checked = true;
+});
+update();
+</script>
+</body>
+</html>

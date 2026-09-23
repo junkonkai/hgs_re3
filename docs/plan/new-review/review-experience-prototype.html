@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>体験から書くレビュー・画面試作</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #020604;
+  --panel: rgba(7, 16, 11, .95);
+  --panel-2: #09150e;
+  --line: rgba(91, 130, 105, .36);
+  --line-soft: rgba(91, 130, 105, .24);
+  --text: #d8e4dc;
+  --muted: #aab8b0;
+  --accent: #72ff9b;
+  --accent-soft: rgba(114, 255, 155, .10);
+  --warn: #d8b678;
+  --row: 24px;
+  --radius: 2px;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  margin: 0;
+  color: var(--text);
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(114,255,155,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(114,255,155,.03) 1px, transparent 1px);
+  background-size: var(--row) var(--row);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.65;
+}
+button, input, textarea { font: inherit; }
+button, input[type="checkbox"], summary { cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+[hidden] { display: none !important; }
+.shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: calc(var(--row) * 2) 0 calc(var(--row) * 4); }
+.masthead { border-top: 1px solid var(--accent); border-bottom: 1px solid var(--line); padding: 23px 0 24px; }
+.eyebrow { margin: 0 0 8px; color: var(--accent); font-size: .75rem; letter-spacing: .18em; text-transform: uppercase; }
+h1, h2, h3, p { margin-top: 0; }
+h1 { margin-bottom: 8px; font-size: clamp(1.65rem, 4vw, 2.7rem); line-height: 1.2; font-weight: 650; }
+.lead { max-width: 760px; margin-bottom: 0; color: var(--muted); }
+.notice { margin: 24px 0 0; padding: 11px 16px; border-left: 2px solid var(--warn); background: rgba(216,182,120,.07); color: #d9d2c3; font-size: .9rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+button { min-height: 42px; border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 14px; color: var(--text); background: #0d1912; }
+button:hover { border-color: var(--accent); background: #102018; }
+button.primary { border-color: var(--accent); color: #06100e; background: var(--accent); font-weight: 700; }
+.layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(310px, .75fr); gap: 24px; align-items: start; margin-top: 24px; }
+form, .preview-stack { min-width: 0; }
+.section, .preview-panel { margin-bottom: 24px; border: 1px solid var(--line); background: var(--panel); box-shadow: inset 4px 0 0 rgba(114,255,155,.08); }
+.section-head, .preview-head { padding: 23px 24px 16px; border-bottom: 1px solid var(--line-soft); }
+.step { color: var(--accent); font: 700 .72rem ui-monospace, monospace; letter-spacing: .12em; }
+h2 { margin: 5px 0 5px; font-size: 1.16rem; }
+.help { margin: 0; color: var(--muted); font-size: .88rem; }
+.section-body { padding: 24px; }
+.category { padding: 0; border-bottom: 1px solid var(--line-soft); }
+.category:last-child { border-bottom: 0; }
+.main-option { display: flex; gap: 11px; align-items: flex-start; padding: 14px 0; font-weight: 650; }
+input[type="checkbox"] { width: 1.15rem; height: 1.15rem; margin: .25rem 0 0; accent-color: var(--accent); flex: 0 0 auto; }
+details { margin: 0 0 14px 29px; border-left: 1px solid var(--line); }
+summary { padding: 7px 12px; color: var(--muted); font-size: .86rem; }
+.children { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; padding: 5px 12px 12px; }
+.sub-option, .fear-option, .attraction-option { display: flex; gap: 9px; align-items: flex-start; padding: 8px 0; font-size: .9rem; }
+.fear-list { display: grid; gap: 12px; }
+.fear-card { padding: 14px 16px; border: 1px solid var(--line-soft); background: var(--panel-2); }
+.fear-title { margin-bottom: 9px; font-weight: 650; }
+.reactions { display: flex; flex-wrap: wrap; gap: 8px 18px; padding-left: 2px; }
+.reactions label { display: flex; gap: 8px; align-items: center; color: #cad3d0; font-size: .87rem; }
+.reactions input { margin-top: 0; }
+.empty { margin: 0; padding: 16px; border: 1px dashed var(--line); color: var(--muted); font-size: .9rem; }
+.candidate-group + .candidate-group { margin-top: 16px; }
+.candidate-group h3 { margin-bottom: 4px; color: var(--muted); font-size: .78rem; font-weight: 650; letter-spacing: .08em; }
+.optional { margin-top: 18px; padding-top: 17px; border-top: 1px solid var(--line-soft); }
+.optional summary { padding: 0; color: var(--text); font-weight: 650; }
+.optional-body { margin-top: 14px; }
+label.text-label { display: block; margin: 0 0 7px; font-size: .88rem; font-weight: 650; }
+textarea, input[type="text"] { width: 100%; border: 1px solid var(--line); border-radius: var(--radius); padding: 11px 12px; color: var(--text); background: #050b07; }
+textarea { min-height: 150px; resize: vertical; }
+.suggestion { margin-top: 20px; padding: 14px; border: 1px dashed var(--line); }
+.suggestion input { margin-top: 7px; }
+.suggestion .help { font-size: .8rem; }
+.preview-stack { position: sticky; top: 16px; }
+.preview-body { padding: 20px 24px 24px; }
+.game-title { margin-bottom: 12px; color: var(--accent); font-size: .78rem; letter-spacing: .08em; }
+.chip-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.chip { padding: 3px 8px; border: 1px solid var(--line); color: #c7d3d0; background: var(--accent-soft); font-size: .76rem; }
+.original { white-space: pre-wrap; overflow-wrap: anywhere; }
+.short-original {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+.original.empty-copy { color: var(--muted); }
+.full-preview { border-top: 1px solid var(--line-soft); }
+.full-preview summary { padding: 13px 24px; color: var(--text); }
+.full-preview-content { padding: 3px 24px 24px; }
+.preview-block { margin-top: 16px; }
+.preview-block h3 { margin: 0 0 7px; color: var(--muted); font-size: .8rem; }
+.preview-block ul { margin: 0; padding-left: 1.2rem; }
+.preview-block li { margin: 4px 0; }
+.output { min-height: 260px; font: .8rem/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; }
+.status { min-height: 1.6em; margin: 10px 0 0; color: var(--accent); font-size: .85rem; }
+.sample-note { color: var(--warn); }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+  .preview-stack { position: static; }
+}
+@media (max-width: 560px) {
+  .shell { width: min(100% - 20px, 1180px); padding-top: 24px; }
+  .section-head, .section-body, .preview-head, .preview-body, .full-preview-content { padding-left: 15px; padding-right: 15px; }
+  .children { grid-template-columns: 1fr; }
+  details { margin-left: 18px; }
+  .actions button { flex: 1 1 auto; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<main class="shell">
+  <header class="masthead">
+    <p class="eyebrow">HGN / Review experience prototype</p>
+    <h1>体験からレビューを書く</h1>
+    <p class="game-title">対象作品：零～紅い蝶～REMAKE</p>
+    <p class="lead">遊んで何を楽しめたか、どんな怖さが印象に残ったかを手掛かりに、あなた自身の言葉を残すための画面試作です。すべて任意です。</p>
+    <p class="notice">この画面は入力とプレビューの試作です。投稿・送信・保存は行いません。ページを閉じると入力は消えます。</p>
+    <noscript><p class="notice">入力項目とプレビューを使うにはJavaScriptを有効にしてください。この画面から外部への送信は行いません。</p></noscript>
+    <div class="actions">
+      <button type="button" id="load-sample">サンプル回答を読み込む</button>
+      <button type="button" id="clear-all">空の状態に戻す</button>
+    </div>
+    <p id="sample-status" class="status" role="status" aria-live="polite"></p>
+  </header>
+
+  <div class="layout">
+    <form id="review-form">
+      <section class="section" aria-labelledby="enjoy-title">
+        <header class="section-head"><span class="step">01</span><h2 id="enjoy-title">楽しめた要素</h2><p class="help">当てはまる大項目を選び、必要なら詳しい要素も選べます。未選択は否定を意味しません。</p></header>
+        <div class="section-body" id="enjoyment-list"></div>
+      </section>
+
+      <section class="section" aria-labelledby="fear-title">
+        <header class="section-head"><span class="step">02</span><h2 id="fear-title">印象に残った怖さ</h2><p class="help">怖さを選んだあと、「楽しめた」「苦手だった」をそれぞれ付けられます。両方でも、どちらも選ばなくても構いません。</p></header>
+        <div class="section-body"><div class="fear-list" id="fear-list"></div></div>
+      </section>
+
+      <section class="section" aria-labelledby="attraction-title">
+        <header class="section-head"><span class="step">03</span><h2 id="attraction-title">特に惹かれたところ</h2><p class="help">「楽しめた要素」と、楽しめた怖さから選べます。</p></header>
+        <div class="section-body"><div id="attraction-list"></div></div>
+      </section>
+
+      <section class="section" aria-labelledby="concern-title">
+        <header class="section-head"><span class="step">04</span><h2 id="concern-title">気になったところ</h2><p class="help">必要なときだけ開いてください。楽しめた要素と重なっても構いません。</p></header>
+        <div class="section-body">
+          <details id="concern-details">
+            <summary>気になったところを選ぶ</summary>
+            <div class="optional-body" id="concern-list"></div>
+          </details>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="words-title">
+        <header class="section-head"><span class="step">05</span><h2 id="words-title">あなたの言葉</h2><p class="help">選択だけから理由を補いません。書いた文章はそのままプレビューと出力へ載せます。</p></header>
+        <div class="section-body">
+          <label class="text-label" for="review-text">自由文</label>
+          <textarea id="review-text" placeholder="印象に残った体験を、自由に書いてください。"></textarea>
+          <div class="suggestion">
+            <label class="text-label" for="suggestion-text">選択肢にない要素の提案（任意）</label>
+            <p class="help">レビュー本文とは別に扱う、試作上の提案欄です。入力しても運営タグへ自動反映されません。</p>
+            <input type="text" id="suggestion-text" placeholder="例：写真を撮って怪異に対抗すること">
+          </div>
+        </div>
+      </section>
+    </form>
+
+    <aside class="preview-stack" aria-label="レビューのプレビューと出力">
+      <section class="preview-panel" aria-labelledby="preview-title">
+        <header class="preview-head"><span class="step">PREVIEW</span><h2 id="preview-title">短いレビュー</h2></header>
+        <div class="preview-body">
+          <div class="game-title" id="preview-game">作品名未入力</div>
+          <div class="chip-list" id="preview-chips"></div>
+          <p class="original short-original empty-copy" id="short-copy">レビュー本文は、まだ書かれていないようだ。</p>
+        </div>
+        <details class="full-preview">
+          <summary>全文プレビューを開く</summary>
+          <div class="full-preview-content" id="full-preview"></div>
+        </details>
+      </section>
+
+      <section class="preview-panel" aria-labelledby="output-title">
+        <header class="preview-head"><span class="step">OUTPUT</span><h2 id="output-title">チャット用テキスト</h2><p class="help">この試作への回答を共有するときに使えます。</p></header>
+        <div class="preview-body">
+          <label class="text-label" for="chat-output">出力内容</label>
+          <textarea class="output" id="chat-output" readonly spellcheck="false"></textarea>
+          <div class="actions">
+            <button class="primary" type="button" id="copy-output">コピー</button>
+            <button type="button" id="select-output">全選択</button>
+          </div>
+          <p class="status" id="copy-status" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<script>
+'use strict';
+const enjoymentGroups = [
+  { id: 'story', title: '物語・登場人物', children: ['続きが気になる展開', '謎や真相', '登場人物', '人物同士の関係'] },
+  { id: 'exploration', title: '探索・発見', children: ['寄り道', 'アイテム収集', '手掛かり探し', '隠された場所の発見'] },
+  { id: 'combat', title: '戦闘・対抗', children: ['狙って攻撃する', 'タイミングを見極める', '敵への対処を考える'] },
+  { id: 'escape', title: '逃走・潜伏', children: ['追跡から逃げ切る', '隠れてやり過ごす', '敵の気配を読む'] },
+  { id: 'puzzle', title: '謎解き・推理', children: ['仕掛けを解く', '情報を組み合わせる', '異変を見つける'] },
+  { id: 'resource', title: '資源管理・サバイバル', children: ['限られた物資のやりくり', '危険を冒すか判断する'] },
+  { id: 'atmosphere', title: '世界観・雰囲気', children: ['舞台や風景', '音の演出', '不穏さ', '怪異や敵の表現'] }
+];
+const fears = [
+  'いつ何が起こるか分からない不安', '敵や怪異が近くにいる気配', '追われる恐怖', '抵抗できない心細さ',
+  '突然の出現や大きな音による驚き', '不気味な光景や異変', '真相を知るほど深まる恐怖', '残酷な描写や身体の変化'
+];
+const concernExtras = ['操作のしづらさ', '不具合'];
+const sampleText = '敵がランダム発生だったりするので、いつ出てくるか分からない怖さと、シナリオが良いので早く進めて続きを見たいという気持ちがせめぎあう。今作では探索要素（アイテム収集や、一定の地点で撮影するなど）もしっかり用意されていて、本編とは違う道でアイテム探しをする楽しさもあった。敵との戦闘はリメイク前の方がよかったものの、ややTPSシューター風にアレンジされた感じがあるので、TPSシューターゲームが好きな身としてはこれはこれで面白かったかもしれない。まぁでもやっぱりこのゲームはシナリオがいい。';
+const $ = id => document.getElementById(id);
+const esc = value => value.replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const checked = selector => Array.from(document.querySelectorAll(selector + ':checked'));
+
+function renderStaticInputs() {
+  $('enjoyment-list').innerHTML = enjoymentGroups.map(group => `
+    <div class="category">
+      <label class="main-option"><input type="checkbox" data-enjoy-main="${group.id}"> <span>${group.title}</span></label>
+      <details data-enjoy-details="${group.id}" hidden>
+        <summary>詳しい要素を選ぶ（任意）</summary>
+        <div class="children">${group.children.map((child, index) => `<label class="sub-option"><input type="checkbox" data-enjoy-child="${group.id}" value="${index}"> <span>${child}</span></label>`).join('')}</div>
+      </details>
+    </div>`).join('');
+  $('fear-list').innerHTML = fears.map((fear, index) => `
+    <div class="fear-card">
+      <label class="main-option fear-title"><input type="checkbox" data-fear-main="${index}"> <span>${fear}</span></label>
+      <div class="reactions" data-fear-reactions="${index}" hidden>
+        <label><input type="checkbox" data-fear-enjoy="${index}"> 楽しめた</label>
+        <label><input type="checkbox" data-fear-dislike="${index}"> 苦手だった</label>
+      </div>
+    </div>`).join('');
+  $('concern-list').innerHTML = `
+    <div class="children">${enjoymentGroups.map(group => `<label class="sub-option"><input type="checkbox" data-concern="group:${group.id}"> <span>${group.title}</span></label>`).join('')}</div>
+    <div class="children">${concernExtras.map((item, index) => `<label class="sub-option"><input type="checkbox" data-concern="extra:${index}"> <span>${item}</span></label>`).join('')}</div>`;
+}
+
+function selectedEnjoymentCandidates() {
+  const candidates = [];
+  enjoymentGroups.forEach(group => {
+    const main = document.querySelector(`[data-enjoy-main="${group.id}"]`);
+    if (!main.checked) return;
+    candidates.push({ key: `group:${group.id}`, group: group.title, label: group.title });
+    checked(`[data-enjoy-child="${group.id}"]`).forEach(input => {
+      candidates.push({ key: `child:${group.id}:${input.value}`, group: group.title, label: group.children[Number(input.value)] });
+    });
+  });
+  return candidates;
+}
+
+function selectedFearCandidates() {
+  return checked('[data-fear-enjoy]').map(input => ({ key: `fear:${input.dataset.fearEnjoy}`, group: '楽しめた怖さ', label: fears[Number(input.dataset.fearEnjoy)] }));
+}
+
+function syncDependencies() {
+  enjoymentGroups.forEach(group => {
+    const selected = document.querySelector(`[data-enjoy-main="${group.id}"]`).checked;
+    document.querySelector(`[data-enjoy-details="${group.id}"]`).hidden = !selected;
+    if (!selected) checked(`[data-enjoy-child="${group.id}"]`).forEach(input => { input.checked = false; });
+  });
+  fears.forEach((fear, index) => {
+    const selected = document.querySelector(`[data-fear-main="${index}"]`).checked;
+    document.querySelector(`[data-fear-reactions="${index}"]`).hidden = !selected;
+    if (!selected) {
+      document.querySelector(`[data-fear-enjoy="${index}"]`).checked = false;
+      document.querySelector(`[data-fear-dislike="${index}"]`).checked = false;
+    }
+  });
+  const candidates = [...selectedEnjoymentCandidates(), ...selectedFearCandidates()];
+  const candidateSignature = candidates.map(item => item.key).join('|');
+  if ($('attraction-list').dataset.candidateSignature === candidateSignature) return;
+  const previous = new Set(checked('[data-attraction]').map(input => input.dataset.attraction));
+  const groups = new Map();
+  candidates.forEach(item => {
+    if (!groups.has(item.group)) groups.set(item.group, []);
+    groups.get(item.group).push(item);
+  });
+  let attractionMarkup = '<p class="empty">楽しめた要素や、楽しめた怖さを選ぶと候補が表示されます。</p>';
+  if (candidates.length) {
+    attractionMarkup = Array.from(groups, ([title, items]) => {
+      const itemMarkup = items.map(item => {
+        let checkedAttribute = '';
+        if (previous.has(item.key)) checkedAttribute = 'checked';
+        return `<label class="attraction-option"><input type="checkbox" data-attraction="${item.key}" ${checkedAttribute}> <span>${item.label}</span></label>`;
+      }).join('');
+      return `<div class="candidate-group"><h3>${title}</h3>${itemMarkup}</div>`;
+    }).join('');
+  }
+  $('attraction-list').innerHTML = attractionMarkup;
+  $('attraction-list').dataset.candidateSignature = candidateSignature;
+}
+
+function labelForAttraction(key) {
+  if (key.startsWith('group:')) return enjoymentGroups.find(group => group.id === key.split(':')[1]).title;
+  if (key.startsWith('child:')) {
+    const [, id, index] = key.split(':');
+    return enjoymentGroups.find(group => group.id === id).children[Number(index)];
+  }
+  return fears[Number(key.split(':')[1])];
+}
+function selectedConcerns() {
+  return checked('[data-concern]').map(input => {
+    const [type, value] = input.dataset.concern.split(':');
+    if (type === 'group') return enjoymentGroups.find(group => group.id === value).title;
+    return concernExtras[Number(value)];
+  });
+}
+function listOrEmpty(items, emptyText = '未選択') {
+  if (items.length) return items;
+  return [emptyText];
+}
+function renderList(title, items) { return `<div class="preview-block"><h3>${title}</h3><ul>${items.map(item => `<li>${esc(item)}</li>`).join('')}</ul></div>`; }
+
+function updatePreview() {
+  const enjoyment = selectedEnjoymentCandidates().map(item => item.label);
+  const fearEntries = [];
+  fears.forEach((fear, index) => {
+    if (!document.querySelector(`[data-fear-main="${index}"]`).checked) return;
+    const reactions = [];
+    if (document.querySelector(`[data-fear-enjoy="${index}"]`).checked) reactions.push('楽しめた');
+    if (document.querySelector(`[data-fear-dislike="${index}"]`).checked) reactions.push('苦手だった');
+    let fearEntry = `${fear}（反応は未回答）`;
+    if (reactions.length) fearEntry = `${fear}（${reactions.join('・')}）`;
+    fearEntries.push(fearEntry);
+  });
+  const attractions = checked('[data-attraction]').map(input => labelForAttraction(input.dataset.attraction));
+  const concerns = selectedConcerns();
+  const original = $('review-text').value;
+  const suggestion = $('suggestion-text').value.trim();
+  const isSample = document.body.dataset.sample === 'true';
+  $('preview-game').textContent = '零～紅い蝶～REMAKE';
+  $('preview-chips').innerHTML = attractions.map(item => `<span class="chip">${esc(item)}</span>`).join('');
+  $('short-copy').textContent = original || 'レビュー本文は、まだ書かれていないようだ。';
+  $('short-copy').classList.toggle('empty-copy', !original);
+  const fullParts = [];
+  if (isSample) fullParts.push('<p class="sample-note">選択項目は画面検討用の仮置きです。本文から新たな反応や理由を推測していません。</p>');
+  fullParts.push(renderList('楽しめた要素', listOrEmpty(enjoyment)));
+  fullParts.push(renderList('印象に残った怖さ', listOrEmpty(fearEntries)));
+  fullParts.push(renderList('特に惹かれたところ', listOrEmpty(attractions)));
+  fullParts.push(renderList('気になったところ', listOrEmpty(concerns)));
+  let originalClass = 'original empty-copy';
+  if (original) originalClass = 'original';
+  fullParts.push(`<div class="preview-block"><h3>レビュー本文</h3><p class="${originalClass}">${esc(original || 'レビュー本文は、まだ書かれていないようだ。')}</p></div>`);
+  if (suggestion) fullParts.push(`<div class="preview-block"><h3>選択肢にない要素の提案</h3><p class="original">${esc(suggestion)}</p><p class="help">運営タグへの反映とは別の提案です。</p></div>`);
+  $('full-preview').innerHTML = fullParts.join('');
+
+  const lines = ['# 体験から書くレビュー・試作回答', '', '作品：零～紅い蝶～REMAKE'];
+  if (isSample) lines.push('※選択項目は画面検討用の仮置きです。本文から反応や理由を推測したものではありません。');
+  lines.push('', '## 楽しめた要素', ...listOrEmpty(enjoyment).map(item => `- ${item}`));
+  lines.push('', '## 印象に残った怖さ', ...listOrEmpty(fearEntries).map(item => `- ${item}`));
+  lines.push('', '## 特に惹かれたところ', ...listOrEmpty(attractions).map(item => `- ${item}`));
+  lines.push('', '## 気になったところ', ...listOrEmpty(concerns).map(item => `- ${item}`));
+  lines.push('', '## レビュー本文', original || '未入力');
+  lines.push('', '## 選択肢にない要素の提案', suggestion || '未入力', '※運営タグへの反映とは別の提案です。');
+  $('chat-output').value = lines.join('\n');
+}
+
+function update() { syncDependencies(); updatePreview(); $('copy-status').textContent = ''; }
+function setChecked(selector, value = true) { const element = document.querySelector(selector); if (element) element.checked = value; }
+function clearAll(announce = true) {
+  document.querySelectorAll('input[type="checkbox"]').forEach(input => { input.checked = false; });
+  document.querySelectorAll('details').forEach(details => { details.open = false; });
+  $('review-text').value = '';
+  $('suggestion-text').value = '';
+  delete document.body.dataset.sample;
+  update();
+  if (announce) $('sample-status').textContent = '入力を空の状態に戻しました。';
+}
+function loadSample() {
+  clearAll(false);
+  document.body.dataset.sample = 'true';
+  ['story', 'exploration', 'combat'].forEach(id => setChecked(`[data-enjoy-main="${id}"]`));
+  setChecked('[data-enjoy-child="story"][value="0"]');
+  setChecked('[data-enjoy-child="exploration"][value="0"]');
+  setChecked('[data-enjoy-child="exploration"][value="1"]');
+  setChecked('[data-enjoy-child="combat"][value="0"]');
+  setChecked('[data-fear-main="0"]');
+  setChecked('[data-concern="group:combat"]');
+  $('review-text').value = sampleText;
+  syncDependencies();
+  setChecked('[data-attraction="group:story"]');
+  updatePreview();
+  $('sample-status').textContent = '「零～紅い蝶～REMAKE」のサンプルを読み込みました。選択項目は検討用の仮置きです。';
+}
+function selectOutput() { $('chat-output').focus(); $('chat-output').select(); }
+
+renderStaticInputs();
+update();
+$('review-form').addEventListener('submit', event => event.preventDefault());
+$('review-form').addEventListener('change', update);
+$('review-form').addEventListener('input', update);
+$('load-sample').addEventListener('click', loadSample);
+$('clear-all').addEventListener('click', () => clearAll(true));
+$('select-output').addEventListener('click', () => {
+  selectOutput();
+  $('copy-status').textContent = 'テキストを全選択しました。Ctrl+C（MacはCommand+C）でコピーしてください。';
+});
+$('copy-output').addEventListener('click', async () => {
+  const snapshot = $('chat-output').value;
+  try {
+    await navigator.clipboard.writeText(snapshot);
+    $('copy-status').textContent = 'チャット用テキストをコピーしました。';
+  } catch (error) {
+    selectOutput();
+    $('copy-status').textContent = '自動コピーを利用できないため、テキストを全選択しました。Ctrl+C（MacはCommand+C）でコピーしてください。';
+  }
+});
+</script>
+</body>
+</html>
